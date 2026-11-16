@@ -264,6 +264,8 @@ public sealed class EventReadTests(ApiFactory factory) : IntegrationTest
         CreatedAt = TestData.Now,
     };
 
+    internal static readonly Dictionary<Guid, string> IssuedShareTokens = [];
+
     internal static Event NewEvent(
         Guid ownerId,
         string title,
@@ -272,7 +274,10 @@ public sealed class EventReadTests(ApiFactory factory) : IntegrationTest
         Instant end,
         double lng = TestData.InsideLng,
         double lat = TestData.InsideLat,
-        EventTag[]? tags = null) => new()
+        EventTag[]? tags = null)
+    {
+        var shareToken = ShareToken.New();
+        var e = new Event
         {
             Id = Guid.CreateVersion7(),
             OwnerId = ownerId,
@@ -285,9 +290,13 @@ public sealed class EventReadTests(ApiFactory factory) : IntegrationTest
             Address = "Telliskivi 60a, Tallinn",
             Visibility = visibility,
             ApprovalMode = ApprovalMode.Open,
-            ShareToken = ShareToken.New(),
+            ShareTokenHash = ShareToken.Hash(shareToken),
             Tags = tags?.ToList() ?? [],
             CreatedAt = TestData.Now,
             UpdatedAt = TestData.Now,
         };
+
+        IssuedShareTokens[e.Id] = shareToken;
+        return e;
+    }
 }

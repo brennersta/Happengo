@@ -54,6 +54,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -96,6 +106,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -106,7 +126,7 @@
           "Events"
         ],
         "summary": "One event the caller is allowed to read.",
-        "description": "Hidden, unlisted (without being the owner), and ended events the caller did not attend return 404. The owner receives shareToken.",
+        "description": "Hidden, unlisted (without being the owner), and ended events the caller did not attend return 404. The share token is not returned; only its hash is stored.",
         "operationId": "GetEvent",
         "parameters": [
           {

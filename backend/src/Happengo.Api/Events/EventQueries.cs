@@ -21,6 +21,7 @@ internal static class EventQueries
     /// Map scope drops unlisted events for every caller, including the owner,
     /// and drops every ended event (<c>end_at &lt;= now</c>), including the owner's
     /// and attendees' (ADR 0006). Direct reads still return ended events to those people.
+    /// The owner clause is the positive <see cref="OwnerVisibility"/> allow-list.
     /// </summary>
     public static IQueryable<Event> VisibleTo(
         this IQueryable<Event> events,
@@ -32,13 +33,14 @@ internal static class EventQueries
         var userId = viewer.UserId ?? Guid.Empty;
         var known = viewer.IsAuthenticated;
         var map = scope == EventReadScope.Map;
+        var ownerMaySee = map ? OwnerVisibility.OnMap : OwnerVisibility.ById;
         var attendingEventIds = AttendanceAccess.EventIdsAttendedBy(db, userId);
 
         return events.Where(e =>
             !map || e.EndAt > now).Where(e =>
             (known
                 && e.OwnerId == userId
-                && (!map || e.Visibility != EventVisibility.Unlisted))
+                && ownerMaySee.Contains(e.Visibility))
             || (known
                 && e.EndAt <= now
                 && !map
@@ -56,11 +58,15 @@ internal static class EventQueries
     public static IQueryable<Event> VisibleByShareToken(
         this IQueryable<Event> events,
         string token,
-        Instant now) =>
-        events.Where(e =>
+        Instant now)
+    {
+        // Lookup is the hash only. The plaintext column is not stored.
+        var hash = ShareToken.Hash(token);
+        return events.Where(e =>
             e.Visibility == EventVisibility.Unlisted
-            && e.ShareToken == token
+            && e.ShareTokenHash == hash
             && e.EndAt > now);
+    }
 
     public static IQueryable<Event> InBoundingBox(this DbSet<Event> events, BoundingBox box)
     {

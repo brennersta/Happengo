@@ -22,6 +22,7 @@ namespace Happengo.Api.Infrastructure.Persistence.Migrations
                 .HasAnnotation("ProductVersion", "10.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pgcrypto");
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "postgis");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
@@ -112,11 +113,10 @@ namespace Happengo.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("owner_id");
 
-                    b.Property<string>("ShareToken")
+                    b.Property<byte[]>("ShareTokenHash")
                         .IsRequired()
-                        .HasMaxLength(22)
-                        .HasColumnType("character varying(22)")
-                        .HasColumnName("share_token");
+                        .HasColumnType("bytea")
+                        .HasColumnName("share_token_hash");
 
                     b.Property<Instant>("StartAt")
                         .HasColumnType("timestamp with time zone")
@@ -163,9 +163,9 @@ namespace Happengo.Api.Infrastructure.Persistence.Migrations
                     b.HasIndex("OwnerId")
                         .HasDatabaseName("ix_events_owner_id");
 
-                    b.HasIndex("ShareToken")
+                    b.HasIndex("ShareTokenHash")
                         .IsUnique()
-                        .HasDatabaseName("ix_events_share_token");
+                        .HasDatabaseName("ix_events_share_token_hash");
 
                     b.ToTable("events", null, t =>
                         {

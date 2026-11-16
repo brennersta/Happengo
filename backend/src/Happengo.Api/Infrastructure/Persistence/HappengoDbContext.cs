@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 
 namespace Happengo.Api.Infrastructure.Persistence;
 
@@ -14,6 +15,7 @@ public sealed class HappengoDbContext(DbContextOptions<HappengoDbContext> option
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.HasPostgresExtension("pgcrypto");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(HappengoDbContext).Assembly);
         HappengoRelationships.Configure(modelBuilder);
     }

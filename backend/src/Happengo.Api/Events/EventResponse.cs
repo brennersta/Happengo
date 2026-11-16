@@ -32,8 +32,7 @@ internal static class EventMapping
         this Event e,
         Guid? viewerId,
         NodaTime.Instant now,
-        int attendingCount,
-        bool includeShareToken) =>
+        int attendingCount) =>
         new(
             e.Id,
             e.Title,
@@ -50,7 +49,7 @@ internal static class EventMapping
             attendingCount,
             Longitude: e.Location.X,
             Latitude: e.Location.Y,
-            ShareToken: includeShareToken && viewerId is not null && e.OwnerId == viewerId
-                ? e.ShareToken
-                : null);
+            // TODO(event-edit): return the plaintext once, when edit can issue, revoke, and rotate it.
+            // Only the SHA-256 is stored, so a read cannot echo the token.
+            ShareToken: null);
 }

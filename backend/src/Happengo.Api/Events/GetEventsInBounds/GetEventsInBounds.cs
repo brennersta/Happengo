@@ -24,6 +24,7 @@ internal static class GetEventsInBounds
     {
         group.MapGet("/events", Handle)
             .AllowAnonymous()
+            .RequireRateLimiting(RateLimitPolicies.MapReads)
             .WithName("ListEventsInBounds")
             .WithTags("Events")
             .WithSummary("Events in the map viewport that have not ended.")
@@ -34,7 +35,8 @@ internal static class GetEventsInBounds
                 + "truncated is true when more events matched. "
                 + "tags keeps events that have any of the named tags.")
             .Produces<EventMapResponse>()
-            .ProducesProblem(StatusCodes.Status400BadRequest);
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
         return group;
     }
@@ -81,7 +83,7 @@ internal static class GetEventsInBounds
 
         var counts = await AttendanceAccess.AttendingCountsAsync(db, rows.Select(e => e.Id).ToArray(), cancellationToken);
         var items = rows
-            .Select(e => e.ToResponse(viewer.UserId, now, counts.GetValueOrDefault(e.Id), includeShareToken: false))
+            .Select(e => e.ToResponse(viewer.UserId, now, counts.GetValueOrDefault(e.Id)))
             .ToArray();
 
         return TypedResults.Ok(new EventMapResponse(items, EventQueries.MapResultLimit, truncated));

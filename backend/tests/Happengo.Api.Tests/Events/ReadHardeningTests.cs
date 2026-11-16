@@ -109,13 +109,21 @@ public sealed class ReadHardeningTests(ApiFactory factory) : IntegrationTest
                 id));
 
             var response = await factory.CreateClient().SendAsync(ApiJson.Get($"/v1/events/{id}", "owner"));
-            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
             var body = await response.Content.ReadAsStringAsync();
             Assert.DoesNotContain("bad-visibility", body, StringComparison.Ordinal);
 
-            var map = await factory.CreateClient().SendAsync(ApiJson.Get($"/v1/events?bbox={TestData.Bbox}"));
+            var map = await factory.CreateClient().SendAsync(ApiJson.Get($"/v1/events?bbox={TestData.Bbox}", "owner"));
+            Assert.Equal(HttpStatusCode.OK, map.StatusCode);
             var page = await map.Content.Read<EventMapResponse>();
             Assert.DoesNotContain(page!.Items, item => item.Id == id);
+
+            await factory.WithDb(async db =>
+            {
+                var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                    db.Events.Where(row => row.Id == id).ToListAsync());
+                Assert.Contains("private", error.Message, StringComparison.Ordinal);
+            });
         }
         finally
         {

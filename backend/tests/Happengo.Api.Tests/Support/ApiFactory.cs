@@ -59,6 +59,11 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment(Microsoft.Extensions.Hosting.Environments.Development);
+        builder.UseSetting("RateLimiting:MapReads:PermitLimit", "100000");
+        builder.UseSetting("RateLimiting:ShareReads:PermitLimit", "100000");
+        builder.UseSetting("RateLimiting:Writes:PermitLimit", "100000");
+        builder.UseSetting("RateLimiting:Auth:PermitLimit", "100000");
+        builder.UseSetting("RateLimiting:Uploads:PermitLimit", "100000");
         builder.ConfigureTestServices(services =>
         {
             services.RemoveAll<DbContextOptions<HappengoDbContext>>();
