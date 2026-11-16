@@ -1,4 +1,8 @@
-name: ci
+# Pull requests and pushes to main.
+# The required check is the ci-success job (status name: CI / ci-success).
+# api, app, and infra skip until their projects exist. See docs/ci.md.
+
+name: CI
 
 on:
   pull_request:
@@ -6,17 +10,372 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  client:
+  changes:
+    name: changes
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      api: ${{ steps.gate.outputs.api }}
+      app: ${{ steps.gate.outputs.app }}
+      infra: ${{ steps.gate.outputs.infra }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: 22
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Decide which jobs have code to run
+        id: gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+          PUSH_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            if git cat-file -e "${HEAD_SHA}^{commit}" && git cat-file -e "${BASE_SHA}^{commit}"; then
+              files=$(git diff --name-only "${BASE_SHA}...${HEAD_SHA}")
+            else
+              echo "PR commits are not both in the checkout; diffing the merge commit against its first parent."
+              files=$(git diff --name-only "HEAD^1...HEAD")
+            fi
+          elif [ -z "$BEFORE_SHA" ] || [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            files=$(git ls-tree -r --name-only HEAD)
+          elif ! git cat-file -e "${BEFORE_SHA}^{commit}"; then
+            echo "Previous push SHA is not in the checkout; treating every file at HEAD as changed."
+            files=$(git ls-tree -r --name-only HEAD)
+          else
+            files=$(git diff --name-only "$BEFORE_SHA" "$PUSH_SHA")
+          fi
+
+          api_paths=false
+          app_paths=false
+          infra_paths=false
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            case "$f" in
+              backend/*)
+                api_paths=true
+                ;;
+              apps/*|packages/*|pnpm-lock.yaml|pnpm-workspace.yaml|package.json|.npmrc)
+                app_paths=true
+                ;;
+              infra/*)
+                infra_paths=true
+                ;;
+              .github/workflows/ci.yml)
+                api_paths=true
+                app_paths=true
+                infra_paths=true
+                ;;
+            esac
+          done <<< "$files"
+
+          api_exists=false
+          if [ -d backend ] && find backend -type f \( -name '*.sln' -o -name '*.csproj' \) -print -quit | grep -q .; then
+            api_exists=true
+          fi
+
+          app_exists=false
+          if find apps packages -type f -name package.json -print -quit 2>/dev/null | grep -q .; then
+            app_exists=true
+          fi
+
+          infra_exists=false
+          if [ -d infra ] && find infra -type f -name '*.tf' -not -path '*/.terraform/*' -print -quit | grep -q .; then
+            infra_exists=true
+          fi
+
+          run_job() {
+            if [ "$1" = true ] && [ "$2" = true ]; then
+              echo true
+            else
+              echo false
+            fi
+          }
+
+          api=$(run_job "$api_paths" "$api_exists")
+          app=$(run_job "$app_paths" "$app_exists")
+          infra=$(run_job "$infra_paths" "$infra_exists")
+
+          {
+            echo "Changed files:"
+            if [ -n "$files" ]; then
+              printf '%s\n' "$files"
+            else
+              echo "(none)"
+            fi
+            echo "api paths=$api_paths exists=$api_exists run=$api"
+            echo "app paths=$app_paths exists=$app_exists run=$app"
+            echo "infra paths=$infra_paths exists=$infra_exists run=$infra"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+          {
+            echo "api=$api"
+            echo "app=$app"
+            echo "infra=$infra"
+          } >> "$GITHUB_OUTPUT"
+
+  api:
+    name: api
+    needs: changes
+    if: ${{ needs.changes.result == 'success' && needs.changes.outputs.api == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Cache NuGet packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('backend/**/*.csproj', 'backend/**/*.fsproj', 'backend/**/*.props', 'backend/**/packages.lock.json') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Restore, format, build, and test
+        run: |
+          set -euo pipefail
+          mapfile -t slns < <(find backend -type f -name '*.sln' | sort)
+          if [ "${#slns[@]}" -eq 1 ]; then
+            target="${slns[0]}"
+          elif [ "${#slns[@]}" -gt 1 ]; then
+            echo "Expected one solution under backend/, found:"
+            printf '  %s\n' "${slns[@]}"
+            exit 1
+          else
+            mapfile -t projects < <(find backend -type f -name '*.csproj' | sort)
+            if [ "${#projects[@]}" -eq 1 ]; then
+              target="${projects[0]}"
+            else
+              echo "backend/ needs one .sln, or a single .csproj when there is no solution."
+              printf '  %s\n' "${projects[@]}"
+              exit 1
+            fi
+          fi
+          echo "Project: $target"
+          dotnet restore "$target"
+          dotnet format "$target" --verify-no-changes --no-restore
+          dotnet build "$target" --no-restore --configuration Release
+          dotnet test "$target" --no-build --configuration Release
+
+  app:
+    name: app
+    needs: changes
+    if: ${{ needs.changes.result == 'success' && needs.changes.outputs.app == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Resolve Node and pnpm versions
+        id: tools
+        run: |
+          set -euo pipefail
+          if [ -f .nvmrc ]; then
+            node_version=$(tr -d '[:space:]' < .nvmrc)
+          elif [ -f .node-version ]; then
+            node_version=$(tr -d '[:space:]' < .node-version)
+          else
+            node_version=22
+          fi
+
+          pnpm_version=""
+          if [ -f package.json ]; then
+            raw=$(jq -r '.packageManager // empty' package.json)
+            case "$raw" in
+              pnpm@*)
+                pnpm_version=${raw#pnpm@}
+                pnpm_version=${pnpm_version%%+*}
+                ;;
+              "")
+                ;;
+              *)
+                echo "packageManager is '$raw'. ADR 0002 requires pnpm."
+                exit 1
+                ;;
+            esac
+            if [ -z "$pnpm_version" ]; then
+              raw=$(jq -r '.devEngines.packageManager | select(.name == "pnpm") | .version // empty' package.json)
+              pnpm_version=${raw%%+*}
+            fi
+          fi
+          if [ -z "$pnpm_version" ]; then
+            pnpm_version=10.34.9
+          fi
+
+          echo "Node: $node_version"
+          echo "pnpm: $pnpm_version"
+          {
+            echo "node=$node_version"
+            echo "pnpm=$pnpm_version"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Require the pnpm workspace
+        run: |
+          set -euo pipefail
+          missing=0
+          if [ ! -f pnpm-workspace.yaml ]; then
+            echo "ADR 0002 expects a pnpm workspace. Add pnpm-workspace.yaml at the repo root."
+            missing=1
+          fi
+          if [ ! -f pnpm-lock.yaml ]; then
+            echo "pnpm-lock.yaml is required so CI can run pnpm install --frozen-lockfile."
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: ${{ steps.tools.outputs.pnpm }}
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ steps.tools.outputs.node }}
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-      - run: pnpm lint
-      - run: pnpm test
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install, lint, typecheck, and test
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm --filter "./apps/**" --filter "./packages/**" run lint
+          pnpm --filter "./apps/**" --filter "./packages/**" exec tsc --noEmit
+          pnpm --filter "./apps/**" --filter "./packages/**" run test
+
+  infra:
+    name: infra
+    needs: changes
+    if: ${{ needs.changes.result == 'success' && needs.changes.outputs.infra == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.17.2
+          terraform_wrapper: false
+
+      - name: Cache Terraform providers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/terraform-plugin-cache
+          key: terraform-${{ runner.os }}-1.17.2-${{ hashFiles('infra/**/.terraform.lock.hcl') }}
+          restore-keys: |
+            terraform-${{ runner.os }}-1.17.2-
+
+      - name: Format and validate
+        env:
+          TF_IN_AUTOMATION: "true"
+          TF_INPUT: "false"
+          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/terraform-plugin-cache
+        run: |
+          set -euo pipefail
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          terraform version
+          terraform fmt -check -diff -recursive infra
+
+          mapfile -t dirs < <(find infra -type f -name '*.tf' -not -path '*/.terraform/*' -printf '%h\n' | sort -u)
+          if [ "${#dirs[@]}" -eq 0 ]; then
+            echo "infra gate was true but no .tf files were found."
+            exit 1
+          fi
+          for dir in "${dirs[@]}"; do
+            echo "init -backend=false && validate: $dir"
+            terraform -chdir="$dir" init -backend=false -input=false -no-color
+            terraform -chdir="$dir" validate -no-color
+          done
+
+  ci-success:
+    name: ci-success
+    needs: [changes, api, app, infra]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: none
+    steps:
+      - name: Fail unless every required job passed or was correctly skipped
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          API_GATE: ${{ needs.changes.outputs.api }}
+          API_RESULT: ${{ needs.api.result }}
+          APP_GATE: ${{ needs.changes.outputs.app }}
+          APP_RESULT: ${{ needs.app.result }}
+          INFRA_GATE: ${{ needs.changes.outputs.infra }}
+          INFRA_RESULT: ${{ needs.infra.result }}
+        run: |
+          set -euo pipefail
+          fail=0
+          report() {
+            echo "$1"
+            fail=1
+          }
+
+          if [ "$CHANGES" != "success" ]; then
+            report "changes must succeed (result=${CHANGES})"
+          fi
+
+          expect() {
+            local name="$1" gate="$2" result="$3"
+            if [ "$gate" = "true" ]; then
+              if [ "$result" != "success" ]; then
+                report "${name} was supposed to run and pass (result=${result})"
+              fi
+            elif [ "$result" != "skipped" ]; then
+              report "${name} was supposed to be skipped (gate=${gate:-empty} result=${result})"
+            fi
+          }
+
+          expect api "$API_GATE" "$API_RESULT"
+          expect app "$APP_GATE" "$APP_RESULT"
+          expect infra "$INFRA_GATE" "$INFRA_RESULT"
+
+          {
+            echo "### ci-success"
+            echo "changes=${CHANGES}"
+            echo "api gate=${API_GATE:-empty} result=${API_RESULT}"
+            echo "app gate=${APP_GATE:-empty} result=${APP_RESULT}"
+            echo "infra gate=${INFRA_GATE:-empty} result=${INFRA_RESULT}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$fail" -ne 0 ]; then
+            exit 1
+          fi
+          echo "ci-success: required jobs passed or were correctly skipped."

@@ -1,0 +1,49 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  # nuget and npm stay commented out on purpose.
+  # Dependabot errors when the configured directory has no manifest.
+  # backend/ does not exist yet, and there is no package.json or
+  # pnpm-lock.yaml. Turn an entry on when that manifest exists.
+  # The npm ecosystem is what Dependabot uses for a pnpm lockfile
+  # (ADR 0002). Point it at the workspace root (/), not at each package.
+  #
+  # - package-ecosystem: nuget
+  #   directory: /backend
+  #   schedule:
+  #     interval: weekly
+  # - package-ecosystem: npm
+  #   directory: /
+  #   schedule:
+  #     interval: weekly
+
+  # One entry per Terraform root and module. Dependabot does not recurse
+  # from /infra, and each directory has its own .terraform.lock.hcl.
+  - package-ecosystem: terraform
+    directory: /infra/envs/dev
+    schedule:
+      interval: weekly
+  - package-ecosystem: terraform
+    directory: /infra/modules/container-apps
+    schedule:
+      interval: weekly
+  - package-ecosystem: terraform
+    directory: /infra/modules/key-vault
+    schedule:
+      interval: weekly
+  - package-ecosystem: terraform
+    directory: /infra/modules/log-analytics
+    schedule:
+      interval: weekly
+  - package-ecosystem: terraform
+    directory: /infra/modules/postgres
+    schedule:
+      interval: weekly
+  - package-ecosystem: terraform
+    directory: /infra/modules/storage
+    schedule:
+      interval: weekly

@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.5
+    environment:
+      POSTGRES_USER: happengo
+      POSTGRES_PASSWORD: happengo
+      POSTGRES_DB: happengo
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U happengo -d happengo"]
+      interval: 5s
+      timeout: 5s
+      retries: 12

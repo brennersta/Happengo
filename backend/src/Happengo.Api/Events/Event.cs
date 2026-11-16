@@ -1,0 +1,43 @@
+using NetTopologySuite.Geometries;
+using NodaTime;
+
+namespace Happengo.Api.Events;
+
+/// <summary>
+/// An event has no stored status. Happening now and ended are computed from the clock (ADR 0003).
+/// </summary>
+internal sealed class Event
+{
+    public Guid Id { get; set; }
+
+    public Guid OwnerId { get; set; }
+
+    public string Title { get; set; } = "";
+
+    public string? Description { get; set; }
+
+    public Instant StartAt { get; set; }
+
+    public Instant EndAt { get; set; }
+
+    public string TimeZoneId { get; set; } = "";
+
+    public Point Location { get; set; } = null!;
+
+    public string Address { get; set; } = "";
+
+    public EventVisibility Visibility { get; set; }
+
+    /// <summary>Canonical base64url of 16 random bytes. 128 bits, unique.</summary>
+    public string ShareToken { get; set; } = "";
+
+    public ApprovalMode ApprovalMode { get; set; }
+
+    public string? CoverBlobName { get; set; }
+
+    public List<EventTag> Tags { get; set; } = [];
+
+    public Instant CreatedAt { get; set; }
+
+    public Instant UpdatedAt { get; set; }
+}
