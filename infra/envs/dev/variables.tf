@@ -96,15 +96,48 @@ variable "key_vault_secret_environment_variables" {
   default     = {}
 }
 
-variable "acr_login_server" {
+variable "registry_server" {
   type        = string
-  description = "Set to the registry login server only when container_image is in this environment's ACR. Null keeps the public placeholder."
+  description = "Set to ghcr.io only for a private package. Leave null for a public image, including a public GHCR package. Not a secret."
   default     = null
+}
+
+variable "registry_username" {
+  type        = string
+  description = "GitHub user or org that owns the pull token. Required with registry_server. Not a secret."
+  default     = null
+}
+
+variable "registry_password_key_vault_secret_id" {
+  type        = string
+  description = "Versionless Key Vault URI of the GHCR pull token. Required with registry_server. Never the token itself."
+  default     = null
+}
+
+variable "key_vault_operator_object_id" {
+  type        = string
+  description = "Object id of the Entra group or user who administers Key Vault secrets. Not a secret. This principal creates the pull token out of band."
+
+  validation {
+    condition     = can(regex("(?i)^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", var.key_vault_operator_object_id))
+    error_message = "key_vault_operator_object_id must be a UUID."
+  }
+}
+
+variable "key_vault_operator_principal_type" {
+  type        = string
+  description = "Group, User, or ServicePrincipal. Prefer Group."
+  default     = "Group"
+
+  validation {
+    condition     = contains(["Group", "User", "ServicePrincipal"], var.key_vault_operator_principal_type)
+    error_message = "key_vault_operator_principal_type must be Group, User, or ServicePrincipal."
+  }
 }
 
 variable "container_image" {
   type        = string
-  description = "Image Container Apps will run. The default is a public placeholder because an image is required. Do not apply until the Happengo API image replaces it."
+  description = "Image the API runs. The default is a public placeholder because Container Apps requires an image. Replace it with the Happengo image on GHCR before any apply."
   default     = "mcr.microsoft.com/k8se/quickstart:latest"
 }
 
@@ -131,11 +164,12 @@ variable "postgres_firewall_rules" {
 }
 
 # Dev defaults. Smallest burstable database, smallest Consumption container, tight log cap.
-# Staging and prod override the ones that differ. None of these are applied by CI.
+# None of these are applied by CI. Purge protection stays off: once enabled it cannot be turned off,
+# which is one reason a prod root is not checked in yet.
 
 variable "postgres_sku_name" {
   type        = string
-  description = "Burstable Flexible Server SKU. Every environment defaults to the smallest, B_Standard_B1ms."
+  description = "Burstable Flexible Server SKU. Dev uses the smallest, B_Standard_B1ms."
   default     = "B_Standard_B1ms"
 }
 

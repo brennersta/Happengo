@@ -28,18 +28,6 @@ updates:
     schedule:
       interval: weekly
   - package-ecosystem: terraform
-    directory: /infra/envs/staging
-    schedule:
-      interval: weekly
-  - package-ecosystem: terraform
-    directory: /infra/envs/prod
-    schedule:
-      interval: weekly
-  - package-ecosystem: terraform
-    directory: /infra/modules/acr
-    schedule:
-      interval: weekly
-  - package-ecosystem: terraform
     directory: /infra/modules/container-apps
     schedule:
       interval: weekly

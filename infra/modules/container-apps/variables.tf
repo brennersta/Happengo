@@ -25,12 +25,7 @@ variable "log_analytics_workspace_id" {
 
 variable "identity_id" {
   type        = string
-  description = "Resource id of the user-assigned identity the API runs as."
-}
-
-variable "identity_client_id" {
-  type        = string
-  description = "Client id of that identity. Passed to the app as AZURE_CLIENT_ID. Not a secret."
+  description = "Resource id of the user-assigned identity the API runs as. Used for Key Vault secret references. Image pulls do not use this identity."
 }
 
 variable "container_image" {
@@ -78,10 +73,30 @@ variable "max_replicas" {
   }
 }
 
-variable "acr_login_server" {
+variable "registry_server" {
   type        = string
   default     = null
-  description = "When set, the app pulls from this registry with its managed identity. Leave null while the image is a public placeholder."
+  description = "Registry host for a private image, such as ghcr.io. Leave null when the image is public. Not a secret."
+}
+
+variable "registry_username" {
+  type        = string
+  default     = null
+  description = "Username for a private registry. For GHCR this is the GitHub user or org that owns the token. Not a secret."
+}
+
+variable "registry_password_key_vault_secret_id" {
+  type        = string
+  default     = null
+  description = "Versionless Key Vault secret id holding the registry pull token. The token value is never a Terraform variable."
+
+  validation {
+    condition = (
+      var.registry_password_key_vault_secret_id == null ||
+      can(regex("^https://[a-z0-9-]+\\.vault\\.azure\\.net/secrets/[A-Za-z0-9-]+$", var.registry_password_key_vault_secret_id))
+    )
+    error_message = "registry_password_key_vault_secret_id must be a versionless Key Vault secret URI, never the token."
+  }
 }
 
 variable "environment_variables" {

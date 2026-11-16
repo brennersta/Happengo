@@ -87,7 +87,7 @@ These wait until Brenner approves them. This workflow does not call them, and it
 
 - `terraform plan` or `terraform apply`, including a plan against a live subscription
 - any Azure login, OIDC federation, or provisioning
-- container build or push, including Azure Container Registry
+- container build or push, including GitHub Container Registry
 - `eas build`, `eas submit`, or `eas update`
 - GitHub Environments, remote Terraform state, or any secret
 

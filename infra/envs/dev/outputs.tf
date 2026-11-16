@@ -13,11 +13,6 @@ output "postgres_fqdn" {
   value       = module.postgres.fqdn
 }
 
-output "acr_login_server" {
-  description = "Registry login server. No image is pushed by this configuration."
-  value       = module.acr.login_server
-}
-
 output "key_vault_uri" {
   description = "Key Vault URI."
   value       = module.key_vault.vault_uri

@@ -1,8 +1,8 @@
 resource "terraform_data" "name_limits" {
   lifecycle {
     precondition {
-      condition     = contains(["dev", "staging", "prod"], local.environment)
-      error_message = "Environment roots must live in infra/envs/dev, infra/envs/staging, or infra/envs/prod."
+      condition     = local.environment == "dev"
+      error_message = "This root is the one deployed environment from ADR 0002 and must live in infra/envs/dev. Copy it when a second environment is actually needed."
     }
 
     precondition {
@@ -37,15 +37,6 @@ module "log_analytics" {
   resource_group_name = azurerm_resource_group.this.name
   location            = azurerm_resource_group.this.location
   daily_quota_gb      = var.log_daily_quota_gb
-  tags                = local.tags
-}
-
-module "acr" {
-  source = "../../modules/acr"
-
-  name                = local.container_registry_name
-  resource_group_name = azurerm_resource_group.this.name
-  location            = azurerm_resource_group.this.location
   tags                = local.tags
 }
 
@@ -106,14 +97,6 @@ resource "azurerm_postgresql_flexible_server_active_directory_administrator" "ap
   depends_on = [module.postgres]
 }
 
-resource "azurerm_role_assignment" "acr_pull" {
-  scope                            = module.acr.id
-  role_definition_name             = "AcrPull"
-  principal_id                     = azurerm_user_assigned_identity.api.principal_id
-  principal_type                   = "ServicePrincipal"
-  skip_service_principal_aad_check = true
-}
-
 resource "azurerm_role_assignment" "blob_data" {
   scope                            = module.storage.id
   role_definition_name             = "Storage Blob Data Contributor"
@@ -130,29 +113,40 @@ resource "azurerm_role_assignment" "key_vault_secrets" {
   skip_service_principal_aad_check = true
 }
 
+# The operator creates secret values out of band, including a GHCR pull token if the package is private.
+# The API identity can only read secrets.
+resource "azurerm_role_assignment" "key_vault_operator" {
+  scope                            = module.key_vault.id
+  role_definition_name             = "Key Vault Administrator"
+  principal_id                     = var.key_vault_operator_object_id
+  principal_type                   = var.key_vault_operator_principal_type
+  skip_service_principal_aad_check = var.key_vault_operator_principal_type == "ServicePrincipal"
+}
+
 module "container_apps" {
   source = "../../modules/container-apps"
 
-  environment_name           = local.container_environment
-  app_name                   = local.container_app_name
-  resource_group_name        = azurerm_resource_group.this.name
-  location                   = azurerm_resource_group.this.location
-  log_analytics_workspace_id = module.log_analytics.id
-  identity_id                = azurerm_user_assigned_identity.api.id
-  identity_client_id         = azurerm_user_assigned_identity.api.client_id
-  container_image            = var.container_image
-  container_port             = var.container_port
-  container_cpu              = var.container_cpu
-  container_memory           = var.container_memory
-  min_replicas               = var.container_min_replicas
-  max_replicas               = var.container_max_replicas
-  acr_login_server           = var.acr_login_server
-  tags                       = local.tags
+  environment_name                      = local.container_environment
+  app_name                              = local.container_app_name
+  resource_group_name                   = azurerm_resource_group.this.name
+  location                              = azurerm_resource_group.this.location
+  log_analytics_workspace_id            = module.log_analytics.id
+  identity_id                           = azurerm_user_assigned_identity.api.id
+  container_image                       = var.container_image
+  container_port                        = var.container_port
+  container_cpu                         = var.container_cpu
+  container_memory                      = var.container_memory
+  min_replicas                          = var.container_min_replicas
+  max_replicas                          = var.container_max_replicas
+  registry_server                       = var.registry_server
+  registry_username                     = var.registry_username
+  registry_password_key_vault_secret_id = var.registry_password_key_vault_secret_id
+  tags                                  = local.tags
 
   role_assignment_ids = [
-    azurerm_role_assignment.acr_pull.id,
     azurerm_role_assignment.blob_data.id,
     azurerm_role_assignment.key_vault_secrets.id,
+    azurerm_role_assignment.key_vault_operator.id,
   ]
   postgres_administrator_id = azurerm_postgresql_flexible_server_active_directory_administrator.api.id
 

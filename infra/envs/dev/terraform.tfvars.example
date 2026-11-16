@@ -6,7 +6,7 @@
 subscription_id = "00000000-0000-0000-0000-000000000000"
 tenant_id       = "00000000-0000-0000-0000-000000000000"
 
-# Four lowercase letters or digits. Makes storage, registry, key vault, and postgres names unique.
+# Four lowercase letters or digits. Makes storage, key vault, and postgres names unique.
 uniqueness_suffix = "dev1"
 
 location = "northeurope"
@@ -16,31 +16,44 @@ postgres_administrator_object_id      = "00000000-0000-0000-0000-000000000000"
 postgres_administrator_principal_name = "happengo-admins"
 postgres_administrator_principal_type = "Group"
 
+# Entra principal that can create Key Vault secrets. Prefer a group.
+key_vault_operator_object_id      = "00000000-0000-0000-0000-000000000000"
+key_vault_operator_principal_type = "Group"
+
 # ADR 0005. Authority and audience are configuration, not secrets.
 # Entra External ID is the default until Brenner picks the provider.
 oidc_authority = "https://example.ciamlogin.com/00000000-0000-0000-0000-000000000000/v2.0"
 oidc_audience  = "api://happengo"
 
-# Dev SKUs. These match the variable defaults. Listed here so the cost shape is visible.
-postgres_sku_name                       = "B_Standard_B1ms"
-postgres_backup_retention_days          = 7
-postgres_allow_azure_services           = true
-postgres_firewall_rules                 = []
-log_daily_quota_gb                      = 0.1
-container_cpu                           = 0.25
-container_memory                        = "0.5Gi"
-container_min_replicas                  = 0
-container_max_replicas                  = 1
-key_vault_purge_protection_enabled      = false
-key_vault_soft_delete_retention_days    = 7
+# Dev SKUs. These match the variable defaults.
+postgres_sku_name                    = "B_Standard_B1ms"
+postgres_backup_retention_days       = 7
+postgres_allow_azure_services        = true
+postgres_firewall_rules              = []
+log_daily_quota_gb                   = 0.1
+container_cpu                        = 0.25
+container_memory                     = "0.5Gi"
+container_min_replicas               = 0
+container_max_replicas               = 1
+key_vault_purge_protection_enabled   = false
+key_vault_soft_delete_retention_days = 7
 
-# Placeholder until the API image is pushed to this environment's registry.
-# The quickstart image does not listen on 8080. Do not apply expecting a healthy API.
+# Replace this placeholder with the Happengo API on GHCR before any apply.
+# The quickstart image does not listen on 8080.
+# Public package: set the image and leave the registry fields null.
+#   container_image = "ghcr.io/brennersta/happengo-api:latest"
+# Private package: also set the three registry fields. The token stays in Key Vault.
 container_image = "mcr.microsoft.com/k8se/quickstart:latest"
 container_port  = 8080
-acr_login_server = null
+registry_server = null
+registry_username = null
+registry_password_key_vault_secret_id = null
 
-# Example of a reference, with no secret value. Leave empty until a secret exists in the vault.
+# registry_server                       = "ghcr.io"
+# registry_username                     = "brennersta"
+# registry_password_key_vault_secret_id = "https://kv-happengo-dev-dev1.vault.azure.net/secrets/ghcr-pull-token"
+
+# Example of an app setting reference, with no secret value.
 # key_vault_secret_environment_variables = {
 #   GEOCODING_API_KEY = "https://kv-happengo-dev-dev1.vault.azure.net/secrets/geocoding-api-key"
 # }

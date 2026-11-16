@@ -24,6 +24,13 @@ locals {
       secret_id   = secret_id
     }
   }
+
+  registry_pull_secret_name = "registry-pull-token"
+  registry_configured = (
+    var.registry_server != null ||
+    var.registry_username != null ||
+    var.registry_password_key_vault_secret_id != null
+  )
 }
 
 resource "terraform_data" "guards" {
@@ -46,6 +53,20 @@ resource "terraform_data" "guards" {
     precondition {
       condition     = length(distinct([for secret in local.key_vault_secrets : secret.secret_name])) == length(local.key_vault_secrets)
       error_message = "Key Vault environment variable names collide once they are lowercased into Container Apps secret names."
+    }
+
+    precondition {
+      condition = (
+        var.registry_server != null &&
+        var.registry_username != null &&
+        var.registry_password_key_vault_secret_id != null
+      ) || !local.registry_configured
+      error_message = "A private registry needs server, username, and a Key Vault secret id together. Leave all three unset to pull a public image."
+    }
+
+    precondition {
+      condition     = !contains([for secret in local.key_vault_secrets : secret.secret_name], local.registry_pull_secret_name)
+      error_message = "registry-pull-token is reserved for the image pull credential."
     }
   }
 }
@@ -81,12 +102,25 @@ resource "azurerm_container_app" "api" {
     identity_ids = [var.identity_id]
   }
 
+  # Public images, including a public GHCR package, need no registry block.
+  # A private package uses a username plus a token that lives in Key Vault.
   dynamic "registry" {
-    for_each = var.acr_login_server == null ? [] : [var.acr_login_server]
+    for_each = local.registry_configured ? [1] : []
 
     content {
-      server   = registry.value
-      identity = var.identity_id
+      server               = var.registry_server
+      username             = var.registry_username
+      password_secret_name = local.registry_pull_secret_name
+    }
+  }
+
+  dynamic "secret" {
+    for_each = local.registry_configured ? [var.registry_password_key_vault_secret_id] : []
+
+    content {
+      name                = local.registry_pull_secret_name
+      identity            = var.identity_id
+      key_vault_secret_id = secret.value
     }
   }
 
