@@ -25,7 +25,7 @@ The accepted ADRs won:
 ## Follow-ups
 
 - [x] N1. Value converters throw on unknown visibility, approval mode, and attendance status. CHECK constraints cover those columns and the tag vocabulary.
-- [x] N1. The geography GiST index is created with `IF NOT EXISTS`.
+- [x] N1. `HardenStoredValues` drops and recreates `ix_events_location_geog` with `IF EXISTS` / `IF NOT EXISTS`. The merged `Initial` migration is unchanged.
 - [x] N2. JSON number handling is strict, so OpenAPI no longer types numbers as `integer|string` or `number|string`.
 - [x] N2. `shareToken` is optional and nullable in the OpenAPI document. `bbox` is required.
 - [x] QA. Map scope of `VisibleTo` itself requires `end_at > now`, including for the owner and attendees.

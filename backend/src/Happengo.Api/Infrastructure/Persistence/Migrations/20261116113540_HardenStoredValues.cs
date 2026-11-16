@@ -29,6 +29,17 @@ namespace Happengo.Api.Infrastructure.Persistence.Migrations
                 name: "ck_attendances_status",
                 table: "attendances",
                 sql: "status IN ('attending', 'requested', 'rejected', 'cancelled')");
+
+            // Initial already created this index. Recreate it idempotently here so a
+            // database that applied Initial, and a fresh database, end on the same index.
+            // Initial itself is left unchanged.
+            migrationBuilder.Sql(
+                """
+                DROP INDEX IF EXISTS ix_events_location_geog;
+                CREATE INDEX IF NOT EXISTS ix_events_location_geog
+                ON events
+                USING gist ((location::geography));
+                """);
         }
 
         /// <inheritdoc />
