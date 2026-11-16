@@ -1,0 +1,20 @@
+{
+  "tabs": {
+    "discover": "Discover",
+    "myEvents": "My Events",
+    "friends": "Friends",
+    "profile": "Profile"
+  },
+  "myEvents": {
+    "empty": "Events you attend or create will appear here."
+  },
+  "friends": {
+    "empty": "Invite friends to create private events and share photos."
+  },
+  "profile": {
+    "empty": "Your name, photo, and language will show up here."
+  },
+  "dates": {
+    "today": "Today"
+  }
+}

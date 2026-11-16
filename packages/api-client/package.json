@@ -1,0 +1,23 @@
+{
+  "name": "@happengo/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "node ./scripts/generate.mjs",
+    "typecheck": "node ./scripts/generate.mjs && tsc --noEmit",
+    "test": "node --test scripts/resolve-spec.test.mjs"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.107.1",
+    "openapi-fetch": "^0.17.0",
+    "openapi-react-query": "^0.5.4"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.13.0",
+    "typescript": "~6.0.3"
+  }
+}

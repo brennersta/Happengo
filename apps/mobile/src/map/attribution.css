@@ -1,0 +1,10 @@
+.maplibregl-ctrl-attrib {
+  font-size: 10px;
+  line-height: 1.2;
+  background-color: rgba(255, 255, 255, 0.55);
+  color: #6b7280;
+}
+
+.maplibregl-ctrl-attrib a {
+  color: #6b7280;
+}
