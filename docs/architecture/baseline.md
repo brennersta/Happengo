@@ -35,17 +35,17 @@ Geocoding is behind one adapter. Whether that adapter runs in the API or the cli
 
 | ADR | Title | Status |
 |---|---|---|
-| [0001](../adr/0001-repo-layout-ts-client-map-stack.md) | Repo layout, TypeScript client, and map stack | Parallel PR |
+| [0001](../adr/0001-repo-layout-ts-client-map-stack.md) | Repo layout, TypeScript client, and map stack | Accepted |
 | [0002](../adr/0002-stack-and-modular-monolith.md) | Stack and modular monolith | Accepted |
 | [0003](../adr/0003-data-model.md) | Data model | Accepted |
-| [0004](../adr/0004-backend-baseline.md) | Backend baseline | Parallel PR |
+| [0004](../adr/0004-backend-baseline.md) | Backend baseline | Accepted |
 | [0005](../adr/0005-authentication.md) | Authentication | Proposed |
 | [0006](../adr/0006-geo-queries.md) | Geo queries | Accepted |
 | [0007](../adr/0007-privacy-enforcement.md) | Privacy enforcement | Accepted |
 | [0008](../adr/0008-image-storage.md) | Image storage | Accepted |
 | [0009](../adr/0009-i18n.md) | Internationalization | Accepted |
 
-0001 (App Engineer) and 0004 (Backend Engineer) land in parallel pull requests. This page links them so the index stays complete.
+0001 and 0004 are accepted.
 
 ## Open for Brenner
 

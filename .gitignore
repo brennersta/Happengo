@@ -94,3 +94,5 @@ Desktop.ini
 .project
 .classpath
 .settings/
+
+apps/mobile/public/maplibre/

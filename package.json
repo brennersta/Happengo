@@ -1,0 +1,15 @@
+{
+  "name": "happengo",
+  "private": true,
+  "packageManager": "pnpm@10.34.9",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "api:generate": "pnpm --filter @happengo/api-client generate",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "pnpm --filter @happengo/mobile lint",
+    "test": "pnpm -r --if-present test",
+    "web:export": "pnpm --filter @happengo/mobile export:web"
+  }
+}
