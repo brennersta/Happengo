@@ -9,8 +9,7 @@ using NodaTime;
 
 namespace Happengo.Api.Tests.Events;
 
-[Collection(ApiCollection.Name)]
-public sealed class VisibleToMatrixTests(ApiFactory factory) : IAsyncLifetime
+public sealed class VisibleToMatrixTests(ApiFactory factory) : IntegrationTest, IAsyncLifetime
 {
     private readonly Dictionary<(EventVisibility Visibility, Phase Phase), Event> _events = [];
 

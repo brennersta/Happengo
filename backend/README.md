@@ -23,9 +23,13 @@ Integration tests share `PostGisFixture` (the container) and `ApiFactory` (`WebA
 
 ```bash
 dotnet test
+dotnet test --filter Category=Integration
+dotnet test --filter Category!=Integration
 ```
 
-Integration tests start a PostGIS container with Testcontainers. Docker has to be running. The suite covers the viewport query, the injected clock, the visibility matrix, the feature-boundary rule, and the OpenAPI document.
+Tests that start PostGIS or `ApiFactory` extend `IntegrationTest` in the test project. That base class puts them in the shared `api` collection and tags them `[Trait("Category", "Integration")]`, so CI can split them later. Extend that class for a new database test instead of adding the trait by hand. The architecture, cursor, and OpenAPI tests do not use the database and are not tagged.
+
+Integration tests need Docker. The suite covers the viewport query, the injected clock, the visibility matrix, the feature-boundary rule, and the OpenAPI document.
 
 ## Migrations
 

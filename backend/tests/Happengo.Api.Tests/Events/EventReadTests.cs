@@ -13,8 +13,7 @@ using NodaTime;
 
 namespace Happengo.Api.Tests.Events;
 
-[Collection(ApiCollection.Name)]
-public sealed class EventReadTests(ApiFactory factory)
+public sealed class EventReadTests(ApiFactory factory) : IntegrationTest
 {
     [Fact]
     public async Task Health_includes_a_database_check()
