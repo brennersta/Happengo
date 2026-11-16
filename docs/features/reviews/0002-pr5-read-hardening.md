@@ -29,9 +29,9 @@ The accepted ADRs won, and the merged `Initial` migration stayed immutable.
 
 ## Branch cleanup
 
-`git diff 8361fc893a34aa46b611d14bbba0399e6a58b370 aa084d894f5e5e629a040965e92b133cd8ab382e` is not empty, so `cursor/read-hardening-08a3` was left at `8361fc8`.
+`git diff 8361fc893a34aa46b611d14bbba0399e6a58b370 aa084d894f5e5e629a040965e92b133cd8ab382e` is not empty. The trees differ by 37 files (`+1748`/`-19`): the infra layout from PR #4 (`cac9691`), which is the parent of the squash and is not on the feature branch (that branch is based on `980991e`).
 
-The trees differ by 37 files (`+1748`/`-19`): the infra layout from PR #4 (`cac9691`), which is the parent of the squash and is not on the feature branch (that branch is based on `980991e`). The hardening patch itself matches. `git diff 980991e 8361fc8` and `git diff cac9691 aa084d8` are the same change.
+The hardening patch is fully in main. `git diff 980991eaf018e76262acc8488d6cbada75148ddf 8361fc893a34aa46b611d14bbba0399e6a58b370` matches `git diff cac9691ef1a0b448973fbca4af617b38a3f928fb aa084d894f5e5e629a040965e92b133cd8ab382e`. On that patch equivalence, the remote branch `cursor/read-hardening-08a3` was deleted.
 
 ## Follow-ups
 
