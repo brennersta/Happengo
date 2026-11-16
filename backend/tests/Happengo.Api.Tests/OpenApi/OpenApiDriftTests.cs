@@ -29,6 +29,20 @@ public sealed class OpenApiDriftTests : IClassFixture<WebApplicationFactory<Prog
         }
 
         Assert.Equal(10, values.Count);
+
+        var raw = document.ToJsonString();
+        Assert.DoesNotContain("\"integer\",\"string\"", raw.Replace(" ", ""), StringComparison.Ordinal);
+        Assert.DoesNotContain("\"number\",\"string\"", raw.Replace(" ", ""), StringComparison.Ordinal);
+
+        var bbox = document["paths"]!["/v1/events"]!["get"]!["parameters"]!.AsArray()
+            .Single(parameter => parameter!["name"]!.GetValue<string>() == "bbox");
+        Assert.True(bbox!["required"]?.GetValue<bool>());
+
+        var required = document["components"]!["schemas"]!["EventResponse"]!["required"]!.AsArray()
+            .Select(node => node!.GetValue<string>());
+        Assert.DoesNotContain("shareToken", required);
+        var share = document["components"]!["schemas"]!["EventResponse"]!["properties"]!["shareToken"]!;
+        Assert.Contains("null", share["type"]!.ToJsonString(), StringComparison.Ordinal);
     }
 
     [Fact]

@@ -18,9 +18,9 @@ internal static class EventQueries
 
     /// <summary>
     /// One visibility filter (ADR 0007).
-    /// Map scope drops unlisted events for every caller, including the owner.
-    /// Ended events stay visible here to the owner and to users who are attending;
-    /// the viewport query adds <c>end_at &gt; now</c> itself (ADR 0006).
+    /// Map scope drops unlisted events for every caller, including the owner,
+    /// and drops every ended event (<c>end_at &lt;= now</c>), including the owner's
+    /// and attendees' (ADR 0006). Direct reads still return ended events to those people.
     /// </summary>
     public static IQueryable<Event> VisibleTo(
         this IQueryable<Event> events,
@@ -35,12 +35,13 @@ internal static class EventQueries
         var attendingEventIds = AttendanceAccess.EventIdsAttendedBy(db, userId);
 
         return events.Where(e =>
+            !map || e.EndAt > now).Where(e =>
             (known
                 && e.OwnerId == userId
                 && (!map || e.Visibility != EventVisibility.Unlisted))
             || (known
                 && e.EndAt <= now
-                && (!map || e.Visibility != EventVisibility.Unlisted)
+                && !map
                 && attendingEventIds.Contains(e.Id))
             || (e.Visibility == EventVisibility.Public && e.EndAt > now)
             || (e.Visibility == EventVisibility.FriendsOnly

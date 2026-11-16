@@ -49,7 +49,6 @@ public sealed class EventReadTests(ApiFactory factory) : IntegrationTest
             var query = db.Events
                 .InBoundingBox(box)
                 .VisibleTo(db, Viewer.Anonymous, now, EventReadScope.Map)
-                .Where(e => e.EndAt > now)
                 .OrderForDiscovery(now)
                 .Take(EventQueries.MapResultLimit + 1);
             return Task.FromResult(query.ToQueryString());
@@ -57,6 +56,7 @@ public sealed class EventReadTests(ApiFactory factory) : IntegrationTest
 
         Assert.Contains("ST_MakeEnvelope", sql, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("&&", sql, StringComparison.Ordinal);
+        Assert.Contains("end_at", sql, StringComparison.OrdinalIgnoreCase);
     }
 
     [Theory]

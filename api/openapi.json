@@ -18,6 +18,7 @@
           {
             "name": "bbox",
             "in": "query",
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -167,11 +168,7 @@
             }
           },
           "limit": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "truncated": {
@@ -195,8 +192,7 @@
           "isOwner",
           "attendingCount",
           "longitude",
-          "latitude",
-          "shareToken"
+          "latitude"
         ],
         "type": "object",
         "properties": {
@@ -246,27 +242,15 @@
             "type": "boolean"
           },
           "attendingCount": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "longitude": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?(?:[eE][\u002B-]?\\d\u002B)?$",
-            "type": [
-              "number",
-              "string"
-            ],
+            "type": "number",
             "format": "double"
           },
           "latitude": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?(?:[eE][\u002B-]?\\d\u002B)?$",
-            "type": [
-              "number",
-              "string"
-            ],
+            "type": "number",
             "format": "double"
           },
           "shareToken": {
@@ -316,11 +300,9 @@
             ]
           },
           "status": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           },

@@ -13,6 +13,9 @@ internal sealed class EventConfiguration : IEntityTypeConfiguration<Event>
             table.HasCheckConstraint(
                 "ck_events_duration",
                 "end_at <= start_at + interval '7 days'");
+            table.HasCheckConstraint("ck_events_visibility", StoredVisibility.Check);
+            table.HasCheckConstraint("ck_events_approval_mode", StoredApprovalMode.Check);
+            table.HasCheckConstraint("ck_events_tags", StoredTags.Check);
         });
 
         builder.Property(e => e.Title).HasMaxLength(200).IsRequired();
@@ -28,19 +31,15 @@ internal sealed class EventConfiguration : IEntityTypeConfiguration<Event>
 
         builder.Property(e => e.Visibility)
             .HasConversion(
-                value => value == EventVisibility.Unlisted ? "unlisted"
-                    : value == EventVisibility.FriendsOnly ? "friends_only"
-                    : "public",
-                value => value == "unlisted" ? EventVisibility.Unlisted
-                    : value == "friends_only" ? EventVisibility.FriendsOnly
-                    : EventVisibility.Public)
+                value => StoredVisibility.ToProvider(value),
+                value => StoredVisibility.FromProvider(value))
             .HasMaxLength(32)
             .IsRequired();
 
         builder.Property(e => e.ApprovalMode)
             .HasConversion(
-                value => value == ApprovalMode.Approval ? "approval" : "open",
-                value => value == "approval" ? ApprovalMode.Approval : ApprovalMode.Open)
+                value => StoredApprovalMode.ToProvider(value),
+                value => StoredApprovalMode.FromProvider(value))
             .HasMaxLength(32)
             .IsRequired();
 
