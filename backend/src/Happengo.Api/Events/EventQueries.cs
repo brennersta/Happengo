@@ -1,0 +1,82 @@
+using Happengo.Api.Attendance;
+using Happengo.Api.Infrastructure.Auth;
+using Happengo.Api.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using NodaTime;
+
+namespace Happengo.Api.Events;
+
+internal enum EventReadScope
+{
+    Map,
+    Direct,
+}
+
+internal static class EventQueries
+{
+    public const int MapResultLimit = 500;
+
+    /// <summary>
+    /// One visibility filter (ADR 0007).
+    /// Map scope drops unlisted events for every caller, including the owner.
+    /// Ended events stay visible here to the owner and to users who are attending;
+    /// the viewport query adds <c>end_at &gt; now</c> itself (ADR 0006).
+    /// </summary>
+    public static IQueryable<Event> VisibleTo(
+        this IQueryable<Event> events,
+        HappengoDbContext db,
+        Viewer viewer,
+        Instant now,
+        EventReadScope scope)
+    {
+        var userId = viewer.UserId ?? Guid.Empty;
+        var known = viewer.IsAuthenticated;
+        var map = scope == EventReadScope.Map;
+        var attendingEventIds = AttendanceAccess.EventIdsAttendedBy(db, userId);
+
+        return events.Where(e =>
+            (known
+                && e.OwnerId == userId
+                && (!map || e.Visibility != EventVisibility.Unlisted))
+            || (known
+                && e.EndAt <= now
+                && (!map || e.Visibility != EventVisibility.Unlisted)
+                && attendingEventIds.Contains(e.Id))
+            || (e.Visibility == EventVisibility.Public && e.EndAt > now)
+            || (e.Visibility == EventVisibility.FriendsOnly
+                && e.EndAt > now
+                && known
+                && db.EventInvites.Any(invite => invite.EventId == e.Id && invite.InviteeUserId == userId)));
+    }
+
+    /// <summary>
+    /// Share-token path beside <see cref="VisibleTo"/> (ADR 0007). A token reads a live unlisted event only.
+    /// </summary>
+    public static IQueryable<Event> VisibleByShareToken(
+        this IQueryable<Event> events,
+        string token,
+        Instant now) =>
+        events.Where(e =>
+            e.Visibility == EventVisibility.Unlisted
+            && e.ShareToken == token
+            && e.EndAt > now);
+
+    public static IQueryable<Event> InBoundingBox(this DbSet<Event> events, BoundingBox box)
+    {
+        var minLng = box.MinLongitude;
+        var minLat = box.MinLatitude;
+        var maxLng = box.MaxLongitude;
+        var maxLat = box.MaxLatitude;
+
+        return events.FromSqlInterpolated($"""
+            SELECT *
+            FROM events
+            WHERE location && ST_MakeEnvelope({minLng}, {minLat}, {maxLng}, {maxLat}, 4326)
+            """);
+    }
+
+    public static IOrderedQueryable<Event> OrderForDiscovery(this IQueryable<Event> events, Instant now) =>
+        events.OrderBy(e => e.StartAt > now)
+            .ThenBy(e => e.StartAt)
+            .ThenBy(e => e.Id);
+}
