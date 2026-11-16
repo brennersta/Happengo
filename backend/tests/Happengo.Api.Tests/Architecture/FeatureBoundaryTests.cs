@@ -7,6 +7,25 @@ namespace Happengo.Api.Tests.Architecture;
 
 public sealed class FeatureBoundaryTests
 {
+    [Fact]
+    public void Features_do_not_depend_on_another_features_non_public_types()
+    {
+        var failures = FeatureBoundaries.FindViolations(typeof(Program).Assembly);
+        Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
+    }
+
+    [Fact]
+    public void Boundary_rule_fails_when_a_feature_uses_another_features_internal_type()
+    {
+        var failures = FeatureBoundaries.FindViolations(typeof(Friends.Probe.BoundaryProbeViolation).Assembly);
+        Assert.Contains(
+            failures,
+            failure => failure.Contains(nameof(Friends.Probe.BoundaryProbeViolation), StringComparison.Ordinal));
+    }
+}
+
+internal static class FeatureBoundaries
+{
     private static readonly string[] Features =
     [
         "Happengo.Api.Events",
@@ -16,10 +35,9 @@ public sealed class FeatureBoundaryTests
         "Happengo.Api.Identity",
     ];
 
-    [Fact]
-    public void Features_do_not_depend_on_another_features_non_public_types()
+    public static IReadOnlyList<string> FindViolations(System.Reflection.Assembly assembly)
     {
-        var architecture = new ArchLoader().LoadAssemblies(typeof(Program).Assembly).Build();
+        var architecture = new ArchLoader().LoadAssemblies(assembly).Build();
         var failures = new List<string>();
 
         foreach (var source in Features)
@@ -49,6 +67,6 @@ public sealed class FeatureBoundaryTests
             }
         }
 
-        Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
+        return failures;
     }
 }

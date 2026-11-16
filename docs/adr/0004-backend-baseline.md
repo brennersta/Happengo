@@ -15,7 +15,7 @@ Persistence is EF Core with Npgsql, NetTopologySuite, and the Npgsql NodaTime pl
 
 The first read slice:
 
-- `GET /v1/events?bbox=minLng,minLat,maxLng,maxLat` applies `VisibleTo`, requires `end_at > now`, and keeps points where `location && ST_MakeEnvelope(...)`. Optional `tags` keeps events that have any of the named tags. The response is capped at 500, sets `truncated` when more matched, and orders happening-now first, then `start_at`. A box that crosses the antimeridian is rejected.
+- `GET /v1/events?bbox=minLng,minLat,maxLng,maxLat` applies `VisibleTo` in map scope, which itself requires `end_at > now` and excludes unlisted events, and keeps points where `location && ST_MakeEnvelope(...)`. Optional `tags` keeps events that have any of the named tags. The response is capped at 500, sets `truncated` when more matched, and orders happening-now first, then `start_at`. A box that crosses the antimeridian is rejected.
 - `GET /v1/events/{id}` uses the same `VisibleTo` filter.
 - `GET /v1/events/shared/{token}` is the share-token path beside that filter: a live unlisted event only.
 
@@ -23,7 +23,7 @@ The first read slice:
 
 Anonymous callers may hit those three reads. Every other route requires a bearer token. JwtBearer reads `Authority` and `Audience` from configuration and checks issuer, audience, lifetime, and signature via the provider JWKS. `MapInboundClaims` is off so the pair (`iss`, `sub`) is stored on `users`. Tests inject a test principal and do not call a live provider. Nothing names Entra or Auth0 in code.
 
-Errors are ProblemDetails. `type` is a stable URI and is the code ADR 0009 says the client translates. The server does not localize it. List endpoints will use cursor pages. The viewport is capped, not paged. The built-in rate limiter, partitioned by (`iss`, `sub`) or client IP, is attached to the write, auth, and upload groups. Those groups have no routes yet. Product caps (create, upload, report) land with the routes.
+Errors are ProblemDetails. `type` is a stable URI and is the code ADR 0009 says the client translates. The server does not localize it. The viewport is capped, not paged. Cursor pagination is not introduced until a list endpoint needs it. The built-in rate limiter, partitioned by (`iss`, `sub`) or the client IP after forwarded headers from configured proxies, is attached to the write, auth, and upload groups. Those groups have no routes yet. Product caps (create, upload, report) land with the routes.
 
 The initial migration includes `users` (ADR 0003 profile columns; language null until a preference is stored), `events`, `event_invites`, and `attendances`. Album, interest, friendship, friend-tag, reaction, and report tables wait for their slices. Soft-hide is not part of `VisibleTo` (ADR 0003, ADR 0007).
 

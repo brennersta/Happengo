@@ -158,7 +158,7 @@ namespace Happengo.Api.Infrastructure.Persistence.Migrations
             // ADR 0006: a future radius query casts to geography and cannot use the geometry GiST.
             migrationBuilder.Sql(
                 """
-                CREATE INDEX ix_events_location_geog
+                CREATE INDEX IF NOT EXISTS ix_events_location_geog
                 ON events
                 USING gist ((location::geography));
                 """);

@@ -2,7 +2,9 @@
 
 ASP.NET Core on .NET 10. One project, feature folders, EF Core, PostgreSQL with PostGIS. Product rules live in the ADRs, especially [0003](../docs/adr/0003-data-model.md), [0005](../docs/adr/0005-authentication.md), [0006](../docs/adr/0006-geo-queries.md), and [0007](../docs/adr/0007-privacy-enforcement.md). This README is how to run the process.
 
-The identity provider is not chosen. `Authentication:Authority` and `Authentication:Audience` in `appsettings.json` are placeholders (`https://idp.example.com/`, audience `happengo-api`). Replace both from configuration before any real token is accepted. The API never names a vendor.
+The identity provider is not chosen. Local placeholders for `Authentication:Authority`, `Authentication:Audience`, and the database live in `appsettings.Development.json` (`https://idp.example.com/`, audience `happengo-api`). Production must set `ConnectionStrings__Happengo`, `Authentication__Authority`, and `Authentication__Audience`. The API never names a vendor.
+
+`ForwardedHeaders:KnownNetworks` and `ForwardedHeaders:KnownProxies` list the proxies whose `X-Forwarded-For` is trusted. Both are empty unless you set them, so a client cannot spoof the address used by the rate limiter.
 
 ## Local database
 
@@ -13,7 +15,7 @@ dotnet ef database update --project src/Happengo.Api
 dotnet run --project src/Happengo.Api
 ```
 
-The API listens on `http://localhost:5080`. It does **not** apply migrations on startup. Compose uses `postgis/postgis:16-3.5` with user, password, and database `happengo`, which matches the development connection string.
+The API listens on `http://localhost:5080`. It does **not** apply migrations on startup. Compose uses `postgis/postgis:16-3.5` with user, password, and database `happengo`, published only on `127.0.0.1:5432`, which matches the development connection string.
 
 `GET /v1/events?bbox=24.6,59.3,24.9,59.5` returns public events that have not ended. Anonymous calls are allowed on the three event reads and on `GET /health` (a database check). Every other route requires a bearer token.
 
