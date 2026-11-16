@@ -1,10 +1,10 @@
 import { http, HttpResponse } from "msw";
-import { health, listEvents } from "./contract";
+import { listEvents } from "./contract";
 
 export const handlers = [
-  http.get("/health", () => HttpResponse.json(health)),
   http.get("/v1/events", ({ request }) => {
     const bbox = new URL(request.url).searchParams.get("bbox");
+    if (!bbox) return new HttpResponse(null, { status: 400 });
     return HttpResponse.json(listEvents(bbox));
   }),
 ];

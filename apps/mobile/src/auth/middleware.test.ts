@@ -20,8 +20,9 @@ test("attaches a bearer access token and omits it when signed out", async () => 
     fetch: fetchImpl,
   });
 
-  const ok = await signedIn.fetchClient.GET("/health");
-  const anonymous = await signedOut.fetchClient.GET("/health");
+  const query = { params: { query: { bbox: "24.6,59.3,24.9,59.5" } } };
+  const ok = await signedIn.fetchClient.GET("/v1/events", query);
+  const anonymous = await signedOut.fetchClient.GET("/v1/events", query);
 
   expect(ok.response.status).toBe(200);
   expect(anonymous.response.status).toBe(200);

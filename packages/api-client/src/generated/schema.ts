@@ -4,15 +4,18 @@
  */
 
 export interface paths {
-    "/health": {
+    "/v1/events": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Liveness check */
-        get: operations["getHealth"];
+        /**
+         * Events in the map viewport that have not ended.
+         * @description bbox is minLng,minLat,maxLng,maxLat (SRID 4326). Uses location && ST_MakeEnvelope. Unlisted events are never returned. At most 500 events, happening-now first, then start time. truncated is true when more events matched. tags keeps events that have any of the named tags.
+         */
+        get: operations["ListEventsInBounds"];
         put?: never;
         post?: never;
         delete?: never;
@@ -21,15 +24,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/events": {
+    "/v1/events/shared/{token}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Events inside a map viewport */
-        get: operations["listEventsByBbox"];
+        /**
+         * Read a live unlisted event by its share token.
+         * @description The token does not reveal public or friends-only events, and it does not reveal an event that has ended.
+         */
+        get: operations["GetSharedEvent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/events/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One event the caller is allowed to read.
+         * @description Hidden, unlisted (without being the owner), and ended events the caller did not attend return 404. The owner receives shareToken.
+         */
+        get: operations["GetEvent"];
         put?: never;
         post?: never;
         delete?: never;
@@ -42,31 +68,49 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        Health: {
-            /** @enum {string} */
-            status: "ok";
-        };
-        EventList: {
+        /** @enum {string} */
+        ApprovalMode: "open" | "approval";
+        EventMapResponse: {
+            items: components["schemas"]["EventResponse"][];
+            /** Format: int32 */
+            limit: number;
             truncated: boolean;
-            events: components["schemas"]["EventSummary"][];
         };
-        EventSummary: {
+        EventResponse: {
             /** Format: uuid */
             id: string;
             title: string;
+            description: null | string;
             /** Format: date-time */
             startAt: string;
             /** Format: date-time */
             endAt: string;
-            /** @description IANA time zone the event was created in. */
             timeZoneId: string;
-            /** @description Human-readable address. Never a raw coordinate string. */
             address: string;
-            location: components["schemas"]["GeoPoint"];
-        };
-        GeoPoint: {
+            tags: components["schemas"]["EventTag"][];
+            visibility: components["schemas"]["EventVisibility"];
+            approvalMode: components["schemas"]["ApprovalMode"];
+            happeningNow: boolean;
+            isOwner: boolean;
+            /** Format: int32 */
+            attendingCount: number;
+            /** Format: double */
             longitude: number;
+            /** Format: double */
             latitude: number;
+            shareToken?: null | string;
+        };
+        /** @enum {string} */
+        EventTag: "Music" | "Sports" | "Food" | "Art" | "Family" | "Tech" | "Nightlife" | "Outdoor" | "Culture" | "Education";
+        /** @enum {string} */
+        EventVisibility: "public" | "unlisted" | "friends_only";
+        ProblemDetails: {
+            type?: null | string;
+            title?: null | string;
+            /** Format: int32 */
+            status?: null | number;
+            detail?: null | string;
+            instance?: null | string;
         };
     };
     responses: never;
@@ -77,45 +121,96 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    getHealth: {
+    ListEventsInBounds: {
         parameters: {
-            query?: never;
+            query: {
+                bbox: string;
+                tags?: string[];
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description The process is up. */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Health"];
+                    "application/json": components["schemas"]["EventMapResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };
     };
-    listEventsByBbox: {
+    GetSharedEvent: {
         parameters: {
-            query: {
-                /** @description minLng,minLat,maxLng,maxLat in WGS84. The box includes its boundary. A viewport that crosses the antimeridian is outside the product. */
-                bbox: string;
-            };
+            query?: never;
             header?: never;
-            path?: never;
+            path: {
+                token: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Events the caller can see in the viewport. The list is capped at about 500; truncated is true when the cap dropped rows. Each event includes the point for a pin. Screens show address, not coordinates. */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EventList"];
+                    "application/json": components["schemas"]["EventResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };

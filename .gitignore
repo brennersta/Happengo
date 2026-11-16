@@ -95,5 +95,4 @@ Desktop.ini
 .classpath
 .settings/
 
-# MapLibre GL JS worker copied for the Expo web bundle.
 apps/mobile/public/maplibre/

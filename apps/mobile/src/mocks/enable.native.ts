@@ -1,23 +1,22 @@
-import { health, listEvents } from "./contract";
+import { listEvents } from "./contract";
 
 let patched = false;
 
 /**
  * Web uses the MSW service worker. MSW has no React Native entry, so a dev
- * build patches fetch with the same health and bbox responses.
+ * build patches fetch with the same viewport response. Production builds do not.
  */
 export async function enableMocks(): Promise<void> {
-  if (patched) return;
+  if (!__DEV__ || patched) return;
   patched = true;
   const original = globalThis.fetch.bind(globalThis);
   globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const request = new Request(input, init);
     const url = new URL(request.url);
-    if (request.method === "GET" && (url.pathname === "/health" || url.pathname.endsWith("/health"))) {
-      return Response.json(health);
-    }
     if (request.method === "GET" && url.pathname.endsWith("/v1/events")) {
-      return Response.json(listEvents(url.searchParams.get("bbox")));
+      const bbox = url.searchParams.get("bbox");
+      if (!bbox) return new Response(null, { status: 400 });
+      return Response.json(listEvents(bbox));
     }
     return original(input, init);
   };

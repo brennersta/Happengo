@@ -18,4 +18,4 @@ pnpm --filter @happengo/mobile exec expo run:android
 
 Copy `.env.example` to `.env` to override the map style or the API URL. `EXPO_PUBLIC_API_MOCK=false` turns the contract mocks off.
 
-`pnpm api:generate` regenerates `packages/api-client` from `api/openapi.json` when that file exists, and from the placeholder until then.
+`pnpm api:generate` regenerates `packages/api-client` from `api/openapi.json`.

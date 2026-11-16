@@ -8,8 +8,9 @@
   },
   "scripts": {
     "generate": "node ./scripts/generate.mjs",
+    "lint": "tsc --noEmit --pretty false",
     "typecheck": "node ./scripts/generate.mjs && tsc --noEmit",
-    "test": "node --test scripts/resolve-spec.test.mjs"
+    "test": "node --test scripts/generate.test.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.107.1",

@@ -1,13 +1,16 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolveSpecPath } from "./resolve-spec.mjs";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const repoRoot = resolve(packageRoot, "../..");
-const spec = resolveSpecPath(repoRoot);
+const spec = resolve(packageRoot, "../../api/openapi.json");
 const out = resolve(packageRoot, "src/generated/schema.ts");
+
+if (!existsSync(spec)) {
+  console.error("api/openapi.json is missing. The backend owns that file.");
+  process.exit(1);
+}
 
 mkdirSync(dirname(out), { recursive: true });
 console.log(`openapi-typescript: ${spec}`);

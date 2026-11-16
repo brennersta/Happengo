@@ -12,7 +12,7 @@ export type FormatEventRangeInput = {
 
 /**
  * Renders an event's start and end in the event's IANA zone.
- * The clock is 24-hour for every locale. Month and weekday still follow the locale.
+ * Month, weekday, and hour cycle follow the locale (ADR 0009).
  * When the viewer's zone differs, their clock and short zone name are appended.
  */
 export function formatEventRange(input: FormatEventRangeInput): string {
@@ -63,7 +63,6 @@ function formatClock(date: Date, locale: string, timeZone: string): string {
   return new Intl.DateTimeFormat(locale, {
     hour: "2-digit",
     minute: "2-digit",
-    hourCycle: "h23",
     timeZone,
   })
     .format(date)
@@ -75,7 +74,6 @@ function zoneName(date: Date, locale: string, timeZone: string): string {
     timeZone,
     hour: "2-digit",
     minute: "2-digit",
-    hourCycle: "h23",
     timeZoneName: "short",
   })
     .formatToParts(date)

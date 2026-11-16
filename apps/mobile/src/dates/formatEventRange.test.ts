@@ -5,7 +5,7 @@ const startAt = "2026-11-16T08:43:00.000Z";
 const endAt = "2026-11-16T12:43:00.000Z";
 const now = new Date("2026-11-16T09:00:00.000Z");
 
-test("formats the event zone on a 24-hour clock", async () => {
+test("lets the locale choose the hour cycle", async () => {
   await i18n.changeLanguage("en");
   expect(
     formatEventRange({
@@ -17,7 +17,7 @@ test("formats the event zone on a 24-hour clock", async () => {
       now,
       viewerTimeZone: "Europe/Tallinn",
     }),
-  ).toBe("Today · Mon, Nov 16 · 10:43\u201314:43");
+  ).toBe("Today · Mon, Nov 16 · 10:43 AM\u201302:43 PM");
 
   await i18n.changeLanguage("pt-BR");
   expect(
@@ -44,7 +44,7 @@ test("omits Today when the event is on another day in its zone", () => {
       now: new Date("2026-11-15T09:00:00.000Z"),
       viewerTimeZone: "Europe/Tallinn",
     }),
-  ).toBe("Mon, Nov 16 · 10:43\u201314:43");
+  ).toBe("Mon, Nov 16 · 10:43 AM\u201302:43 PM");
 });
 
 test("appends the viewer zone when it differs from the event zone", () => {
@@ -58,7 +58,7 @@ test("appends the viewer zone when it differs from the event zone", () => {
       now,
       viewerTimeZone: "America/Sao_Paulo",
     }),
-  ).toBe("Today · Mon, Nov 16 · 10:43\u201314:43 (05:43\u201309:43 GMT-3)");
+  ).toBe("Today · Mon, Nov 16 · 10:43 AM\u201302:43 PM (05:43 AM\u201309:43 AM GMT-3)");
 
   expect(
     formatEventRange({
@@ -84,5 +84,5 @@ test("keeps a multi-day span on both dates", () => {
       now,
       viewerTimeZone: "Europe/Tallinn",
     }),
-  ).toBe("Today · Mon, Nov 16 · 22:00 \u2013 Wed, Nov 18 · 14:00");
+  ).toBe("Today · Mon, Nov 16 · 10:00 PM \u2013 Wed, Nov 18 · 02:00 PM");
 });
