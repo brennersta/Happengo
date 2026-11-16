@@ -1,0 +1,24 @@
+# Editor defaults for Happengo.
+# Whitespace and charset only. C# style rules are left for the backend
+# so `dotnet format` does not enforce a style this repo has not reviewed.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.{cs,csx}]
+indent_size = 4
+
+[*.{csproj,vbproj,fsproj,props,targets,sln,slnx}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[Makefile]
+indent_style = tab
