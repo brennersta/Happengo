@@ -5,21 +5,22 @@ updates:
     schedule:
       interval: weekly
 
-  # nuget and npm stay commented out on purpose.
+  # npm stays commented out on purpose.
   # Dependabot errors when the configured directory has no manifest.
-  # backend/ does not exist yet, and there is no package.json or
-  # pnpm-lock.yaml. Turn an entry on when that manifest exists.
+  # There is no package.json or pnpm-lock.yaml yet.
   # The npm ecosystem is what Dependabot uses for a pnpm lockfile
   # (ADR 0002). Point it at the workspace root (/), not at each package.
   #
-  # - package-ecosystem: nuget
-  #   directory: /backend
-  #   schedule:
-  #     interval: weekly
   # - package-ecosystem: npm
   #   directory: /
   #   schedule:
   #     interval: weekly
+
+  # Happengo.sln is at /backend. The API and test projects live under it.
+  - package-ecosystem: nuget
+    directory: /backend
+    schedule:
+      interval: weekly
 
   # One entry per Terraform root and module. Dependabot does not recurse
   # from /infra, and each directory has its own .terraform.lock.hcl.
