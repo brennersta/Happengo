@@ -1,0 +1,348 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Happengo API",
+    "description": "Read API for map-first local events. ProblemDetails type values are stable codes. EventTag is the fixed tag vocabulary. Bearer tokens are validated against the configured OIDC authority.",
+    "version": "v1"
+  },
+  "paths": {
+    "/v1/events": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "Events in the map viewport that have not ended.",
+        "description": "bbox is minLng,minLat,maxLng,maxLat (SRID 4326). Uses location \u0026\u0026 ST_MakeEnvelope. Unlisted events are never returned. At most 500 events, happening-now first, then start time. truncated is true when more events matched. tags keeps events that have any of the named tags.",
+        "operationId": "ListEventsInBounds",
+        "parameters": [
+          {
+            "name": "bbox",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventMapResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/events/shared/{token}": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "Read a live unlisted event by its share token.",
+        "description": "The token does not reveal public or friends-only events, and it does not reveal an event that has ended.",
+        "operationId": "GetSharedEvent",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/events/{id}": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "One event the caller is allowed to read.",
+        "description": "Hidden, unlisted (without being the owner), and ended events the caller did not attend return 404. The owner receives shareToken.",
+        "operationId": "GetEvent",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApprovalMode": {
+        "enum": [
+          "open",
+          "approval"
+        ],
+        "type": "string"
+      },
+      "EventMapResponse": {
+        "required": [
+          "items",
+          "limit",
+          "truncated"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventResponse"
+            }
+          },
+          "limit": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        }
+      },
+      "EventResponse": {
+        "required": [
+          "id",
+          "title",
+          "description",
+          "startAt",
+          "endAt",
+          "timeZoneId",
+          "address",
+          "tags",
+          "visibility",
+          "approvalMode",
+          "happeningNow",
+          "isOwner",
+          "attendingCount",
+          "longitude",
+          "latitude",
+          "shareToken"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timeZoneId": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventTag"
+            }
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/EventVisibility"
+          },
+          "approvalMode": {
+            "$ref": "#/components/schemas/ApprovalMode"
+          },
+          "happeningNow": {
+            "type": "boolean"
+          },
+          "isOwner": {
+            "type": "boolean"
+          },
+          "attendingCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "longitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?(?:[eE][\u002B-]?\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "latitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?(?:[eE][\u002B-]?\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "shareToken": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "EventTag": {
+        "enum": [
+          "Music",
+          "Sports",
+          "Food",
+          "Art",
+          "Family",
+          "Tech",
+          "Nightlife",
+          "Outdoor",
+          "Culture",
+          "Education"
+        ],
+        "type": "string"
+      },
+      "EventVisibility": {
+        "enum": [
+          "public",
+          "unlisted",
+          "friends_only"
+        ],
+        "type": "string"
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Events"
+    }
+  ]
+}
