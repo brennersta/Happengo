@@ -16,7 +16,7 @@ Branch protection is not changed by the workflow. After this is on `main`, requi
 | `infra` | `infra/**` or this workflow changed, **and** `infra/` contains a `.tf` file | `terraform fmt -check` and, in each directory that contains `.tf` files, `terraform init -backend=false` and `terraform validate` |
 | `ci-success` | Always, unless the run was cancelled | Fails if any of those jobs failed, was cancelled, or was skipped when its gate said to run. A skip while the tree is still missing is a pass. |
 
-`infra/` already exists and only has a README. That is not Terraform code, so `infra` stays skipped until a `.tf` file is added. A workflow-only change does not force `api`, `app`, or `infra` to run before their projects exist.
+`infra/` contains Terraform, so a pull request that changes it runs the `infra` job. Before any `.tf` file existed, that job stayed skipped. A workflow-only change does not force `api` or `app` to run before their projects exist, and it does not force `infra` when `infra/` has no `.tf` files.
 
 Once a project exists, a real failure fails the job. The gate does not swallow a failed test, a format diff, a missing lockfile, or a Terraform validation error.
 
@@ -55,7 +55,7 @@ Nothing in the workflow reads a secret. No Azure login, no OIDC, no Expo token.
 
 Pull request runs cancel an older in-progress run of the same PR. Pushes to `main` are not cancelled.
 
-Actions are pinned to commit SHAs. Dependabot's `github-actions` entry is what bumps those pins. nuget, npm, and terraform updates stay commented out in [`.github/dependabot.yml`](../.github/dependabot.yml) until the manifests exist. Enabling them earlier makes Dependabot error on the missing directory.
+Actions are pinned to commit SHAs. Dependabot's `github-actions` entry is what bumps those pins. Terraform updates are enabled per root and module in [`.github/dependabot.yml`](../.github/dependabot.yml) now that those directories have lock files. nuget and npm stay commented out until their manifests exist. Enabling them earlier makes Dependabot error on the missing directory.
 
 ## Local equivalents
 
