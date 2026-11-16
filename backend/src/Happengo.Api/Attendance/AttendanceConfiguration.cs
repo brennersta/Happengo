@@ -7,18 +7,13 @@ internal sealed class AttendanceConfiguration : IEntityTypeConfiguration<Attenda
 {
     public void Configure(EntityTypeBuilder<Attendance> builder)
     {
-        builder.ToTable("attendances");
+        builder.ToTable("attendances", table =>
+            table.HasCheckConstraint("ck_attendances_status", StoredAttendanceStatus.Check));
 
         builder.Property(row => row.Status)
             .HasConversion(
-                status => status == AttendanceStatus.Attending ? "attending"
-                    : status == AttendanceStatus.Requested ? "requested"
-                    : status == AttendanceStatus.Rejected ? "rejected"
-                    : "cancelled",
-                value => value == "requested" ? AttendanceStatus.Requested
-                    : value == "rejected" ? AttendanceStatus.Rejected
-                    : value == "cancelled" ? AttendanceStatus.Cancelled
-                    : AttendanceStatus.Attending)
+                value => StoredAttendanceStatus.ToProvider(value),
+                value => StoredAttendanceStatus.FromProvider(value))
             .HasMaxLength(32)
             .IsRequired();
 

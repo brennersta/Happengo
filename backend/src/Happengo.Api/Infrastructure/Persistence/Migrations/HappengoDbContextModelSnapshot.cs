@@ -60,7 +60,10 @@ namespace Happengo.Api.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_attendances_event_id_user_id");
 
-                    b.ToTable("attendances", (string)null);
+                    b.ToTable("attendances", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_attendances_status", "status IN ('attending', 'requested', 'rejected', 'cancelled')");
+                        });
                 });
 
             modelBuilder.Entity("Happengo.Api.Events.Event", b =>
@@ -166,9 +169,15 @@ namespace Happengo.Api.Infrastructure.Persistence.Migrations
 
                     b.ToTable("events", null, t =>
                         {
+                            t.HasCheckConstraint("ck_events_approval_mode", "approval_mode IN ('open', 'approval')");
+
                             t.HasCheckConstraint("ck_events_duration", "end_at <= start_at + interval '7 days'");
 
+                            t.HasCheckConstraint("ck_events_tags", "tags <@ ARRAY['Music','Sports','Food','Art','Family','Tech','Nightlife','Outdoor','Culture','Education']::text[]");
+
                             t.HasCheckConstraint("ck_events_time_order", "end_at > start_at");
+
+                            t.HasCheckConstraint("ck_events_visibility", "visibility IN ('public', 'unlisted', 'friends_only')");
                         });
                 });
 

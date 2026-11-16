@@ -61,8 +61,7 @@ internal static class GetEventsInBounds
         var query = db.Events
             .InBoundingBox(box)
             .AsNoTracking()
-            .VisibleTo(db, viewer, now, EventReadScope.Map)
-            .Where(e => e.EndAt > now);
+            .VisibleTo(db, viewer, now, EventReadScope.Map);
 
         if (tags.Count > 0)
         {

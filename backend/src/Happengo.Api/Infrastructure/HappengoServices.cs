@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.Json.Serialization;
 using Happengo.Api.Events.GetEvent;
 using Happengo.Api.Events.GetEventsInBounds;
@@ -5,6 +6,7 @@ using Happengo.Api.Events.GetSharedEvent;
 using Happengo.Api.Infrastructure.Auth;
 using Happengo.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -61,6 +63,28 @@ public static class HappengoServices
         services.ConfigureHttpJsonOptions(options =>
         {
             options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+            options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
+        });
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            options.KnownIPNetworks.Clear();
+            options.KnownProxies.Clear();
+            foreach (var cidr in configuration.GetSection("ForwardedHeaders:KnownNetworks").Get<string[]>() ?? [])
+            {
+                if (System.Net.IPNetwork.TryParse(cidr, out var network))
+                {
+                    options.KnownIPNetworks.Add(network);
+                }
+            }
+
+            foreach (var proxy in configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? [])
+            {
+                if (IPAddress.TryParse(proxy, out var address))
+                {
+                    options.KnownProxies.Add(address);
+                }
+            }
         });
 
         services.AddProblemDetails();
@@ -87,6 +111,31 @@ public static class HappengoServices
                             openApiSchema.Type = JsonSchemaType.String;
                         }
                     }
+
+                    if (document.Components.Schemas.TryGetValue("EventResponse", out var eventSchema)
+                        && eventSchema is OpenApiSchema responseSchema)
+                    {
+                        responseSchema.Required?.Remove("shareToken");
+                    }
+                }
+
+                foreach (var path in document.Paths.Values)
+                {
+                    if (path.Operations is null)
+                    {
+                        continue;
+                    }
+
+                    foreach (var operation in path.Operations.Values)
+                    {
+                        foreach (var parameter in operation.Parameters ?? [])
+                        {
+                            if (parameter is OpenApiParameter { Name: "bbox" } openApiParameter)
+                            {
+                                openApiParameter.Required = true;
+                            }
+                        }
+                    }
                 }
 
                 return Task.CompletedTask;
@@ -96,6 +145,7 @@ public static class HappengoServices
 
     public static WebApplication UseHappengo(this WebApplication app)
     {
+        app.UseForwardedHeaders();
         app.UseExceptionHandler();
         app.UseStatusCodePages(async status =>
         {
