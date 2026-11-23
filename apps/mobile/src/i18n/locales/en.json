@@ -16,7 +16,8 @@
     "upcomingCount": "Upcoming ({count})",
     "pastCount": "Past ({count})",
     "ongoing": "Ongoing",
-    "ended": "Ended"
+    "ended": "Ended",
+    "cancelled": "Cancelled"
   },
   "friends": {
     "empty": "Invite friends to create private events and share photos.",
@@ -98,6 +99,9 @@
   "createEvent": {
     "title": "Create an event",
     "heading": "Create New Event",
+    "editHeading": "Edit Event",
+    "loadingEvent": "Loading event details…",
+    "visibilityApprovalLocked": "Visibility and joining rules stay as they were when this event was created.",
     "when": "When",
     "whenHelp": "Choose when it starts and how long it lasts.",
     "selectWhen": "Select date and time",
@@ -120,6 +124,7 @@
     "endDate": "End date (YYYY-MM-DD)",
     "endTime": "End time (HH:MM)",
     "timeZone": "Time zone",
+    "timeZoneId": "Time zone (IANA)",
     "address": "Address",
     "location": "Map location",
     "locationHelp": "Tap the map to place the event pin.",
@@ -147,9 +152,10 @@
     },
     "demoNotice": "Demo mode: events are temporary and visible only in this development session.",
     "signInRequired": "Sign in is not connected yet. Choose an identity provider before creating real events.",
-    "createError": "The event could not be created. Check the details and try again.",
+    "createError": "The event could not be saved. Check the details and try again.",
     "creating": "Creating…",
     "submit": "Create event",
+    "saveChanges": "Save changes",
     "cancel": "Cancel",
     "errors": {
       "title": "Enter an event name (up to 200 characters).",
@@ -167,6 +173,13 @@
     "title": "Event details",
     "back": "Back",
     "share": "Share",
+    "editEvent": "Edit event",
+    "cancelEvent": "Cancel event",
+    "cancelledBanner": "This event has been cancelled.",
+    "cancelEventTitle": "Cancel this event?",
+    "cancelEventMessage": "People will no longer find it on the map or join it.",
+    "keepEvent": "Keep event",
+    "confirmCancelEvent": "Cancel event",
     "openInMaps": "Open in Maps",
     "attendingCheck": "Attending ✓",
     "loading": "Loading event…",

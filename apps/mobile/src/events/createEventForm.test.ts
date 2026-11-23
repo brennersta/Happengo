@@ -1,4 +1,4 @@
-import { defaultLocalSlot, localDateTimeToIso, validateCreateEventForm, type CreateEventFormValues } from "./createEventForm";
+import { defaultLocalSlot, eventDateTimeFields, localDateTimeToIso, validateCreateEventForm, type CreateEventFormValues } from "./createEventForm";
 
 const now = new Date("2026-11-17T10:00:00.000Z");
 const start = new Date(now.getTime() + 60 * 60_000);
@@ -64,4 +64,14 @@ test("keeps tag selection order and requires at least one tag", () => {
 test("default slots are future local times on the hour", () => {
   const slots = defaultLocalSlot(1, new Date(2026, 10, 17, 10, 42));
   expect(slots).toEqual({ date: "2026-11-17", time: "11:00" });
+});
+
+test("converts and displays local date-times in the selected event timezone", () => {
+  const instant = localDateTimeToIso("2026-11-17", "13:00", "Europe/Tallinn");
+  expect(instant).toBe("2026-11-17T11:00:00.000Z");
+  expect(eventDateTimeFields(instant!, "Europe/Tallinn")).toEqual({ date: "2026-11-17", time: "13:00" });
+});
+
+test("rejects local times in a daylight-saving gap", () => {
+  expect(localDateTimeToIso("2026-03-29", "03:30", "Europe/Tallinn")).toBeNull();
 });

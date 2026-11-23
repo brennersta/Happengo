@@ -197,6 +197,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/events/{eventId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update editable details of an event owned by the caller.
+         * @description Requires authentication. Visibility and approval mode stay unchanged. Edits to ended events conflict.
+         */
+        patch: operations["EditEvent"];
+        trace?: never;
+    };
+    "/v1/events/{eventId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel an event owned by the caller. */
+        post: operations["CancelEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/events/shared/{token}": {
         parameters: {
             query?: never;
@@ -372,6 +409,22 @@ export interface components {
             tags: components["schemas"]["EventTag"][];
             invitedFriendTags?: null | string[];
         };
+        EditEventRequest: {
+            title: null | string;
+            description?: null | string;
+            /** Format: date-time */
+            startAt: null | string;
+            /** Format: date-time */
+            endAt: null | string;
+            timeZoneId: null | string;
+            address: null | string;
+            /** Format: double */
+            longitude: null | number;
+            /** Format: double */
+            latitude: null | number;
+            tags: null | components["schemas"]["EventTag"][];
+            invitedFriendTags?: null | string[];
+        };
         EventMapResponse: {
             items: components["schemas"]["EventResponse"][];
             /** Format: int32 */
@@ -402,6 +455,8 @@ export interface components {
             latitude: number;
             shareToken?: null | string;
             invitedFriendTags: null | string[];
+            /** Format: date-time */
+            cancelledAt: null | string;
         };
         /** @enum {string} */
         EventTag: "Music" | "Sports" | "Food" | "Art" | "Family" | "Tech" | "Nightlife" | "Outdoor" | "Culture" | "Education";
@@ -904,6 +959,108 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RotateShareLinkResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    EditEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditEventRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CancelEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventResponse"];
                 };
             };
             /** @description Unauthorized */

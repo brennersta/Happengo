@@ -45,4 +45,11 @@ internal static class Problems
             title: "Attendance conflict",
             detail: detail,
             type: ProblemTypes.InvalidAttendance);
+
+    public static ProblemHttpResult EventConflict(string detail) =>
+        TypedResults.Problem(
+            statusCode: StatusCodes.Status409Conflict,
+            title: "Event conflict",
+            detail: detail,
+            type: ProblemTypes.EventConflict);
 }

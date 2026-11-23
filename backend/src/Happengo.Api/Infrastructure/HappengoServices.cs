@@ -5,6 +5,8 @@ using Happengo.Api.Events.GetMyEvents;
 using Happengo.Api.Events.RotateShareLink;
 using Happengo.Api.Events.GetSharedEvent;
 using Happengo.Api.Events.CreateEvent;
+using Happengo.Api.Events.EditEvent;
+using Happengo.Api.Events.CancelEvent;
 using Happengo.Api.Attendance;
 using Happengo.Api.Friends;
 using Happengo.Api.Infrastructure.Auth;
@@ -233,6 +235,8 @@ public static class HappengoServices
         GetEventsInBounds.Map(v1);
         GetMyEvents.Map(v1);
         RotateShareLink.Map(v1);
+        EditEvent.Map(v1);
+        CancelEvent.Map(v1);
         CreateEvent.Map(v1);
         AttendanceRoutes.Map(v1);
         GetSharedEvent.Map(v1);

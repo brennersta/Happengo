@@ -87,18 +87,20 @@ export default function MyEventsScreen() {
         ) : (
           <View style={styles.grid}>
             {filtered.map((item) => {
-              const live = isHappeningNow(item.startAt, item.endAt, new Date(now));
+              const live = !item.cancelledAt && isHappeningNow(item.startAt, item.endAt, new Date(now));
               const ended = hasEnded(item.endAt, new Date(now));
+              const cancelled = Boolean(item.cancelledAt);
               const address = displayAddress(item.address);
               return (
                 <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={t("discover.openDetails", { title: item.title })}
                   onPress={() => router.push({ pathname: "/events/[id]", params: { id: item.id } })}
-                  style={[styles.card, { width: cardWidth }, ended && styles.past]}>
+                  style={[styles.card, { width: cardWidth }, ended && styles.past, cancelled && styles.cancelled]}>
                   <View style={styles.cover}><CoverPlaceholder tag={item.tags[0]} /></View>
                   <View style={styles.cardBody}>
                     <View style={styles.heading}>
                       <Text style={[styles.eventTitle, ended && styles.pastTitle]}>{item.title}</Text>
                       {live ? <Text style={styles.badge}>{t("myEvents.ongoing")}</Text> : null}
+                      {cancelled ? <Text style={styles.cancelledBadge}>{t("myEvents.cancelled")}</Text> : null}
                       {ended ? <Text style={styles.ended}>{t("myEvents.ended")}</Text> : null}
                     </View>
                     {item.description ? <Text numberOfLines={2} style={styles.description}>{item.description}</Text> : null}
@@ -138,6 +140,8 @@ const styles = StyleSheet.create({
   eventTitle: { flex: 1, color: theme.ink, fontSize: 18, fontWeight: "800" },
   badge: { color: "white", backgroundColor: "#1F1B2E", overflow: "hidden", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, fontSize: 11, fontWeight: "700" },
   ended: { color: theme.muted, backgroundColor: theme.chip, overflow: "hidden", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, fontSize: 11, fontWeight: "700" },
+  cancelled: { borderWidth: 1, borderColor: "#F1B7B7" },
+  cancelledBadge: { color: theme.danger, backgroundColor: "#FDEAEA", overflow: "hidden", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, fontSize: 11, fontWeight: "800" },
   description: { color: theme.ink, fontSize: 14, lineHeight: 20 },
   meta: { color: theme.muted, fontSize: 13 },
   tags: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },

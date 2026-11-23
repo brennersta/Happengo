@@ -16,7 +16,8 @@
     "upcomingCount": "Próximos ({count})",
     "pastCount": "Passados ({count})",
     "ongoing": "Em andamento",
-    "ended": "Encerrado"
+    "ended": "Encerrado",
+    "cancelled": "Cancelado"
   },
   "friends": {
     "empty": "Convide amigos para criar eventos privados e compartilhar fotos.",
@@ -98,6 +99,9 @@
   "createEvent": {
     "title": "Criar evento",
     "heading": "Criar novo evento",
+    "editHeading": "Editar evento",
+    "loadingEvent": "Carregando dados do evento…",
+    "visibilityApprovalLocked": "A visibilidade e as regras de participação continuam como foram definidas na criação.",
     "when": "Quando",
     "whenHelp": "Escolha quando começa e quanto tempo dura.",
     "selectWhen": "Selecionar data e hora",
@@ -120,6 +124,7 @@
     "endDate": "Data de término (AAAA-MM-DD)",
     "endTime": "Horário de término (HH:MM)",
     "timeZone": "Fuso horário",
+    "timeZoneId": "Fuso horário (IANA)",
     "address": "Endereço",
     "location": "Local no mapa",
     "locationHelp": "Toque no mapa para posicionar o evento.",
@@ -147,9 +152,10 @@
     },
     "demoNotice": "Modo de demonstração: os eventos são temporários e visíveis apenas nesta sessão de desenvolvimento.",
     "signInRequired": "O login ainda não está conectado. Escolha um provedor de identidade antes de criar eventos reais.",
-    "createError": "Não foi possível criar o evento. Confira os dados e tente novamente.",
+    "createError": "Não foi possível salvar o evento. Confira os dados e tente novamente.",
     "creating": "Criando…",
     "submit": "Criar evento",
+    "saveChanges": "Salvar alterações",
     "cancel": "Cancelar",
     "errors": {
       "title": "Informe um nome para o evento (até 200 caracteres).",
@@ -167,6 +173,13 @@
     "title": "Detalhes do evento",
     "back": "Voltar",
     "share": "Compartilhar",
+    "editEvent": "Editar evento",
+    "cancelEvent": "Cancelar evento",
+    "cancelledBanner": "Este evento foi cancelado.",
+    "cancelEventTitle": "Cancelar este evento?",
+    "cancelEventMessage": "As pessoas não encontrarão mais o evento no mapa nem poderão participar.",
+    "keepEvent": "Manter evento",
+    "confirmCancelEvent": "Cancelar evento",
     "openInMaps": "Abrir no mapa",
     "attendingCheck": "Participando ✓",
     "loading": "Carregando evento…",

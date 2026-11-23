@@ -22,7 +22,8 @@ public sealed record EventResponse(
     double Latitude,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     string? ShareToken,
-    IReadOnlyList<string>? InvitedFriendTags);
+    IReadOnlyList<string>? InvitedFriendTags,
+    DateTimeOffset? CancelledAt);
 
 public sealed record EventMapResponse(
     IReadOnlyList<EventResponse> Items,
@@ -48,17 +49,17 @@ internal static class EventMapping
             e.Tags,
             e.Visibility,
             e.ApprovalMode,
-            HappeningNow: e.StartAt <= now && now < e.EndAt,
+            HappeningNow: e.CancelledAt is null && e.StartAt <= now && now < e.EndAt,
             IsOwner: viewerId is not null && e.OwnerId == viewerId,
             attendingCount,
             Longitude: e.Location.X,
             Latitude: e.Location.Y,
-            // TODO(event-edit): return the plaintext once, when edit can issue, revoke, and rotate it.
-            // Only the SHA-256 is stored, so a read cannot echo the token.
+            // Only the SHA-256 is stored, so event reads never echo the plaintext token.
             ShareToken: null,
             // Null for everyone except the owner, so the tags are not omitted from the contract
             // and are still absent as values for other readers.
-            InvitedFriendTags: viewerId is not null && e.OwnerId == viewerId ? invitedFriendTags ?? [] : null);
+            InvitedFriendTags: viewerId is not null && e.OwnerId == viewerId ? invitedFriendTags ?? [] : null,
+            CancelledAt: e.CancelledAt?.ToDateTimeOffset());
 
     public static async Task<EventResponse[]> ToResponsesAsync(
         this IReadOnlyList<Event> events,

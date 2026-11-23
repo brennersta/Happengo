@@ -26,6 +26,7 @@ internal sealed class EventConfiguration : IEntityTypeConfiguration<Event>
             .HasColumnType("bytea")
             .IsRequired();
         builder.Property(e => e.CoverBlobName).HasMaxLength(1024);
+        builder.Property(e => e.CancelledAt).HasColumnName("cancelled_at");
 
         builder.Property(e => e.Location)
             .HasColumnType("geometry(Point,4326)")

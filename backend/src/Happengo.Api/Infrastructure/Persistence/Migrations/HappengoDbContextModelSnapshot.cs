@@ -86,6 +86,10 @@ namespace Happengo.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(32)")
                         .HasColumnName("approval_mode");
 
+                    b.Property<Instant?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at");
+
                     b.Property<string>("CoverBlobName")
                         .HasMaxLength(1024)
                         .HasColumnType("character varying(1024)")
