@@ -32,6 +32,13 @@ internal static class Problems
             detail: "No visible event exists for this request.",
             type: ProblemTypes.NotFound);
 
+    public static ProblemHttpResult Unauthorized(string detail) =>
+        TypedResults.Problem(
+            statusCode: StatusCodes.Status401Unauthorized,
+            title: "Authentication required",
+            detail: detail,
+            type: ProblemTypes.Unauthorized);
+
     public static ProblemHttpResult InvalidAttendance(string detail) =>
         TypedResults.Problem(
             statusCode: StatusCodes.Status409Conflict,

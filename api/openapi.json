@@ -157,6 +157,59 @@
         }
       }
     },
+    "/v1/events/{eventId}/share-link": {
+      "post": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "Rotate an unlisted event\u0027s share link.",
+        "description": "Owner only. Returns the new plaintext token once; only its SHA-256 hash is stored. Rotation creates no attendance or invite grants.",
+        "operationId": "RotateEventShareLink",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RotateShareLinkResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/events/shared/{token}": {
       "get": {
         "tags": [
@@ -964,6 +1017,22 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "RotateShareLinkResponse": {
+        "required": [
+          "eventId",
+          "shareToken"
+        ],
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shareToken": {
+            "type": "string"
           }
         }
       }

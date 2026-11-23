@@ -316,3 +316,66 @@ No identity provider is configured, so the browser did not call the real API. Th
 ### Still open, unchanged
 
 Attendee identity display, maximum duration (the code still allows 7 days), incident tags and moderation, and livestream links. Do not decide them in passing.
+
+## Backend hardening — 2026-11-23
+
+### Implemented
+
+- Forwarded headers are opt-in (ForwardedHeaders:Enabled, default false). Configured KnownProxies and KnownNetworks are parsed strictly and copied into ForwardedHeadersOptions; defaults remain empty. Outside Development, startup fails when forwarding is enabled without at least one trusted proxy/network. UseForwardedHeaders remains before authentication and rate limiting.
+- Production-only startup guards now also apply in Staging. Both environments are covered for missing/local database settings, placeholder authority, and valid startup.
+- Added owner-only POST /v1/events/{eventId}/share-link for unlisted events. It returns the new plaintext token once, stores only its SHA-256 hash in the existing share_token_hash column, invalidates the previous token, and does not add attendance or invite/grant rows. Anonymous gets a typed 401 ProblemDetails response; non-owners and ineligible events get the existing 404 ProblemDetails. No schema change or migration was needed.
+- Regenerated api/openapi.json from the backend OpenAPI endpoint and regenerated packages/api-client/src/generated/schema.ts.
+
+### Commands actually run
+
+Docker/Testcontainers was available after starting the installed Docker Desktop app. Engine: 29.9.3. The test runner's first restricted process attempt could not connect to testhost; successful test runs used the approved elevated process so they could access Docker and the test runner.
+
+Focused share-rotation integration tests:
+
+~~~powershell
+$env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+dotnet test backend/tests/Happengo.Api.Tests/Happengo.Api.Tests.csproj --configuration Release --no-restore --filter FullyQualifiedName~ShareLinkRotationTests
+~~~
+
+Result: 2 passed, 0 failed.
+
+Backend-generated OpenAPI export:
+
+~~~powershell
+$env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+$env:UPDATE_OPENAPI = '1'
+dotnet test backend/tests/Happengo.Api.Tests/Happengo.Api.Tests.csproj --configuration Release --no-restore --filter FullyQualifiedName~OpenApi_document_matches_committed_contract
+~~~
+
+Result: 1 passed and api/openapi.json was rewritten from the live generated document.
+
+TypeScript client generation, working directory packages/api-client:
+
+~~~text
+node ./scripts/generate.mjs
+~~~
+
+Result: openapi-typescript 7.13.0 regenerated src/generated/schema.ts.
+
+Full backend suite, including Docker-backed integration tests and normal OpenAPI drift assertion:
+
+~~~powershell
+$env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+dotnet test backend/Happengo.sln --configuration Release
+~~~
+
+Result: 222 passed, 0 failed, 0 skipped. This includes forwarded-header rate-limit isolation for two client IPs behind a trusted proxy, ignored untrusted X-Forwarded-For, Staging and Production guard cases, ProblemDetails authorization, new-token success/old-token rejection, and unchanged attendance/invite rows.
+
+### Read/review only (not executed as commands)
+
+- Read GROK.md, docs/architecture/baseline.md, this handoff, ADR 0007, HashShareTokens, the rate limiter and auth middleware, existing production guard tests, Testcontainers setup, and the OpenAPI drift test.
+- No Azure, Terraform, deployment, external service, or mobile files were changed.
+
+Targeted formatting check for the changed C# files:
+
+~~~powershell
+$env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+dotnet format whitespace backend/Happengo.sln --verify-no-changes --no-restore --include backend/src/Happengo.Api/Infrastructure/ForwardedHeaderSettings.cs backend/src/Happengo.Api/Infrastructure/HappengoServices.cs backend/src/Happengo.Api/Infrastructure/Problems.cs backend/src/Happengo.Api/Infrastructure/ProductionConfiguration.cs backend/src/Happengo.Api/Events/ShareToken.cs backend/src/Happengo.Api/Events/RotateShareLink/RotateShareLink.cs backend/tests/Happengo.Api.Tests/Infrastructure/ProductionConfigurationTests.cs backend/tests/Happengo.Api.Tests/Infrastructure/RateLimitTests.cs backend/tests/Happengo.Api.Tests/Events/ShareLinkRotationTests.cs
+~~~
+
+Result: passed. A full-solution `dotnet format backend/Happengo.sln --verify-no-changes --no-restore` was also attempted but failed on pre-existing checkout-wide CRLF/LF differences. The targeted check above passed after normalizing line endings in the changed C# files.
