@@ -28,8 +28,10 @@ internal sealed class Event
 
     public EventVisibility Visibility { get; set; }
 
-    /// <summary>Canonical base64url of 16 random bytes. 128 bits, unique.</summary>
-    public string ShareToken { get; set; } = "";
+    /// <summary>
+    /// SHA-256 of the canonical base64url share token. The plaintext is not stored.
+    /// </summary>
+    public byte[] ShareTokenHash { get; set; } = [];
 
     public ApprovalMode ApprovalMode { get; set; }
 

@@ -109,7 +109,7 @@ public sealed class VisibleToMatrixTests(ApiFactory factory) : IntegrationTest, 
         using var response = surface == Surface.Map
             ? await client.SendAsync(ApiJson.Get($"/v1/events?bbox={TestData.Bbox}", Subject(viewer)))
             : viewer == ViewerKind.ShareTokenHolder
-                ? await client.SendAsync(ApiJson.Get($"/v1/events/shared/{Uri.EscapeDataString(e.ShareToken)}"))
+                ? await client.SendAsync(ApiJson.Get($"/v1/events/shared/{Uri.EscapeDataString(EventReadTests.IssuedShareTokens[e.Id])}"))
                 : await client.SendAsync(ApiJson.Get($"/v1/events/{e.Id}", Subject(viewer)));
 
         if (surface == Surface.Map)
@@ -129,7 +129,7 @@ public sealed class VisibleToMatrixTests(ApiFactory factory) : IntegrationTest, 
             Assert.Equal(phase == Phase.Now, body.HappeningNow);
             if (viewer == ViewerKind.Owner)
             {
-                Assert.Equal(e.ShareToken, body.ShareToken);
+                Assert.Null(body.ShareToken);
                 Assert.True(body.IsOwner);
             }
             else

@@ -2,7 +2,7 @@ using Happengo.Api.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddHappengo(builder.Configuration);
+builder.Services.AddHappengo(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 

@@ -1,5 +1,6 @@
 using System.Buffers.Text;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace Happengo.Api.Events;
 
@@ -13,6 +14,16 @@ internal static class ShareToken
         RandomNumberGenerator.Fill(bytes);
         return Base64Url.EncodeToString(bytes);
     }
+
+    /// <summary>
+    /// SHA-256 of the canonical token's UTF-8 bytes. This is the value stored in
+    /// <c>share_token_hash</c> and the only value the share-link read compares.
+    /// pgcrypto <c>digest(token, 'sha256')</c> produces the same bytes on a UTF-8 database.
+    /// </summary>
+    // TODO(event-edit): revoke and rotate the share token when event edit lands.
+    // The plaintext is shown once at issue time and is not stored.
+    public static byte[] Hash(string canonicalToken) =>
+        SHA256.HashData(Encoding.UTF8.GetBytes(canonicalToken));
 
     public static bool TryCanonicalize(string token, out string canonical)
     {

@@ -22,7 +22,9 @@ internal sealed class EventConfiguration : IEntityTypeConfiguration<Event>
         builder.Property(e => e.Description).HasMaxLength(4000);
         builder.Property(e => e.TimeZoneId).HasMaxLength(64).IsRequired();
         builder.Property(e => e.Address).HasMaxLength(500).IsRequired();
-        builder.Property(e => e.ShareToken).HasMaxLength(22).IsRequired();
+        builder.Property(e => e.ShareTokenHash)
+            .HasColumnType("bytea")
+            .IsRequired();
         builder.Property(e => e.CoverBlobName).HasMaxLength(1024);
 
         builder.Property(e => e.Location)
@@ -50,7 +52,7 @@ internal sealed class EventConfiguration : IEntityTypeConfiguration<Event>
             .HasMaxLength(32);
 
         builder.HasIndex(e => e.Location).HasMethod("gist");
-        builder.HasIndex(e => e.ShareToken).IsUnique();
+        builder.HasIndex(e => e.ShareTokenHash).IsUnique();
         builder.HasIndex(e => e.OwnerId);
         builder.HasIndex(e => e.EndAt);
     }

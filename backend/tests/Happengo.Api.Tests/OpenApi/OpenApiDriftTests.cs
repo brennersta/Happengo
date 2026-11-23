@@ -43,6 +43,9 @@ public sealed class OpenApiDriftTests : IClassFixture<WebApplicationFactory<Prog
         Assert.DoesNotContain("shareToken", required);
         var share = document["components"]!["schemas"]!["EventResponse"]!["properties"]!["shareToken"]!;
         Assert.Contains("null", share["type"]!.ToJsonString(), StringComparison.Ordinal);
+
+        Assert.NotNull(document["paths"]!["/v1/events"]!["get"]!["responses"]!["429"]);
+        Assert.NotNull(document["paths"]!["/v1/events/shared/{token}"]!["get"]!["responses"]!["429"]);
     }
 
     [Fact]

@@ -19,10 +19,18 @@ namespace Happengo.Api.Infrastructure;
 
 public static class HappengoServices
 {
-    public static void AddHappengo(this IServiceCollection services, IConfiguration configuration)
+    public static void AddHappengo(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
-        var connectionString = configuration.GetConnectionString("Happengo")
-            ?? throw new InvalidOperationException("Connection string 'Happengo' is required.");
+        ProductionConfiguration.Ensure(environment, configuration);
+
+        var connectionString = configuration.GetConnectionString("Happengo");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException("Connection string 'Happengo' is required.");
+        }
 
         var authority = configuration["Authentication:Authority"];
         var audience = configuration["Authentication:Audience"];
@@ -50,6 +58,20 @@ public static class HappengoServices
                     ValidateIssuerSigningKey = true,
                     ValidAudience = audience,
                     NameClaimType = "sub",
+                };
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = context =>
+                    {
+                        var subject = context.Principal?.FindFirst("sub")?.Value;
+                        var issuer = context.Principal?.FindFirst("iss")?.Value;
+                        if (string.IsNullOrWhiteSpace(subject) || string.IsNullOrWhiteSpace(issuer))
+                        {
+                            context.Fail("The access token must include iss and sub.");
+                        }
+
+                        return Task.CompletedTask;
+                    },
                 };
             });
 
@@ -91,7 +113,7 @@ public static class HappengoServices
         services.AddExceptionHandler<ProblemExceptionHandler>();
         services.AddHealthChecks()
             .AddDbContextCheck<HappengoDbContext>("database");
-        services.AddHappengoRateLimiter();
+        services.AddHappengoRateLimiter(configuration);
         services.AddOpenApi(options =>
         {
             options.AddDocumentTransformer((document, _, _) =>
@@ -201,8 +223,8 @@ public static class HappengoServices
         GetSharedEvent.Map(v1);
         GetEvent.Map(v1);
 
-        // Product write, auth, and upload routes land on these groups later.
-        // The limiter is partitioned per (issuer, sub) or client IP.
+        // Write, auth, and upload routes are added to these groups when those slices land.
+        // There is no write route yet. Map reads and the share-link read carry their own per-IP policies.
         v1.MapGroup("/auth").RequireRateLimiting(RateLimitPolicies.Auth);
         v1.MapGroup("/media").RequireRateLimiting(RateLimitPolicies.Uploads);
         v1.MapGroup(string.Empty).RequireRateLimiting(RateLimitPolicies.Writes);
