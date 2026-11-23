@@ -110,5 +110,8 @@
     "signedIn": "You are signed in. Protected event actions can now use your account.",
     "signOut": "Sign out"
   },
-  "localeCode": "en"
+  "localeCode": "en",
+  "demo": {
+    "notice": "Demo: sample data, nothing is saved"
+  }
 }

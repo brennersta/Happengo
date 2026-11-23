@@ -142,7 +142,7 @@ Historical notes disagreed:
 
 ## 8. Rebuild status and first-release focus
 
-The rebuild has a credible event/map/API foundation, not feature parity with Base44 and not all three product use cases. Current gaps include Discover filters, incident lifecycle/reporting, friend/invitation lifecycle, private albums/media access, profile editing, stream links, and a still-unpicked identity provider (ADR 0005 is Proposed). Small-city launch is an owner-stated option: seed local content and review it manually while volume is manageable, with a later moderation path.
+The rebuild has a credible event/map/API foundation, not feature parity with Base44 and not all three product use cases. Current gaps include Discover filters, incident lifecycle/reporting, friend/invitation lifecycle, private albums/media access, profile editing, and stream links. Auth0 is the chosen identity provider (ADR 0005, 2026-11-23) and no tenant exists yet. Small-city launch is an owner-stated option: seed local content and review it manually while volume is manageable, with a later moderation path.
 
 ## Decisions to resolve
 

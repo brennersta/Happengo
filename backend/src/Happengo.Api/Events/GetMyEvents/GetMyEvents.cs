@@ -1,4 +1,5 @@
 using Happengo.Api.Attendance;
+using Happengo.Api.Infrastructure;
 using Happengo.Api.Infrastructure.Auth;
 using Happengo.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -33,8 +34,11 @@ internal static class GetMyEvents
     {
         if (viewerContext.Viewer.UserId is not Guid userId)
         {
-            return TypedResults.Problem(statusCode: StatusCodes.Status401Unauthorized,
-                title: "Authentication required", detail: "A valid user identity is required to list your events.");
+            return TypedResults.Problem(
+                statusCode: StatusCodes.Status401Unauthorized,
+                title: "Authentication required",
+                detail: "A valid user identity is required to list your events.",
+                type: ProblemTypes.Unauthorized);
         }
 
         var now = clock.GetCurrentInstant();

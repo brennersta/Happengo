@@ -1,5 +1,22 @@
-/** Dev mocks stay on unless explicitly disabled. A web export enables them only when the flag is exactly "true". */
-export function mocksEnabled(): boolean {
-  if (process.env.EXPO_PUBLIC_API_MOCK === "true") return true;
-  return __DEV__ && process.env.EXPO_PUBLIC_API_MOCK !== "false";
+import { Platform } from "react-native";
+
+/**
+ * The public demo is an explicit web export (`EXPO_PUBLIC_DEMO_MODE=true`).
+ * A normal production build, including native, does not enable it.
+ * Local dev still mocks unless `EXPO_PUBLIC_API_MOCK=false`.
+ */
+export function isDemoBuild(env?: Record<string, string | undefined>): boolean {
+  const value = env ? env.EXPO_PUBLIC_DEMO_MODE : process.env.EXPO_PUBLIC_DEMO_MODE;
+  return value === "true";
+}
+
+export function mocksEnabled(
+  env?: Record<string, string | undefined>,
+  dev: boolean = typeof __DEV__ === "boolean" ? __DEV__ : false,
+  platform: "web" | "native" = Platform.OS === "web" ? "web" : "native",
+): boolean {
+  const source = env ?? process.env;
+  const demo = env ? env.EXPO_PUBLIC_DEMO_MODE === "true" : process.env.EXPO_PUBLIC_DEMO_MODE === "true";
+  if (demo) return platform === "web";
+  return dev && source.EXPO_PUBLIC_API_MOCK !== "false";
 }

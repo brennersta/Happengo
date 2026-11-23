@@ -133,7 +133,7 @@ The page list follows the exported Base44 project. “Incident reporting” and 
 | Custom profile photo | Lets a user upload a preferred photo. | Uses Base44 file upload and updates profile. | Not implemented. |
 | Reset provider photo | Restores the profile image from Google identity. | Reset action exists. | Not implemented. |
 | Language preference | Uses English or Brazilian Portuguese, detects device/browser language, and offers a manual setting. | LanguageProvider and Profile controls exist. | App has EN/PT-BR localization foundation; profile preference experience is incomplete. |
-| Sign in/out | Authenticates users for actions requiring an account, while allowing public browsing. | Base44 auth controls/page flows exist. | Provider-agnostic OIDC client exists. Entra External ID vs Auth0 is still open (ADR 0005 Proposed). |
+| Sign in/out | Authenticates users for actions requiring an account, while allowing public browsing. | Base44 auth controls/page flows exist. | Auth0 is chosen (ADR 0005). The client is still standard OIDC. No tenant is configured. The public demo uses a fake signed-in user. |
 
 ## I. OAuth Consent (platform support page)
 
@@ -167,7 +167,7 @@ The page list follows the exported Base44 project. “Incident reporting” and 
 
 | Feature name | What it represents | Base44 source | Rebuild |
 |---|---|---|---|
-| Sign-in when needed | Allows anonymous discovery and requires a signed-in user for actions such as creating, attending, uploading, managing friends, or reporting. | Base44 auth gates in pages. | OIDC groundwork exists and does not hard-code a provider. Live configuration is pending the provider pick. |
+| Sign-in when needed | Allows anonymous discovery and requires a signed-in user for actions such as creating, attending, uploading, managing friends, or reporting. | Base44 auth gates in pages. | Auth0 is chosen. Live tenant setup is still pending. The Pages demo does not sign in to Auth0. |
 | Helpful loading, empty, and error states | Explains what is happening and how to recover without technical wording. | Repeatedly requested and some components/copy exist. | Loading/error states exist for Discover; not all pages are built. |
 | English and Brazilian Portuguese | Localizes navigation, controls, dates, and errors while retaining authored event content. | LanguageProvider and formatting utilities. | EN/PT-BR foundation exists. |
 | Rate limits | Restricts repeated event creation, photo uploads, or reports to reduce spam and abuse. | `rateLimits.jsx`; exact historical limits changed across prompts. | Some API rate limiting exists; align per-action policy when those APIs are built. |

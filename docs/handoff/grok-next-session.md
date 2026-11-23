@@ -8,7 +8,7 @@ The notes below were written with the unvalidated Codex draft and are not the cu
 
 - Happening now is half-open: `startAt <= now < endAt`. The event has ended at exactly `endAt`. Map visibility uses the same end (`now < endAt`). The draft's `<= endAt` was wrong and has been removed from the API, the demo mock, and both map clients.
 - Unlisted events are never on any map, including the owner's. Brenner confirmed ADR 0007. A share link creates no persisted grant and no attendance. There is no `invited` status. This is no longer an open product decision.
-- The identity provider is still open. ADR 0005 stays Proposed (Entra External ID default, Auth0 fallback). The draft's edits that marked ADR 0005 Accepted and named Auth0 as chosen were reverted. The OIDC client stays provider-agnostic. It does send an `audience` authorize parameter when `EXPO_PUBLIC_OIDC_API_AUDIENCE` is set; that parameter is an Auth0 convention and must be confirmed with whichever provider Brenner picks.
+- The identity provider is Auth0. Brenner chose it on 2026-11-23. ADR 0005 is Accepted. Entra External ID remains the considered alternative. No tenant or secret exists. The client sends the OIDC `audience` parameter because that is what Auth0 requires.
 - Share tokens are stored as SHA-256 only (PR #11). Reads, including create, do not return `shareToken`. Create stores the hash and discards the plaintext, so the owner cannot yet show a share link. Returning the plaintext once belongs with event edit, which is not in this slice.
 - Attendee identity display, maximum duration (24 hours vs 7 days), incident tags and moderation, and livestream links stay open. Current behavior is unchanged: 7-day cap, count plus the existing request-id prefix, no incident tags, no livestream field.
 
@@ -189,6 +189,45 @@ The implementation draft now includes ordered tag chips in event creation, a req
 - Added map-marker press navigation to event detail on web and native. Discover cards now show the main tag and attendee count; the detail map receives main tag/live state.
 - Existing event detail and attendance controls were already present; this work connects the first-use paths to them. Friends, albums/photos, cover uploads, identity display for attendance requests, and profile editing remain unimplemented.
 - No tests, typecheck, builds, or visual walkthrough were run. All runtime behavior remains unverified. See the updated page-by-page status in `../business/feature-catalog.md`.
+
+## Demo Pages — 2026-11-23
+
+Runtime proof for the public demo. The earlier validation section below it is the first-event-journey run, before this demo build.
+
+The static export does not use the MSW service worker. Production Metro replaces the `msw` package with an empty module, so `http.get` throws `Cannot read properties of undefined (reading 'get')`. `EXPO_PUBLIC_DEMO_MODE=true` turns on an in-page fetch mock and a fake signed-in session instead. A normal production web or native build does not set that flag, so it does not mock.
+
+Commands, from `/workspace`:
+
+```text
+pnpm --filter "./apps/**" --filter "./packages/**" run lint
+pnpm --filter @happengo/mobile exec tsc --noEmit
+pnpm --filter @happengo/mobile test
+pnpm --filter @happengo/api-client test
+dotnet format backend/Happengo.sln --verify-no-changes --no-restore
+dotnet test backend/Happengo.sln --configuration Release
+EXPO_PUBLIC_DEMO_MODE=true pnpm --filter @happengo/mobile export:web
+node apps/mobile/scripts/finalize-pages.mjs
+```
+
+Lint, `tsc --noEmit`, and `dotnet format --verify-no-changes` exited 0. Mobile Jest: 48 passed. api-client: 2 passed, including no diff after client generation. `dotnet test`: **210 passed, 0 failed**, including PostGIS. The anonymous `GET /v1/events/mine` response type is `https://happengo.app/problems/unauthorized`.
+
+The export logged `Using (experimental) base path: /Happengo`. `index.html` references `/Happengo/_expo/...`. `finalize-pages.mjs` copies `index.html` to `404.html` and writes `.nojekyll`.
+
+Playwright then served `apps/mobile/dist` at `http://127.0.0.1:4173/Happengo/` with the 404.html fallback. The page's own fetch mock answered the API. No route was stubbed from the test. Checked in the page:
+
+- Banner text "Demo: sample data, nothing is saved".
+- Harbour choir pin `rgb(124, 58, 237)` (Music) with one running aura animation.
+- Market lunch pin `rgb(234, 88, 12)` (Food) with zero animations.
+- Opened Market lunch from the card and from the pin.
+- Joined Harbour choir.
+- My Events Past showed Sunday picnic. Upcoming showed Studio night. Declined its seeded request.
+- Created Night market with Tech as the main tag and approved the seeded request.
+- The same Harbour choir pin under `prefers-reduced-motion: reduce` kept the green border and had zero animations.
+- `GET /Happengo/events/00000000-0000-4000-8000-000000000001` returns the 404.html document, and a reload still shows Harbour choir.
+
+Screenshots: `demo-01-discover.png` through `demo-10-deep-link.png`.
+
+Code review only: native screens were not opened. No Auth0 tenant was created. GitHub Pages source was not switched to GitHub Actions from this environment; see the PR report.
 
 ## Validation — 2026-11-23
 

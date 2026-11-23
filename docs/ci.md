@@ -51,7 +51,11 @@ Workflow token: `contents: read`. `ci-success` sets `contents: none`. The token 
 
 Dependency caching uses the runner cache (NuGet global packages, the pnpm store, Terraform provider plugins). Cache access is GitHub's default: write on trusted triggers (push, and pull requests from this repository), read-only on low-trust triggers. The workflow does not set `cache-mode: write`, so a fork pull request cannot overwrite the cache.
 
-Nothing in the workflow reads a secret. No Azure login, no OIDC, no Expo token.
+Nothing in the CI workflow reads a secret. No Azure login, no OIDC, no Expo token.
+
+## Pages demo
+
+[`.github/workflows/pages.yml`](../.github/workflows/pages.yml) is a separate workflow. It builds the web export with `EXPO_PUBLIC_DEMO_MODE=true` and deploys it to GitHub Pages on a push to `main` that changes `apps/` or `packages/`, and on `workflow_dispatch`. It does not run on pull requests. Do not add it as a required status check. The only required check remains `CI / ci-success`.
 
 Pull request runs cancel an older in-progress run of the same PR. Pushes to `main` are not cancelled.
 

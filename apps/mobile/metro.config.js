@@ -14,6 +14,9 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, "node_modules"),
 ];
 
+// Production bundles must not ship MSW. The stub has no `http` export, so a
+// production import of the handlers throws on `http.get`. The static demo
+// uses src/mocks/fetchMock.ts instead and does not import `msw`.
 if (process.env.NODE_ENV === "production") {
   config.resolver.resolveRequest = (context, moduleName, platform) => {
     if (moduleName === "msw" || moduleName.startsWith("msw/") || moduleName.startsWith("@mswjs/")) {

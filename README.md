@@ -8,6 +8,8 @@ Monorepo: `backend/` (ASP.NET Core Web API, .NET 10, PostgreSQL + PostGIS) and `
 
 All changes land through pull requests into `main`.
 
+The public demo, once GitHub Pages is enabled for this repository, is [https://brennersta.github.io/Happengo/](https://brennersta.github.io/Happengo/). It is a static web export with sample data in the browser. Nothing is saved, and it does not call the API or Auth0.
+
 ## CI
 
 Pull requests and pushes to `main` run [`.github/workflows/ci.yml`](.github/workflows/ci.yml). The check to require is `CI / ci-success`. [docs/ci.md](docs/ci.md) describes each job, and lists what CI does not do until Brenner approves it: Terraform plan or apply, Azure login or provisioning, container registry push, and EAS build or submit.

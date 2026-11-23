@@ -14,34 +14,112 @@ export type PendingAttendanceResponse = components["schemas"]["PendingAttendance
 export const mapResultLimit = 500;
 
 const tallinn = { longitude: 24.7536, latitude: 59.437 };
+
+export const liveEventId = "00000000-0000-4000-8000-000000000001";
+export const unlistedEventId = "00000000-0000-4000-8000-000000000002";
+export const endedStrangerEventId = "00000000-0000-4000-8000-000000000003";
+export const lunchEventId = "00000000-0000-4000-8000-000000000004";
+export const runEventId = "00000000-0000-4000-8000-000000000005";
+export const studioEventId = "00000000-0000-4000-8000-000000000006";
+export const picnicEventId = "00000000-0000-4000-8000-000000000007";
+export const requestEventId = "00000000-0000-4000-8000-000000000008";
+
 function createFixtures(now: Date): EventResponse[] {
   const nowMs = now.getTime();
-  const liveEvent: EventResponse = {
-    id: "00000000-0000-4000-8000-000000000001",
-    title: "Sample gathering",
+  const base = {
     description: null,
-    startAt: new Date(nowMs - 30 * 60_000).toISOString(),
-    endAt: new Date(nowMs + 90 * 60_000).toISOString(),
     timeZoneId: "Europe/Tallinn",
     address: "Tallinn, Estonia",
-    tags: ["Music"],
-    visibility: "public",
-    approvalMode: "open",
-    happeningNow: true,
+    visibility: "public" as const,
+    approvalMode: "open" as const,
+    happeningNow: false,
     isOwner: false,
     attendingCount: 0,
     longitude: tallinn.longitude,
     latitude: tallinn.latitude,
   };
   return [
-    liveEvent,
-    { ...liveEvent, id: "00000000-0000-4000-8000-000000000002", title: "Unlisted gathering", visibility: "unlisted" },
     {
-      ...liveEvent,
-      id: "00000000-0000-4000-8000-000000000003",
+      ...base,
+      id: liveEventId,
+      title: "Harbour choir",
+      startAt: new Date(nowMs - 30 * 60_000).toISOString(),
+      endAt: new Date(nowMs + 90 * 60_000).toISOString(),
+      tags: ["Music"],
+      happeningNow: true,
+    },
+    {
+      ...base,
+      id: unlistedEventId,
+      title: "Unlisted gathering",
+      startAt: new Date(nowMs - 30 * 60_000).toISOString(),
+      endAt: new Date(nowMs + 90 * 60_000).toISOString(),
+      tags: ["Family"],
+      visibility: "unlisted",
+    },
+    {
+      ...base,
+      id: endedStrangerEventId,
       title: "Ended gathering",
       startAt: new Date(nowMs - 4 * 60 * 60_000).toISOString(),
       endAt: new Date(nowMs - 2 * 60 * 60_000).toISOString(),
+      tags: ["Culture"],
+    },
+    {
+      ...base,
+      id: lunchEventId,
+      title: "Market lunch",
+      startAt: new Date(nowMs + 2 * 60 * 60_000).toISOString(),
+      endAt: new Date(nowMs + 5 * 60 * 60_000).toISOString(),
+      tags: ["Food"],
+      longitude: 24.77,
+      latitude: 59.445,
+    },
+    {
+      ...base,
+      id: runEventId,
+      title: "Kadriorg run",
+      startAt: new Date(nowMs + 3 * 60 * 60_000).toISOString(),
+      endAt: new Date(nowMs + 4 * 60 * 60_000).toISOString(),
+      tags: ["Sports", "Outdoor"],
+      longitude: 24.735,
+      latitude: 59.43,
+    },
+    {
+      ...base,
+      id: studioEventId,
+      title: "Studio night",
+      startAt: new Date(nowMs + 6 * 60 * 60_000).toISOString(),
+      endAt: new Date(nowMs + 9 * 60 * 60_000).toISOString(),
+      tags: ["Art"],
+      approvalMode: "approval",
+      isOwner: true,
+      attendingCount: 1,
+      longitude: 24.76,
+      latitude: 59.428,
+    },
+    {
+      ...base,
+      id: requestEventId,
+      title: "Gallery opening",
+      startAt: new Date(nowMs + 8 * 60 * 60_000).toISOString(),
+      endAt: new Date(nowMs + 10 * 60 * 60_000).toISOString(),
+      tags: ["Nightlife"],
+      approvalMode: "approval",
+      longitude: 24.742,
+      latitude: 59.44,
+    },
+    {
+      ...base,
+      id: picnicEventId,
+      title: "Sunday picnic",
+      startAt: new Date(nowMs - 26 * 60 * 60_000).toISOString(),
+      endAt: new Date(nowMs - 24 * 60 * 60_000).toISOString(),
+      tags: ["Family"],
+      isOwner: true,
+      attendingCount: 1,
+      longitude: 24.748,
+      latitude: 59.45,
     },
   ];
 }
@@ -50,10 +128,19 @@ const fixtures = createFixtures(new Date());
 const demoEvents: EventResponse[] = [];
 const attendance = new Map<string, AttendanceStatus>();
 const pendingUsers = new Map<string, string[]>();
+const shareTokens = new Map<string, string>();
 const demoUserId = "demo-current-user";
 /** Synthetic requester so the single-user demo can exercise owner approve and decline. */
 export const demoPendingRequesterId = "00000000-0000-4000-8000-0000000000aa";
 let nextDemoId = 101;
+
+function seedFixtureRelations(): void {
+  attendance.set(attendanceKey(studioEventId), "attending");
+  attendance.set(attendanceKey(studioEventId, demoPendingRequesterId), "requested");
+  pendingUsers.set(studioEventId, [demoPendingRequesterId]);
+  attendance.set(attendanceKey(picnicEventId), "attending");
+  shareTokens.set(unlistedEventId, "demo-unlisted-token");
+}
 
 function attendanceKey(eventId: string, userId = demoUserId): string {
   return `${eventId}:${userId}`;
@@ -84,8 +171,10 @@ export function createDemoEvent(request: CreateEventRequest, now = new Date()): 
     attendingCount: 1,
     longitude: request.longitude,
     latitude: request.latitude,
-    shareToken: `demo-share-${String(nextDemoId).padStart(12, "0")}`,
   };
+  if (request.visibility === "unlisted") {
+    shareTokens.set(id, `demo-share-${String(nextDemoId).padStart(12, "0")}`);
+  }
   demoEvents.unshift(event);
   attendance.set(attendanceKey(event.id), "attending");
   if (request.approvalMode === "approval") {
@@ -99,12 +188,18 @@ export function resetDemoEvents(): void {
   demoEvents.length = 0;
   attendance.clear();
   pendingUsers.clear();
+  shareTokens.clear();
   nextDemoId = 101;
   for (let index = 0; index < fixtures.length; index += 1) {
     const event = fixtures[index];
-    if (event) fixtures[index] = { ...event, attendingCount: 0 };
+    if (!event) continue;
+    const owned = event.id === studioEventId || event.id === picnicEventId;
+    fixtures[index] = { ...event, attendingCount: owned ? 1 : 0 };
   }
+  seedFixtureRelations();
 }
+
+seedFixtureRelations();
 
 export function getDemoAttendance(eventId: string): MyAttendanceResponse | null {
   const event = getEvent(eventId);
@@ -113,14 +208,14 @@ export function getDemoAttendance(eventId: string): MyAttendanceResponse | null 
 }
 
 export function getDemoPendingRequests(eventId: string): PendingAttendanceResponse | null {
-  const event = demoEvents.find((item) => item.id === eventId && item.isOwner);
+  const event = [...demoEvents, ...fixtures].find((item) => item.id === eventId && item.isOwner);
   return event ? { userIds: [...(pendingUsers.get(eventId) ?? [])] } : null;
 }
 
 export function requestDemoAttendance(eventId: string, shareToken: string | null): AttendanceResponse | null {
   const event = getEvent(eventId);
   if (!event || event.isOwner || hasEnded(event.endAt, new Date())) return null;
-  if (event.visibility === "unlisted" && event.shareToken !== shareToken) return null;
+  if (event.visibility === "unlisted" && shareTokens.get(eventId) !== shareToken) return null;
   if (event.visibility === "friends_only") return null;
 
   const key = attendanceKey(eventId);
@@ -142,7 +237,7 @@ export function decideDemoAttendance(
   userId: string,
   decision: "attending" | "rejected",
 ): AttendanceResponse | null {
-  const event = demoEvents.find((item) => item.id === eventId && item.isOwner);
+  const event = [...demoEvents, ...fixtures].find((item) => item.id === eventId && item.isOwner);
   const userIds = pendingUsers.get(eventId) ?? [];
   if (!event || !userIds.includes(userId)) return null;
   pendingUsers.set(eventId, userIds.filter((id) => id !== userId));
@@ -180,7 +275,12 @@ export function getEvent(id: string, now = new Date()): EventResponse | null {
   if (!event || (event.visibility !== "public" && !event.isOwner)) return null;
   const attending = attendance.get(attendanceKey(event.id)) === "attending";
   if (hasEnded(event.endAt, now) && !event.isOwner && !attending) return null;
-  return { ...event, happeningNow: isHappeningNow(event.startAt, event.endAt, now) };
+  return publish(event, now);
+}
+
+function publish(event: EventResponse, now: Date): EventResponse {
+  const { shareToken: _shareToken, ...rest } = event;
+  return { ...rest, happeningNow: isHappeningNow(event.startAt, event.endAt, now) };
 }
 
 /**
@@ -202,21 +302,20 @@ export function listEvents(bbox: string | null, now = new Date()): EventMapRespo
         event.latitude >= minLat &&
         event.latitude <= maxLat,
     )
-    .map(({ shareToken: _shareToken, ...event }) => ({
-      ...event,
-      happeningNow: isHappeningNow(event.startAt, event.endAt, now),
-    }));
+    .map((event) => publish(event, now));
   return { items, limit: mapResultLimit, truncated: false };
 }
 
-/** Events created by the demo user plus events they are attending or requested. */
+/** Events the demo user owns or is attending, plus requests that have not ended. */
 export function listMyEvents(now = new Date()): EventMapResponse {
   const items = [...demoEvents, ...fixtures]
-    .filter((event) => event.isOwner || ["attending", "requested"].includes(attendance.get(attendanceKey(event.id)) ?? ""))
-    .map(({ shareToken: _shareToken, ...event }) => ({
-      ...event,
-      happeningNow: isHappeningNow(event.startAt, event.endAt, now),
-    }))
+    .filter((event) => {
+      if (event.isOwner) return true;
+      const status = attendance.get(attendanceKey(event.id));
+      if (status === "attending") return true;
+      return status === "requested" && !hasEnded(event.endAt, now);
+    })
+    .map((event) => publish(event, now))
     .sort((a, b) => Number(Date.parse(a.startAt) <= now.getTime()) - Number(Date.parse(b.startAt) <= now.getTime())
       || Date.parse(a.startAt) - Date.parse(b.startAt));
   return { items, limit: mapResultLimit, truncated: false };

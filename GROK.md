@@ -14,7 +14,9 @@
 
 The first-use event journey was validated on 2026-11-23. Create, Discover, My Events, marker and card navigation, join, and owner approve/decline work against the demo contract. The live aura uses the half-open window `startAt <= now < endAt`. Exact commands and what was executed versus only read are in [`docs/handoff/grok-next-session.md`](docs/handoff/grok-next-session.md).
 
-The next small slice should be Discover filters for the existing tags and happening-now. Do not start incident tags, attendee names, a duration change, or livestream links. Those decisions are still open.
+The public demo is a static GitHub Pages export at `https://brennersta.github.io/Happengo/`. It uses in-browser sample data, a fake signed-in demo user, and saves nothing. Exact commands are in [`docs/handoff/grok-next-session.md`](docs/handoff/grok-next-session.md). After this demo merges, the next slice is Discover filters for the existing tags and happening-now. Do not start incident tags, attendee names, a duration change, or livestream links.
+
+Auth0 is the identity provider (ADR 0005, chosen 2026-11-23). Entra External ID was considered and was not selected. No tenant has been created.
 
 ## Current product direction
 

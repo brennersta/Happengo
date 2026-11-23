@@ -21,17 +21,24 @@ const atEnd = new Date(liveEvent.endAt);
 
 beforeEach(() => resetDemoEvents());
 
-test("returns the public event when the bbox contains Tallinn", () => {
+test("returns a mix of tagged public events around Tallinn, with one live", () => {
   const body = listEvents(bbox);
   expect(body.truncated).toBe(false);
   expect(body.limit).toBe(500);
-  expect(body.items).toHaveLength(1);
-  expect(body.items[0]?.address).toBe("Tallinn, Estonia");
-  expect(body.items[0]?.visibility).toBe("public");
-  expect(body.items[0]?.happeningNow).toBe(true);
-  expect(body.items[0]?.shareToken).toBeUndefined();
-  expect(body.items[0]?.longitude).toBe(24.7536);
-  expect(body.items[0]?.latitude).toBe(59.437);
+  expect(body.items.map((event) => event.title).sort()).toEqual([
+    "Gallery opening",
+    "Harbour choir",
+    "Kadriorg run",
+    "Market lunch",
+    "Studio night",
+  ]);
+  expect(body.items.filter((event) => event.happeningNow).map((event) => event.title)).toEqual(["Harbour choir"]);
+  expect(body.items.every((event) => event.shareToken === undefined)).toBe(true);
+  expect(new Set(body.items.map((event) => event.tags[0])).size).toBeGreaterThan(1);
+  const live = body.items.find((event) => event.title === "Harbour choir");
+  expect(live?.address).toBe("Tallinn, Estonia");
+  expect(live?.longitude).toBe(24.7536);
+  expect(live?.latitude).toBe(59.437);
 });
 
 test("unlisted events never appear on the map", () => {
@@ -41,15 +48,17 @@ test("unlisted events never appear on the map", () => {
 });
 
 test("an event leaves the map and stops being live at endAt", () => {
-  expect(listEvents(bbox, new Date(atEnd.getTime() - 1)).items).toHaveLength(1);
-  expect(listEvents(bbox, atEnd).items).toEqual([]);
+  const beforeEnd = listEvents(bbox, new Date(atEnd.getTime() - 1)).items.map((event) => event.id);
+  const atEndItems = listEvents(bbox, atEnd).items.map((event) => event.id);
+  expect(beforeEnd).toContain(liveEvent.id);
+  expect(atEndItems).not.toContain(liveEvent.id);
   expect(isHappeningNow(liveEvent.startAt, liveEvent.endAt, new Date(liveEvent.startAt))).toBe(true);
   expect(isHappeningNow(liveEvent.startAt, liveEvent.endAt, new Date(atEnd.getTime() - 1))).toBe(true);
   expect(isHappeningNow(liveEvent.startAt, liveEvent.endAt, atEnd)).toBe(false);
 });
 
 test("includes a point that sits on the bbox boundary", () => {
-  expect(listEvents("24.7536,59.437,24.8,59.5").items).toHaveLength(1);
+  expect(listEvents("24.7536,59.437,24.8,59.5").items.some((event) => event.id === liveEvent.id)).toBe(true);
 });
 
 test("returns no events outside the bbox and for a bad bbox", () => {
@@ -105,7 +114,6 @@ test("keeps demo unlisted events out of Discover but lets their creator open det
 });
 
 test("my events returns only the demo user's owned, attending, or requested events", () => {
-  expect(listMyEvents().items).toEqual([]);
   const created = createDemoEvent({
     title: "Owner dinner",
     description: null,
@@ -120,20 +128,31 @@ test("my events returns only the demo user's owned, attending, or requested even
     tags: ["Nightlife", "Music"],
   });
   expect(created?.tags).toEqual(["Nightlife", "Music"]);
+  expect(created?.shareToken).toBeUndefined();
   const mine = listMyEvents().items.map((event) => event.id);
-  expect(mine).toEqual([created!.id]);
+  expect(mine).toEqual(expect.arrayContaining([created!.id, "00000000-0000-4000-8000-000000000006", "00000000-0000-4000-8000-000000000007"]));
+  expect(mine).not.toContain("00000000-0000-4000-8000-000000000004");
   expect(getDemoPendingRequests(created!.id)?.userIds).toEqual([demoPendingRequesterId]);
   expect(decideDemoAttendance(created!.id, demoPendingRequesterId, "rejected")?.status).toBe("rejected");
   expect(getDemoPendingRequests(created!.id)?.userIds).toEqual([]);
 
-  const sample = listEvents(bbox).items[0]!;
+  const sample = listEvents(bbox).items.find((event) => event.title === "Harbour choir")!;
   expect(listMyEvents().items.some((event) => event.id === sample.id)).toBe(false);
   expect(requestDemoAttendance(sample.id, null)?.status).toBe("attending");
   expect(listMyEvents().items.map((event) => event.id)).toContain(sample.id);
 });
 
+test("listMyEvents drops a request at endAt and still returns an owned past event", () => {
+  const opening = listEvents(bbox).items.find((event) => event.title === "Gallery opening")!;
+  expect(requestDemoAttendance(opening.id, null)?.status).toBe("requested");
+  expect(listMyEvents().items.some((event) => event.id === opening.id)).toBe(true);
+  expect(listMyEvents(new Date(opening.endAt)).items.some((event) => event.id === opening.id)).toBe(false);
+  expect(listMyEvents().items.some((event) => event.title === "Sunday picnic")).toBe(true);
+  expect(listEvents(bbox).items.some((event) => event.title === "Sunday picnic")).toBe(false);
+});
+
 test("joins a public demo event idempotently and updates the attendee count on cancellation", () => {
-  const event = listEvents(bbox).items[0]!;
+  const event = listEvents(bbox).items.find((item) => item.title === "Harbour choir")!;
   const first = requestDemoAttendance(event.id, null);
   const second = requestDemoAttendance(event.id, null);
   expect(first?.status).toBe("attending");

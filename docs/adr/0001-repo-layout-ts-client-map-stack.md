@@ -5,7 +5,7 @@
 
 ## Context
 
-Happengo is one Expo client for iOS, Android, and web, calling one ASP.NET Core API ([ADR 0002](0002-stack-and-modular-monolith.md)). A solo developer has to install, generate a typed client, and show a map without a second monorepo tool or a vendor map SDK. The backend owns the OpenAPI document at `api/openapi.json`. The IdP is still open in [ADR 0005](0005-authentication.md). Geocoding stays open in [ADR 0006](0006-geo-queries.md).
+Happengo is one Expo client for iOS, Android, and web, calling one ASP.NET Core API ([ADR 0002](0002-stack-and-modular-monolith.md)). A solo developer has to install, generate a typed client, and show a map without a second monorepo tool or a vendor map SDK. The backend owns the OpenAPI document at `api/openapi.json`. Auth0 is the identity provider in [ADR 0005](0005-authentication.md). The API stays vendor-neutral. Geocoding stays open in [ADR 0006](0006-geo-queries.md).
 
 ## Decision
 
