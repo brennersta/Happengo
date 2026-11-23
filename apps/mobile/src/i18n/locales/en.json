@@ -33,7 +33,13 @@
     "retry": "Try again",
     "truncated": "Showing the first 500 events. Zoom in to narrow the area.",
     "createEvent": "Create event",
-    "openDetails": "Open event details for {{title}}"
+    "openDetails": "Open event details for {{title}}",
+    "filters": "Filters",
+    "filterTags": "Tags",
+    "happeningNowOnly": "Happening now",
+    "apply": "Apply",
+    "clear": "Clear all",
+    "noMatches": "No events match these filters."
   },
   "createEvent": {
     "title": "Create an event",

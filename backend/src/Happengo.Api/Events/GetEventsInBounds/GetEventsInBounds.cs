@@ -16,6 +16,9 @@ internal sealed record ListEventsRequest
 
     [FromQuery(Name = "tags")]
     public string[]? Tags { get; init; }
+
+    [FromQuery(Name = "happeningNow")]
+    public bool? HappeningNow { get; init; }
 }
 
 internal static class GetEventsInBounds
@@ -33,7 +36,8 @@ internal static class GetEventsInBounds
                 + "Uses location && ST_MakeEnvelope. Unlisted events are never returned. "
                 + "At most 500 events, happening-now first, then start time. "
                 + "truncated is true when more events matched. "
-                + "tags keeps events that have any of the named tags.")
+                + "tags keeps events that have any of the named tags. "
+                + "happeningNow keeps only events with start_at <= now < end_at.")
             .Produces<EventMapResponse>()
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
@@ -68,6 +72,11 @@ internal static class GetEventsInBounds
         if (tags.Count > 0)
         {
             query = query.Where(e => e.Tags.Any(tag => tags.Contains(tag)));
+        }
+
+        if (request.HappeningNow == true)
+        {
+            query = query.Where(e => e.StartAt <= now && e.EndAt > now);
         }
 
         var rows = await query

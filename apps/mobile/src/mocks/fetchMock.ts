@@ -56,7 +56,10 @@ export async function enableFetchMocks(): Promise<void> {
     if (request.method === "GET" && path.endsWith("/v1/events")) {
       const bbox = url.searchParams.get("bbox");
       if (!bbox) return new Response(null, { status: 400 });
-      return Response.json(listEvents(bbox));
+      return Response.json(listEvents(bbox, new Date(), {
+        tags: url.searchParams.getAll("tags"),
+        happeningNow: url.searchParams.get("happeningNow") === "true",
+      }));
     }
     const eventMatch = path.match(/\/v1\/events\/([^/]+)$/);
     if (request.method === "GET" && eventMatch?.[1]) {
