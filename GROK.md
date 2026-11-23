@@ -14,7 +14,7 @@
 
 The first-use event journey was validated on 2026-11-23. Create, Discover, My Events, marker and card navigation, join, and owner approve/decline work against the demo contract. The live aura uses the half-open window `startAt <= now < endAt`. Exact commands and what was executed versus only read are in [`docs/handoff/grok-next-session.md`](docs/handoff/grok-next-session.md).
 
-The public demo is live at `https://brennersta.github.io/Happengo/` when GitHub Pages Source is GitHub Actions. Discover filters for the existing tags and happening-now (`startAt <= now < endAt`) are the current slice. Do not start address search, incident tags, attendee names, a duration change, or livestream links.
+The public demo is live at `https://brennersta.github.io/Happengo/` when GitHub Pages Source is GitHub Actions. The current slice matches the target Discover, detail, create, and My Events layout and adds Photon address search (ADR 0010). Do not start cover upload, albums, reactions, incident tags, attendee names, a duration change, or livestream links.
 
 Auth0 is the identity provider (ADR 0005, chosen 2026-11-23). Entra External ID was considered and was not selected. No tenant has been created.
 

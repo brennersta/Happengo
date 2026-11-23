@@ -4,13 +4,23 @@ export type LngLat = {
 };
 
 export type MapBounds = { southWest: LngLat; northEast: LngLat };
-export type MapMarker = { id: string; coordinate: LngLat; title: string; mainTag?: string | null; happeningNow?: boolean };
+export type MapMarker = {
+  id: string;
+  coordinate: LngLat;
+  title: string;
+  mainTag?: string | null;
+  tagLabel?: string | null;
+  happeningNow?: boolean;
+};
+
+export type MapFocus = { longitude: number; latitude: number; key: number };
 
 export type HappengoMapProps = {
   center: LngLat;
   zoom?: number;
   styleUrl: string;
   markers?: MapMarker[];
+  focus?: MapFocus | null;
   onMarkerPress?: (id: string) => void;
   onMapIdle?: (bounds: MapBounds) => void;
   onMapPress?: (coordinate: LngLat) => void;

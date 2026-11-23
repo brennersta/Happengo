@@ -36,7 +36,7 @@ The saved chat repeatedly asked for a restrained map style, single-world map wit
 ### Evidence/status
 
 - **ZIP contains:** `MapView.jsx` uses Leaflet and marker clustering; has map/list and `FilterPanel`, address search, event tag/date/happening-now filters, attendee counts, friend attendee component, and location search. `FilterPanel.jsx` has explicit Apply and Clear all controls. `MapTiles.jsx` and `AddressAutocomplete.jsx` are present. This confirms implementation artifacts, not tested behavior.
-- **Rebuild:** viewport map/list reads exist; Discover filter UI, friend graph, friend attendance, and address search remain incomplete. Web map disables world copies; native behavior differs (see ADR 0001/0006).
+- **Rebuild:** Discover has a map/list layout, tag and happening-now filters, and Photon address search. Friend graph and friend attendance are not built. Web map disables world copies; native behavior differs (see ADR 0001/0006).
 
 ## 2. Local incidents and eyewitness reports
 

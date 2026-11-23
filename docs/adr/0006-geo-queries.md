@@ -23,7 +23,7 @@ Clustering and same-location handling are client-side in MapLibre. The API retur
 
 The viewport payload includes the point so the map can place a pin. Screens show `address`, not a raw coordinate string.
 
-Address autocomplete and reverse geocoding go through one provider, behind a single adapter. The adapter may live in the API or in the client. The provider is open.
+Address autocomplete is client-side Photon ([ADR 0010](0010-geocoding.md)). The vendor URL stays in that module. Reverse geocoding of a map tap is still open.
 
 MapLibre's tile provider is open.
 
@@ -32,10 +32,10 @@ MapLibre's tile provider is open.
 - Map and list share this query, so pan, zoom, and filters cannot diverge.
 - The cap can truncate a dense city. The response says when it was truncated.
 - The geography cast needs its own GiST index. The geometry index does not serve `ST_DWithin`.
-- Feature code calls the geocoding adapter. Vendor URLs stay inside that adapter.
+- Discover search moves the map. The viewport query then loads events. It does not add a pin or change an event.
 
 ## Open
 
-- Geocoding provider, and whether the adapter is server-side or client-side.
+- Reverse geocoding when a map tap should fill the address.
 - Tile provider.
 - Map center when the user denies location. The old app used two different fallback cities. No default is chosen here.

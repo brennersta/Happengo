@@ -1,12 +1,26 @@
-import { Camera, Map as NativeMap, Marker } from "@maplibre/maplibre-react-native";
+import { Camera, Map as NativeMap, Marker, type CameraRef } from "@maplibre/maplibre-react-native";
 import { AccessibilityInfo, Animated, StyleSheet, View } from "react-native";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { HappengoMapProps } from "./types";
 import { liveAuraMode, markerColor } from "./markerStyle";
 
 const worldBounds: [number, number, number, number] = [-180, -85, 180, 85];
 
-export function Map({ center, zoom = 11, styleUrl, markers = [], onMapIdle, onMapPress, onMarkerPress }: HappengoMapProps) {
+export function Map({ center, zoom = 11, styleUrl, markers = [], focus = null, onMapIdle, onMapPress, onMarkerPress }: HappengoMapProps) {
+  const cameraRef = useRef<CameraRef>(null);
+  useEffect(() => {
+    if (!focus) return;
+    let cancelled = false;
+    void AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
+      if (cancelled) return;
+      cameraRef.current?.easeTo({
+        center: [focus.longitude, focus.latitude],
+        zoom: 14,
+        duration: reduce ? 0 : 600,
+      });
+    });
+    return () => { cancelled = true; };
+  }, [focus]);
   return (
     <NativeMap
       mapStyle={styleUrl}
@@ -26,6 +40,7 @@ export function Map({ center, zoom = 11, styleUrl, markers = [], onMapIdle, onMa
       })}
     >
       <Camera
+        ref={cameraRef}
         initialViewState={{
           center: [center.longitude, center.latitude],
           zoom,
@@ -39,7 +54,7 @@ export function Map({ center, zoom = 11, styleUrl, markers = [], onMapIdle, onMa
           lngLat={[marker.coordinate.longitude, marker.coordinate.latitude]}
           onPress={() => onMarkerPress?.(marker.id)}
         >
-          <NativeMarker title={marker.title} mainTag={marker.mainTag} happeningNow={marker.happeningNow} />
+          <NativeMarker title={marker.title} mainTag={marker.mainTag} tagLabel={marker.tagLabel} happeningNow={marker.happeningNow} />
         </Marker>
       ))}
     </NativeMap>
@@ -48,13 +63,13 @@ export function Map({ center, zoom = 11, styleUrl, markers = [], onMapIdle, onMa
 
 const styles = StyleSheet.create({
   map: { flex: 1 },
-  markerContainer: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
-  marker: { width: 26, height: 26, borderRadius: 13, borderWidth: 3, borderColor: "white", elevation: 3 },
+  markerContainer: { width: 40, height: 48, alignItems: "center", justifyContent: "flex-start" },
+  marker: { marginTop: 8, width: 26, height: 26, backgroundColor: "white", borderTopLeftRadius: 13, borderTopRightRadius: 13, borderBottomRightRadius: 13, borderBottomLeftRadius: 2, borderWidth: 2, borderColor: "white", transform: [{ rotate: "45deg" }] },
   aura: { position: "absolute", width: 28, height: 28, borderRadius: 14, backgroundColor: "#18a879" },
   staticAura: { borderWidth: 3, borderColor: "#18a879", backgroundColor: "rgba(24,168,121,.14)" },
 });
 
-function NativeMarker({ title, mainTag, happeningNow }: { title: string; mainTag?: string | null; happeningNow?: boolean }) {
+function NativeMarker({ title, mainTag, tagLabel, happeningNow }: { title: string; mainTag?: string | null; tagLabel?: string | null; happeningNow?: boolean }) {
   const [progress] = useState(() => new Animated.Value(0));
   const [reduceMotion, setReduceMotion] = useState(false);
   useEffect(() => {
@@ -76,7 +91,7 @@ function NativeMarker({ title, mainTag, happeningNow }: { title: string; mainTag
   const scale = progress.interpolate({ inputRange: [0, 1], outputRange: [1, 1.75] });
   const opacity = progress.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0] });
   return (
-    <View accessible accessibilityLabel={`${title}${mainTag ? `, ${mainTag}` : ""}${happeningNow ? ", happening now" : ""}`} style={styles.markerContainer}>
+    <View accessible accessibilityLabel={`${title}${tagLabel || mainTag ? `, ${tagLabel || mainTag}` : ""}${happeningNow ? ", happening now" : ""}`} style={styles.markerContainer}>
       {aura !== "none" ? <Animated.View style={[styles.aura, aura === "static" ? styles.staticAura : { transform: [{ scale }], opacity }]} /> : null}
       <View style={[styles.marker, { backgroundColor: markerColor(mainTag) }]} />
     </View>
