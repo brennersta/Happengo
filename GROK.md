@@ -12,7 +12,9 @@
 
 ## Next implementation checkpoint
 
-Complete and validate the first-use event journey: create an event, find it in Discover/My Events, open details from a marker or card, and join/request attendance or manage attendance requests as owner. The My Events API/page and marker navigation were drafted on 2026-11-20 alongside [`primary-tag map pins and live-event aura`](docs/features/plans/0001-primary-tag-map-pins.md). Read the latest work notes in [`docs/handoff/grok-next-session.md`](docs/handoff/grok-next-session.md), then validate the code, fix issues, and record actual results. Tests, typecheck, builds, and visual walkthroughs have not been run.
+The first-use event journey was validated on 2026-11-23. Create, Discover, My Events, marker and card navigation, join, and owner approve/decline work against the demo contract. The live aura uses the half-open window `startAt <= now < endAt`. Exact commands and what was executed versus only read are in [`docs/handoff/grok-next-session.md`](docs/handoff/grok-next-session.md).
+
+The next small slice should be Discover filters for the existing tags and happening-now. Do not start incident tags, attendee names, a duration change, or livestream links. Those decisions are still open.
 
 ## Current product direction
 

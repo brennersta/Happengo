@@ -12,7 +12,7 @@ The notes below were written with the unvalidated Codex draft and are not the cu
 - Share tokens are stored as SHA-256 only (PR #11). Reads, including create, do not return `shareToken`. Create stores the hash and discards the plaintext, so the owner cannot yet show a share link. Returning the plaintext once belongs with event edit, which is not in this slice.
 - Attendee identity display, maximum duration (24 hours vs 7 days), incident tags and moderation, and livestream links stay open. Current behavior is unchanged: 7-day cap, count plus the existing request-id prefix, no incident tags, no livestream field.
 
-Validation commands and results for 2026-11-23 are recorded at the end of this file.
+Validation commands and results for 2026-11-23 are in the section at the end of this file. That section is the source of truth for what was executed.
 
 Updated: 2026-11-20
 
@@ -189,3 +189,70 @@ The implementation draft now includes ordered tag chips in event creation, a req
 - Added map-marker press navigation to event detail on web and native. Discover cards now show the main tag and attendee count; the detail map receives main tag/live state.
 - Existing event detail and attendance controls were already present; this work connects the first-use paths to them. Friends, albums/photos, cover uploads, identity display for attendance requests, and profile editing remain unimplemented.
 - No tests, typecheck, builds, or visual walkthrough were run. All runtime behavior remains unverified. See the updated page-by-page status in `../business/feature-catalog.md`.
+
+## Validation — 2026-11-23
+
+This section records commands that were actually run. Anything not listed here was read, not executed.
+
+### Runtime proof
+
+Backend, from `/workspace`, .NET SDK 10.0.404, Docker 29.1.3 with the `postgis/postgis:16-3.5` Testcontainers image:
+
+```text
+dotnet format backend/Happengo.sln --verify-no-changes --no-restore
+dotnet test backend/Happengo.sln --configuration Release
+```
+
+`dotnet format --verify-no-changes` exited 0. `dotnet test` reported **210 passed, 0 failed**. That run includes the PostGIS integration tests, the OpenAPI drift test, tag-order create/read, and `GET /v1/events/mine` (owned, attending, requested only; anonymous 401; other users' events absent; a request drops at `end_at` while an owned event remains and is not happening).
+
+Client, pnpm 10.34.9, Node 22:
+
+```text
+pnpm install --frozen-lockfile
+pnpm --filter "./apps/**" --filter "./packages/**" run lint
+pnpm --filter "./apps/**" --filter "./packages/**" exec tsc --noEmit
+pnpm --filter "./apps/**" --filter "./packages/**" run test
+```
+
+Install, lint, and `tsc --noEmit` exited 0. Tests: api-client **2 passed** (the second regenerates `schema.ts` and requires no diff), mobile **43 passed**.
+
+Web export:
+
+```text
+pnpm web:export
+EXPO_PUBLIC_API_MOCK=true pnpm web:export
+```
+
+Both exports completed. The second bundle is the one walked, because the UI only allows create and My Events without a token when the mock flag is exactly `true`.
+
+Playwright (Chromium) then served `apps/mobile/dist` and fulfilled `http://localhost:5080` with the same demo contract the unit tests cover. Checked in the page:
+
+- Sample gathering pin background `rgb(124, 58, 237)` (Music), green live border, Web Animations entry running at 1600ms.
+- Harbour dinner pin background `rgb(234, 88, 12)` (Food, the first selected tag), white border, no animation. It is upcoming, so it must not pulse.
+- The same Music pin under emulated `prefers-reduced-motion: reduce` kept the green border and had an empty animation list.
+- Created the event, saw it on Discover and in My Events Upcoming, opened it from the card and from the pin, declined one seeded request, approved a second event's request, and joined Sample gathering.
+
+Screenshots from that run: `01-discover-live-pin.png` through `11-owner-approved.png`.
+
+The static export's own MSW worker did **not** start. The console was `API mocks did not start. TypeError: Cannot read properties of undefined (reading 'get')` inside the bundled handlers chunk. The journey above is the exported UI against the demo contract, not a successful MSW service worker.
+
+No identity provider is configured, so the browser did not call the real API. The PostGIS proof is the `dotnet test` run above. Test auth is an `X-Test-User` header and is not wired into the Expo client.
+
+### Code review only
+
+- Native map (iOS/Android). No simulator or device was available. `tsc` covers `Map.native.tsx`. Unit tests cover `markerColor`, `liveAuraMode`, and the half-open clock. The native component uses that helper: pulse when live, static ring when reduced motion is on. The native dev fetch patch now handles `GET /v1/events/mine` before the `events/{id}` matcher. That route was not run on a device.
+- MSW inside the static web bundle, as above. Handler behavior was unit-tested, not served by the worker.
+- The live Base44 site was not opened.
+
+### Fixes applied after the unvalidated draft
+
+- Restored the half-open window everywhere the draft had used `<= endAt`, including `VisibleTo`, `HappeningNow`, the demo contract, and both maps. Merged main kept PR #11's allow-list and hashed share tokens.
+- `GET /v1/events/mine` compiles (`is` patterns are illegal in the EF expression) and returns only the caller's owned, attending, and active requested events.
+- Tag order is asserted through validation, create, database read, and direct read. The first tag is the main tag.
+- Create stores `ShareTokenHash` only. Reads still return `shareToken: null`. The plaintext is discarded, so the owner cannot show a share link until a later edit flow can issue it once.
+- ADR 0005 is Proposed again. The draft's Auth0 decision was removed from the ADR, the baseline diagram, and the setup note.
+- `azure.extensions` in Terraform is `POSTGIS,PGCRYPTO`. Nothing was applied.
+
+### Still open, unchanged
+
+Attendee identity display, maximum duration (the code still allows 7 days), incident tags and moderation, and livestream links. Do not decide them in passing.
