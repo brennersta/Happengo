@@ -1,6 +1,7 @@
 # Azure Database for PostgreSQL Flexible Server.
 # Password authentication is off, so there is no administrator password in variables or in this module.
-# PostGIS is allow-listed. Creating the extension in the database is a migration (`CREATE EXTENSION postgis`), not Terraform.
+# PostGIS and pgcrypto are allow-listed. Creating them is a migration (`CREATE EXTENSION`), not Terraform.
+# pgcrypto is required because HashShareTokens hashes share tokens with digest().
 # No high availability block and no geo-redundant backup: both are zone or region redundancy and cost more.
 # Storage is the 32 GiB minimum at P4, with auto-grow off, so a full disk fails instead of raising the bill.
 # VNet injection and private endpoints are not created. See infra/README.md.
@@ -42,7 +43,7 @@ resource "azurerm_postgresql_flexible_server_database" "happengo" {
 resource "azurerm_postgresql_flexible_server_configuration" "postgis" {
   name      = "azure.extensions"
   server_id = azurerm_postgresql_flexible_server.this.id
-  value     = "POSTGIS"
+  value     = "POSTGIS,PGCRYPTO"
 }
 
 resource "azurerm_postgresql_flexible_server_firewall_rule" "azure_services" {

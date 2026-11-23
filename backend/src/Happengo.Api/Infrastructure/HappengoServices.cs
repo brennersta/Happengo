@@ -2,7 +2,10 @@ using System.Net;
 using System.Text.Json.Serialization;
 using Happengo.Api.Events.GetEvent;
 using Happengo.Api.Events.GetEventsInBounds;
+using Happengo.Api.Events.GetMyEvents;
 using Happengo.Api.Events.GetSharedEvent;
+using Happengo.Api.Events.CreateEvent;
+using Happengo.Api.Attendance;
 using Happengo.Api.Infrastructure.Auth;
 using Happengo.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -134,6 +137,31 @@ public static class HappengoServices
                         }
                     }
 
+                    if (document.Components.Schemas.TryGetValue("CreateEventRequest", out var createRequest)
+                        && createRequest is OpenApiSchema createRequestSchema)
+                    {
+                        if (createRequestSchema.Properties is { } properties)
+                        {
+                            foreach (var name in createRequestSchema.Required ?? new HashSet<string>(StringComparer.Ordinal))
+                            {
+                                if (properties.TryGetValue(name, out var property)
+                                    && property is OpenApiSchema propertySchema)
+                                {
+                                    propertySchema.Type &= ~JsonSchemaType.Null;
+                                    if (propertySchema.OneOf is { } oneOf)
+                                    {
+                                        foreach (var nullableBranch in oneOf
+                                            .Where(branch => branch is OpenApiSchema { Type: JsonSchemaType.Null })
+                                            .ToArray())
+                                        {
+                                            oneOf.Remove(nullableBranch);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     if (document.Components.Schemas.TryGetValue("EventResponse", out var eventSchema)
                         && eventSchema is OpenApiSchema responseSchema)
                     {
@@ -220,11 +248,14 @@ public static class HappengoServices
 
         var v1 = app.MapGroup("/v1");
         GetEventsInBounds.Map(v1);
+        GetMyEvents.Map(v1);
+        CreateEvent.Map(v1);
+        AttendanceRoutes.Map(v1);
         GetSharedEvent.Map(v1);
         GetEvent.Map(v1);
 
-        // Write, auth, and upload routes are added to these groups when those slices land.
-        // There is no write route yet. Map reads and the share-link read carry their own per-IP policies.
+        // Map reads and the share-link read carry their own per-IP policies.
+        // Create and attendance attach the writes policy on the route. Auth and upload groups wait for those slices.
         v1.MapGroup("/auth").RequireRateLimiting(RateLimitPolicies.Auth);
         v1.MapGroup("/media").RequireRateLimiting(RateLimitPolicies.Uploads);
         v1.MapGroup(string.Empty).RequireRateLimiting(RateLimitPolicies.Writes);

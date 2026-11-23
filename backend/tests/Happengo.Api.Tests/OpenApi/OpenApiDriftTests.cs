@@ -49,6 +49,21 @@ public sealed class OpenApiDriftTests : IClassFixture<WebApplicationFactory<Prog
     }
 
     [Fact]
+    public async Task Create_event_required_properties_are_non_nullable()
+    {
+        var document = await LoadDocumentAsync();
+        var schema = document["components"]!["schemas"]!["CreateEventRequest"]!;
+        var required = schema["required"]!.AsArray().Select(node => node!.GetValue<string>()).ToArray();
+        Assert.Equal(
+            ["title", "startAt", "endAt", "timeZoneId", "address", "longitude", "latitude", "visibility", "approvalMode", "tags"],
+            required);
+        foreach (var name in required)
+        {
+            Assert.DoesNotContain("null", schema["properties"]![name]!.ToJsonString(), StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
     public async Task OpenApi_document_matches_committed_contract()
     {
         var generated = await LoadDocumentAsync();

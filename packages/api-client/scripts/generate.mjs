@@ -5,7 +5,9 @@ import { fileURLToPath } from "node:url";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const spec = resolve(packageRoot, "../../api/openapi.json");
-const out = resolve(packageRoot, "src/generated/schema.ts");
+const out = process.env.OPENAPI_TYPES_OUT
+  ? resolve(process.env.OPENAPI_TYPES_OUT)
+  : resolve(packageRoot, "src/generated/schema.ts");
 
 if (!existsSync(spec)) {
   console.error("api/openapi.json is missing. The backend owns that file.");
@@ -14,7 +16,9 @@ if (!existsSync(spec)) {
 
 mkdirSync(dirname(out), { recursive: true });
 console.log(`openapi-typescript: ${spec}`);
-execFileSync("pnpm", ["exec", "openapi-typescript", spec, "-o", out], {
+const openApiPackage = fileURLToPath(import.meta.resolve("openapi-typescript"));
+const openApiCli = resolve(dirname(openApiPackage), "../bin/cli.js");
+execFileSync(process.execPath, [openApiCli, spec, "-o", out], {
   cwd: packageRoot,
   stdio: "inherit",
 });

@@ -14,6 +14,6 @@ export type AuthTokens = {
 
 export interface AuthClient {
   getAccessToken(): Promise<string | null>;
-  signIn(): Promise<void>;
+  establishSession(tokens: AuthTokens): Promise<void>;
   signOut(): Promise<void>;
 }

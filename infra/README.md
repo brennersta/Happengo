@@ -58,7 +58,7 @@ Key Vault references are the only way a secret reaches the app. `key_vault_secre
 
 Blob containers are private ([ADR 0008](../docs/adr/0008-image-storage.md)). Shared keys are disabled, so account-key SAS will not work. The API issues a user-delegation SAS with Storage Blob Data Contributor, which includes `generateUserDelegationKey`. The account still allows public network access because the client uploads directly. A guessed URL must not return the object. That is the container access level, not a public network flag.
 
-PostGIS is allow-listed with the server parameter `azure.extensions=POSTGIS`. `CREATE EXTENSION postgis` belongs in the API migration, not here. GiST indexes are part of that migration ([ADR 0003](../docs/adr/0003-data-model.md), [ADR 0006](../docs/adr/0006-geo-queries.md)).
+PostGIS and pgcrypto are allow-listed with the server parameter `azure.extensions=POSTGIS,PGCRYPTO`. `CREATE EXTENSION` belongs in the API migration, not here. GiST indexes are part of that migration ([ADR 0003](../docs/adr/0003-data-model.md), [ADR 0006](../docs/adr/0006-geo-queries.md)). The share-token migration uses pgcrypto `digest()`.
 
 ## Container image (GHCR)
 

@@ -1,9 +1,18 @@
+using System.Text.Json.Serialization;
+
 namespace Happengo.Api.Attendance;
 
-internal enum AttendanceStatus
+public enum AttendanceStatus
 {
+    [JsonStringEnumMemberName("attending")]
     Attending,
+
+    [JsonStringEnumMemberName("requested")]
     Requested,
+
+    [JsonStringEnumMemberName("rejected")]
     Rejected,
+
+    [JsonStringEnumMemberName("cancelled")]
     Cancelled,
 }

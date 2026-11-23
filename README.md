@@ -1,6 +1,8 @@
 # Happengo
 
-Map-first app for discovering and creating short-lived local events.
+Map-based app concept for local incident awareness, nearby event discovery, and private gathering memories. See the plain-language [business product description](docs/business/product-description.md), the [page-by-page feature catalog](docs/business/feature-catalog.md), [product vision](docs/product-vision.md), and [feature requirements](docs/product-features.md). The currently implemented code is an early social-event/discovery foundation; the broader use cases remain to be designed and built.
+
+For Grok or another coding agent continuing this repository, start with [`GROK.md`](GROK.md), then follow its reading order.
 
 Monorepo: `backend/` (ASP.NET Core Web API, .NET 10, PostgreSQL + PostGIS) and `apps/` / `packages/` (TypeScript client). Architecture decisions live in `docs/adr/`.
 

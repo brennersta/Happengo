@@ -6,7 +6,13 @@
     "profile": "Profile"
   },
   "myEvents": {
-    "empty": "Events you attend or create will appear here."
+    "empty": "Events you attend or create will appear here.",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "signIn": "Sign in to see the events you create or attend.",
+    "loadError": "Could not load your events. Check your connection and try again.",
+    "emptyUpcoming": "You have no upcoming events yet. Create one or join an event nearby.",
+    "emptyPast": "Past events will appear here after they end."
   },
   "friends": {
     "empty": "Invite friends to create private events and share photos."
@@ -16,5 +22,93 @@
   },
   "dates": {
     "today": "Today"
-  }
+  },
+  "discover": {
+    "eventCount": "{count, plural, one {# event in this area} other {# events in this area}}",
+    "eventsInView": "Events in this view",
+    "happeningNow": "Happening now",
+    "loading": "Loading events…",
+    "empty": "No events in this map area yet.",
+    "loadError": "Could not load events. Check your connection and try again.",
+    "retry": "Try again",
+    "truncated": "Showing the first 500 events. Zoom in to narrow the area.",
+    "createEvent": "Create event",
+    "openDetails": "Open event details for {{title}}"
+  },
+  "createEvent": {
+    "title": "Create an event",
+    "subtitle": "Add the details and tap the map to choose a location.",
+    "titleLabel": "Event name",
+    "descriptionLabel": "Description (optional)",
+    "startDate": "Start date (YYYY-MM-DD)",
+    "startTime": "Start time (HH:MM)",
+    "endDate": "End date (YYYY-MM-DD)",
+    "endTime": "End time (HH:MM)",
+    "timeZone": "Time zone",
+    "address": "Address",
+    "location": "Map location",
+    "locationHelp": "Tap the map to place the event pin.",
+    "tags": "Tags",
+    "tagsHelp": "Choose one or more. The first selected tag is the main type and sets the map pin color.",
+    "mainType": "Main type",
+    "visibility": "Who can find this event?",
+    "public": "Public",
+    "unlisted": "Unlisted",
+    "friendsOnly": "Friends only",
+    "approval": "Joining",
+    "open": "Open",
+    "approvalRequired": "Request approval",
+    "demoNotice": "Demo mode: events are temporary and visible only in this development session.",
+    "signInRequired": "Sign in is not connected yet. Choose an identity provider before creating real events.",
+    "createError": "The event could not be created. Check the details and try again.",
+    "creating": "Creating…",
+    "submit": "Create event",
+    "cancel": "Cancel",
+    "errors": {
+      "title": "Enter an event name (up to 200 characters).",
+      "description": "Description must be 4,000 characters or fewer.",
+      "start": "Choose a valid start date and time in the future.",
+      "end": "Choose an end time after the start time and in the future.",
+      "duration": "Events can last up to seven days.",
+      "timeZone": "Enter a valid time zone, such as Europe/Tallinn.",
+      "address": "Enter an address (up to 500 characters).",
+      "location": "Tap the map to choose a valid location.",
+      "tags": "Choose at least one tag."
+    }
+  },
+  "eventDetail": {
+    "title": "Event details",
+    "loading": "Loading event…",
+    "notFound": "This event could not be found or is no longer available.",
+    "attendingCount": "{count, plural, one {# person attending} other {# people attending}}",
+    "join": "Join event",
+    "requestToJoin": "Request to join",
+    "youAreAttending": "You are attending this event.",
+    "requested": "Your request is waiting for the event owner.",
+    "cancelAttendance": "Cancel attendance",
+    "requestsTitle": "Attendance requests",
+    "noRequests": "No pending requests.",
+    "approve": "Approve",
+    "reject": "Reject",
+    "actionError": "This attendance action could not be completed. Try again.",
+    "attendance": {
+      "rejected": "Your request was declined.",
+      "cancelled": "You cancelled your attendance. Contact the event owner if you need to rejoin."
+    },
+    "visibility": "Visibility",
+    "public": "Public",
+    "unlisted": "Unlisted",
+    "friends_only": "Friends only"
+  },
+  "auth": {
+    "intro": "Sign in to create and manage your events.",
+    "notConfigured": "Sign-in setup is waiting for the identity provider and app registration.",
+    "discoveryError": "Could not load the sign-in provider configuration. Check the issuer URL and try again.",
+    "signInError": "Sign-in could not be completed. Try again.",
+    "signIn": "Continue to sign in",
+    "goToSignIn": "Open sign-in",
+    "signedIn": "You are signed in. Protected event actions can now use your account.",
+    "signOut": "Sign out"
+  },
+  "localeCode": "en"
 }

@@ -1,4 +1,4 @@
-# 0002. Review of PR #5, read hardening
+# 0003. Review of PR #5, read hardening
 
 - Pull request: https://github.com/brennersta/Happengo/pull/5
 - Merge commit: `aa084d8`

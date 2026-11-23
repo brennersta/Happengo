@@ -1,4 +1,4 @@
-export { auth } from "./stub";
+export { auth } from "./oidc";
 export { bearerAuthMiddleware } from "./middleware";
 export { refreshTokenStore } from "./refreshTokenStore";
 export type { AuthClient, AuthTokens } from "./types";

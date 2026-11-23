@@ -1,6 +1,6 @@
 # Happengo architecture baseline
 
-Happengo is a map-first app for discovering and creating short-lived local events. One Expo client (iOS, Android, and web) calls one ASP.NET Core API. The API is a modular monolith on PostgreSQL/PostGIS. Azure runs it on Container Apps (consumption plan, scale to zero) with Blob Storage and Key Vault.
+Happengo's product vision includes local incident awareness, nearby event discovery, and private gathering memories, with location, time, and audience as shared concepts. See the [product vision](../product-vision.md). This architecture baseline currently covers the social-event and map-discovery foundation; incident reporting, private albums, and external live-stream links are not implemented. One Expo client (iOS, Android, and web) calls one ASP.NET Core API. The API is a modular monolith on PostgreSQL/PostGIS. Azure is planned for Container Apps (consumption plan, scale to zero) with Blob Storage and Key Vault.
 
 Anonymous visitors can browse public events that have not ended. Sign-in is required to create events, attend, manage friends, and use albums. v1 is one codebase, one API process, local development, and one deployed environment.
 
@@ -45,7 +45,7 @@ Geocoding is behind one adapter. Whether that adapter runs in the API or the cli
 | [0008](../adr/0008-image-storage.md) | Image storage | Accepted |
 | [0009](../adr/0009-i18n.md) | Internationalization | Accepted |
 
-0001 and 0004 are accepted.
+0001 and 0004 are accepted. 0005 stays Proposed until Brenner picks the identity provider.
 
 ## Open for Brenner
 
