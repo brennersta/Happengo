@@ -15,6 +15,8 @@ Not built, because the features are not there yet: cover upload, albums, reactio
 
 The live filter check on `c1fae62` and the local 1280×800 before/after export are written in `docs/handoff/grok-next-session.md`. Food left only Market lunch. Happening now left only Harbour choir. The stubbed search separated two Santa Luzia results by region and country.
 
+The gate's must-fix is in: a pick does not search the chosen label, and the map centre is read from a ref, so panning does not call Photon. The blank create map in the first export shot was tile timing, not a layout bug. The refreshed create shot shows Tallinn.
+
 ## Code review only
 
 Native camera movement was not opened on a device. Photon was not called on the public host during the browser check. CI tests use a stubbed fetch.

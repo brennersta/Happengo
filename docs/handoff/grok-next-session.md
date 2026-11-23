@@ -225,7 +225,11 @@ pnpm --filter @happengo/mobile test
 pnpm --filter @happengo/mobile exec expo lint
 ```
 
-`tsc` and lint exited 0. Mobile Jest: **58 passed**. The API was not changed, so `dotnet test` was not re-run here. CI still runs it when the workflow asks.
+`tsc` and lint exited 0. Mobile Jest: **60 passed**, including the pick-then-centre search test and `displayAddress`. The API was not changed, so `dotnet test` was not re-run here. CI still runs it when the workflow asks.
+
+Address search requests Photon only when the typed text changes. Choosing a result does not search that label, and a later map-centre change does not either. `expo-linear-gradient` is `~58.0.4`.
+
+The first `after-create.png` was blank because the shot landed before OpenFreeMap tiles arrived. The when-picker shot of the same screen already showed Tallinn, and the refreshed `after-create.png` waits for a tile. The refreshed `after-address-search.png` is after choosing Santa Luzia: the list is closed, the field keeps that label, and the count is 0 because the map moved. The browser log showed one Photon request, for `santa` only.
 
 ### Code review only
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { LngLat } from "@/map/types";
@@ -26,28 +26,35 @@ export function AddressSearch({
   const [status, setStatus] = useState<GeocodeStatus>("idle");
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
+  const centerRef = useRef(center);
+  const chosenLabel = useRef<string | null>(null);
   const short = text.trim().length < MIN_QUERY_LENGTH;
 
   useEffect(() => {
+    centerRef.current = center;
+  }, [center]);
+
+  useEffect(() => {
     const query = text.trim();
-    if (query.length < MIN_QUERY_LENGTH) return;
+    if (query.length < MIN_QUERY_LENGTH || query === chosenLabel.current) return;
     const controller = new AbortController();
     const timer = setTimeout(() => {
+      const here = centerRef.current;
       void searchPlaces({
         query,
-        latitude: center.latitude,
-        longitude: center.longitude,
+        latitude: here.latitude,
+        longitude: here.longitude,
         locale: i18n.language,
         signal: controller.signal,
       }).then((result) => {
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted || chosenLabel.current) return;
         setPlaces(result.places);
         setStatus(result.status);
         setHighlight(0);
         setOpen(true);
       }).catch((error: unknown) => {
         if (error instanceof Error && error.name === "AbortError") return;
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted || chosenLabel.current) return;
         setPlaces([]);
         setStatus("error");
         setOpen(true);
@@ -57,10 +64,17 @@ export function AddressSearch({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [text, i18n.language, center.latitude, center.longitude]);
+  }, [text, i18n.language]);
+
+  function changeText(next: string) {
+    if (chosenLabel.current && next.trim() !== chosenLabel.current) chosenLabel.current = null;
+    setText(next);
+  }
 
   function choose(place: GeocodePlace) {
+    chosenLabel.current = place.label;
     setText(place.label);
+    setPlaces([]);
     setOpen(false);
     onSelect(place);
   }
@@ -83,7 +97,7 @@ export function AddressSearch({
         accessibilityLabel={t("discover.searchLabel")}
         accessibilityState={{ expanded: open && !short }}
         value={text}
-        onChangeText={setText}
+        onChangeText={changeText}
         placeholder={placeholder ?? t("discover.searchPlaceholder")}
         placeholderTextColor={theme.muted}
         onKeyPress={(event) => onKeyPress(event.nativeEvent.key)}
