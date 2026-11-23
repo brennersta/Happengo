@@ -1,5 +1,6 @@
 # 0009. Review of the event detail and My Events polish
 
+- Pull request: https://github.com/brennersta/Happengo/pull/19
 - Branch: `cursor/detail-my-events-polish-c78e`
 - Approved by Brenner on 2026-11-23
 
