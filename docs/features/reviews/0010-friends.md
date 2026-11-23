@@ -2,7 +2,7 @@
 
 - Pull request: https://github.com/brennersta/Happengo/pull/21
 - Branch: `cursor/friends-tab-c78e`
-- Approved by Brenner on 2026-11-23
+- Feature approved by Brenner on 2026-11-23; architecture gate by Atlas Arch
 
 ## What changed
 
