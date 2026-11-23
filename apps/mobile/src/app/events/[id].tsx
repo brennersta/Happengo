@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -8,6 +9,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { fetchClient } from "@/api/client";
 import { auth } from "@/auth";
 import { mocksEnabled } from "@/mocks/config";
+import { detailFacts } from "@/events/detailFacts";
 import { displayAddress } from "@/events/displayAddress";
 import { isHappeningNow } from "@/events/liveState";
 import { formatEventTime } from "@/events/mapEvents";
@@ -138,12 +140,36 @@ export default function EventDetailScreen() {
               {event.tags.map((tag) => <Chip key={tag} label={t(`tags.${tag}`)} />)}
             </View>
             {event.description ? <Text style={styles.description}>{event.description}</Text> : null}
-            <Text style={styles.meta}>{formatEventTime(event, t("localeCode"))}</Text>
-            <Text style={styles.address}>{address ?? t("discover.addressUnavailable")}</Text>
-            <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(`https://www.openstreetmap.org/?mlat=${event.latitude}&mlon=${event.longitude}#map=16/${event.latitude}/${event.longitude}`)}>
-              <Text style={styles.link}>{t("eventDetail.openInMaps")}</Text>
-            </Pressable>
-            <Text style={styles.meta}>{t("eventDetail.attendingCount", { count: event.attendingCount })}</Text>
+            <View style={styles.facts}>
+              {detailFacts(event).map((fact) => {
+                if (fact === "when") {
+                  return <FactRow key={fact} icon="calendar-outline" label={t("eventDetail.when")} value={formatEventTime(event, t("localeCode"))} />;
+                }
+                if (fact === "where") {
+                  return (
+                    <FactRow key={fact} icon="location-outline" label={t("eventDetail.where")} value={address ?? t("discover.addressUnavailable")}>
+                      <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(`https://www.openstreetmap.org/?mlat=${event.latitude}&mlon=${event.longitude}#map=16/${event.latitude}/${event.longitude}`)}>
+                        <Text style={styles.link}>{t("eventDetail.openInMaps")}</Text>
+                      </Pressable>
+                    </FactRow>
+                  );
+                }
+                if (fact === "host") {
+                  return <FactRow key={fact} icon="person-outline" label={t("eventDetail.host")} value={t("eventDetail.hostedByYou")} />;
+                }
+                if (fact === "attendees") {
+                  return <FactRow key={fact} icon="people-outline" label={t("eventDetail.attendees")} value={t("eventDetail.attendingCount", { count: event.attendingCount })} />;
+                }
+                return (
+                  <FactRow
+                    key={fact}
+                    icon="eye-outline"
+                    label={t("eventDetail.access")}
+                    value={`${t(`eventDetail.${event.visibility}`)} · ${t(event.approvalMode === "open" ? "eventDetail.joiningOpen" : "eventDetail.joiningApproval")}`}
+                  />
+                );
+              })}
+            </View>
             {event.isOwner ? (
               <View style={styles.requests}>
                 <Text style={styles.sectionTitle}>{t("eventDetail.requestsTitle")}</Text>
@@ -188,6 +214,23 @@ export default function EventDetailScreen() {
   );
 }
 
+function FactRow({ icon, label, value, children }: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string;
+  children?: ReactNode;
+}) {
+  return (
+    <View style={styles.fact} accessibilityLabel={label}>
+      <Ionicons name={icon} size={18} color={theme.brand} />
+      <View style={styles.factBody}>
+        <Text style={styles.factValue}>{value}</Text>
+        {children}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.page },
   content: { padding: 20, gap: 14, width: "100%", maxWidth: 760, alignSelf: "center", paddingBottom: 40 },
@@ -201,9 +244,12 @@ const styles = StyleSheet.create({
   live: { color: theme.live, backgroundColor: theme.liveBg, overflow: "hidden", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4, fontSize: 12, fontWeight: "700" },
   iconButton: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: theme.chip },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  description: { color: theme.ink, fontSize: 15, lineHeight: 22 },
+  description: { color: theme.ink, fontSize: 15, lineHeight: 22, paddingTop: 4 },
+  facts: { gap: 14, paddingTop: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.line },
+  fact: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+  factBody: { flex: 1, gap: 2 },
+  factValue: { color: theme.ink, fontSize: 15, lineHeight: 21 },
   meta: { color: theme.muted, fontSize: 14 },
-  address: { color: theme.ink, fontSize: 15 },
   link: { color: theme.brand, fontWeight: "700" },
   attendance: { gap: 10, marginTop: 6 },
   attending: { backgroundColor: "#DDF6EA", borderRadius: 12, minHeight: 48, alignItems: "center", justifyContent: "center" },

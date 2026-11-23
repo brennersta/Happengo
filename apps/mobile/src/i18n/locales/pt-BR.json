@@ -164,7 +164,15 @@
     "visibility": "Visibilidade",
     "public": "Público",
     "unlisted": "Não listado",
-    "friends_only": "Somente amigos"
+    "friends_only": "Somente amigos",
+    "when": "Quando",
+    "where": "Onde",
+    "host": "Organizador",
+    "hostedByYou": "Organizado por você",
+    "attendees": "Participantes",
+    "access": "Quem pode participar",
+    "joiningOpen": "Qualquer pessoa pode participar",
+    "joiningApproval": "O organizador aprova os pedidos"
   },
   "auth": {
     "intro": "Entre para criar e gerenciar seus eventos.",
