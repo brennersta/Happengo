@@ -5,7 +5,7 @@
 
 ## Context
 
-[ADR 0002](0002-stack-and-modular-monolith.md) chooses one ASP.NET Core process on .NET 10, EF Core, and PostgreSQL/PostGIS, with feature folders and ArchUnitNET. [ADR 0003](0003-data-model.md) is the data model. [ADR 0005](0005-authentication.md) is the IdP-agnostic JWT boundary and is still Proposed. [ADR 0006](0006-geo-queries.md) is the viewport query. [ADR 0007](0007-privacy-enforcement.md) is `VisibleTo`. [ADR 0008](0008-image-storage.md) and [ADR 0009](0009-i18n.md) fix blob privacy and the shape of errors. Hosting is already decided in 0002 and [infra/README.md](../../infra/README.md). This ADR records only how that API is built, tested, and deployed.
+[ADR 0002](0002-stack-and-modular-monolith.md) chooses one ASP.NET Core process on .NET 10, EF Core, and PostgreSQL/PostGIS, with feature folders and ArchUnitNET. [ADR 0003](0003-data-model.md) is the data model. [ADR 0005](0005-authentication.md) is the IdP-agnostic JWT boundary. Brenner chose Auth0 on 2026-11-23, and that ADR is Accepted. The API still does not name a vendor. [ADR 0006](0006-geo-queries.md) is the viewport query. [ADR 0007](0007-privacy-enforcement.md) is `VisibleTo`. [ADR 0008](0008-image-storage.md) and [ADR 0009](0009-i18n.md) fix blob privacy and the shape of errors. Hosting is already decided in 0002 and [infra/README.md](../../infra/README.md). This ADR records only how that API is built, tested, and deployed.
 
 ## Decision
 
@@ -42,9 +42,9 @@ Low-traffic sketch for East US, list prices, one API replica that scales to zero
 
 Rough total at low traffic: **about $15–20/month**, almost all of it the database. Container Apps stays in the free grant if it scales to zero.
 
-### Notes for the open provider pick (ADR 0005)
+### Provider comparison retained for context (ADR 0005)
 
-ADR 0005 already sets the default to Microsoft Entra External ID and the fallback to Auth0, and stays Proposed until Brenner writes the pick. These notes are not a second decision.
+Brenner chose Auth0 on 2026-11-23. These notes are the comparison behind that pick. ADR 0005 is the decision. Entra External ID remains the considered alternative.
 
 - **Free tier.** Entra External ID core is free for the first 50,000 MAU ([FAQ](https://learn.microsoft.com/en-us/entra/external-id/customers/faq-customers), [pricing](https://azure.microsoft.com/en-us/pricing/details/microsoft-entra-external-id/)). The static pricing page does not show the per-MAU rate after that. A secondary write-up dated 2026-11-05 says $0.03; treat that as unverified. Auth0 Free is $0 for 25,000 MAU, with unlimited social connections subject to system limits, and one custom domain that requires a credit card ([pricing](https://auth0.com/pricing)). Essentials B2C starts at $35/month for 500 MAU.
 - **Google.** Both support it. Entra: [identity providers](https://learn.microsoft.com/en-us/entra/external-id/customers/concept-authentication-methods-customers). Auth0: social connections on the free plan.
@@ -52,7 +52,7 @@ ADR 0005 already sets the default to Microsoft Entra External ID and the fallbac
 - **OIDC + PKCE.** ADR 0005 already requires authorization code + PKCE for the Expo client. Auth0 documents that flow ([PKCE](https://auth0.com/docs/get-started/authentication-and-authorization-flow/authorization-code-flow-with-pkce/add-login-using-the-authorization-code-flow-with-pkce)). Entra External ID is a normal OIDC issuer, so the same public-client flow applies. The API only checks the resulting access token.
 - **Lock-in.** The API keys users by (`iss`, `sub`) and does not call Google or Apple itself, so changing provider is configuration plus a user migration. The costly part is accounts, not schema. Using MSAL-only native auth would tie the client to Entra more tightly than plain OIDC.
 
-The 50,000 MAU grant and the Azure bill are why ADR 0005's default fits a solo deployment, if the system-browser Apple flow and the 6-month secret rotation are acceptable. If v1 needs Apple's in-app sheet with no browser, Auth0's native connection is the better fallback and is free to 25,000 MAU. Brenner still has to confirm the pick.
+Auth0 was selected for the simpler first setup and its native Apple connection. Entra External ID's larger free tier is why it stays the recorded alternative. No tenant is provisioned here.
 
 ## Consequences
 

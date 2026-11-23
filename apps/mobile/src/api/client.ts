@@ -5,5 +5,7 @@ const baseUrl = process.env.EXPO_PUBLIC_API_URL?.trim() || "http://localhost:508
 
 export const { fetchClient, query } = createApiClient({
   baseUrl,
+  // Resolve fetch on each call so the demo patch can replace global fetch after startup.
+  fetch: (input, init) => globalThis.fetch(input, init),
   middleware: [bearerAuthMiddleware(() => auth.getAccessToken())],
 });

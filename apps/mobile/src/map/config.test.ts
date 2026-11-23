@@ -1,8 +1,14 @@
-import { OPENFREEMAP_POSITRON, TALLINN, mapStyleUrl } from "./config";
+import { OPENFREEMAP_POSITRON, TALLINN, mapLibreWorkerUrl, mapStyleUrl } from "./config";
 
 test("defaults to OpenFreeMap Positron and Tallinn", () => {
   expect(mapStyleUrl({})).toBe(OPENFREEMAP_POSITRON);
   expect(TALLINN).toEqual({ longitude: 24.7536, latitude: 59.437 });
+});
+
+test("prefixes the map worker with the Pages base path", () => {
+  expect(mapLibreWorkerUrl({})).toBe("/maplibre/maplibre-gl-worker.mjs");
+  expect(mapLibreWorkerUrl({ EXPO_BASE_URL: "/Happengo" })).toBe("/Happengo/maplibre/maplibre-gl-worker.mjs");
+  expect(mapLibreWorkerUrl({ EXPO_PUBLIC_DEMO_MODE: "true" })).toBe("/Happengo/maplibre/maplibre-gl-worker.mjs");
 });
 
 test("uses a configured style and substitutes a key only in {key}", () => {

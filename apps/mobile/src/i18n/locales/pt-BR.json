@@ -110,5 +110,8 @@
     "signedIn": "Você está conectado. As ações protegidas podem usar sua conta.",
     "signOut": "Sair"
   },
-  "localeCode": "pt-BR"
+  "localeCode": "pt-BR",
+  "demo": {
+    "notice": "Demonstração: dados de exemplo, nada é salvo"
+  }
 }

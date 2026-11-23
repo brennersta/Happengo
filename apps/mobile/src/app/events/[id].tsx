@@ -63,7 +63,9 @@ export default function EventDetailScreen() {
       if (action.type === "join") {
         const { data, error, response } = await fetchClient.POST("/v1/events/{eventId}/attendance", {
           params: { path: { eventId: id } },
-          body: { shareToken: event?.shareToken ?? null },
+          body: {
+            ...(event?.shareToken ? { shareToken: event.shareToken } : {}),
+          } as { shareToken: string | null },
         });
         if (error || !data) throw new Error(response.statusText);
         return data;

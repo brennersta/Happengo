@@ -1,6 +1,7 @@
 using System.Net;
 using Happengo.Api.Attendance;
 using Happengo.Api.Events;
+using Happengo.Api.Infrastructure;
 using Happengo.Api.Events.CreateEvent;
 using Happengo.Api.Tests.Support;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,8 @@ public sealed class GetMyEventsTests(ApiFactory factory) : IntegrationTest
 
         var anonymous = await client.SendAsync(ApiJson.Get("/v1/events/mine"));
         Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
+        var anonymousProblem = await anonymous.Content.Read<Microsoft.AspNetCore.Mvc.ProblemDetails>();
+        Assert.Equal(ProblemTypes.Unauthorized, anonymousProblem!.Type);
 
         var owned = await CreateAsync("caller", "Owned dinner", ApprovalMode.Open);
         var attending = await CreateAsync("host", "Open gathering", ApprovalMode.Open);
