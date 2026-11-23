@@ -1,5 +1,6 @@
 # 0008. Review of the target design and address search
 
+- Pull request: https://github.com/brennersta/Happengo/pull/18
 - Branch: `cursor/target-design-c78e`
 
 ## What changed
