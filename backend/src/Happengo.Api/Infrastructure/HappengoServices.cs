@@ -1,11 +1,12 @@
-using System.Net;
 using System.Text.Json.Serialization;
 using Happengo.Api.Events.GetEvent;
 using Happengo.Api.Events.GetEventsInBounds;
 using Happengo.Api.Events.GetMyEvents;
+using Happengo.Api.Events.RotateShareLink;
 using Happengo.Api.Events.GetSharedEvent;
 using Happengo.Api.Events.CreateEvent;
 using Happengo.Api.Attendance;
+using Happengo.Api.Friends;
 using Happengo.Api.Infrastructure.Auth;
 using Happengo.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -27,7 +28,8 @@ public static class HappengoServices
         IConfiguration configuration,
         IHostEnvironment environment)
     {
-        ProductionConfiguration.Ensure(environment, configuration);
+        var forwardedHeaders = ForwardedHeaderSettings.Read(configuration);
+        ProductionConfiguration.Ensure(environment, configuration, forwardedHeaders);
 
         var connectionString = configuration.GetConnectionString("Happengo");
         if (string.IsNullOrWhiteSpace(connectionString))
@@ -90,27 +92,7 @@ public static class HappengoServices
             options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
             options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
         });
-        services.Configure<ForwardedHeadersOptions>(options =>
-        {
-            options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-            options.KnownIPNetworks.Clear();
-            options.KnownProxies.Clear();
-            foreach (var cidr in configuration.GetSection("ForwardedHeaders:KnownNetworks").Get<string[]>() ?? [])
-            {
-                if (System.Net.IPNetwork.TryParse(cidr, out var network))
-                {
-                    options.KnownIPNetworks.Add(network);
-                }
-            }
-
-            foreach (var proxy in configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? [])
-            {
-                if (IPAddress.TryParse(proxy, out var address))
-                {
-                    options.KnownProxies.Add(address);
-                }
-            }
-        });
+        services.Configure<ForwardedHeadersOptions>(forwardedHeaders.Configure);
 
         services.AddProblemDetails();
         services.AddExceptionHandler<ProblemExceptionHandler>();
@@ -247,9 +229,10 @@ public static class HappengoServices
         }).AllowAnonymous();
 
         var v1 = app.MapGroup("/v1");
-        Happengo.Api.Friends.FriendRoutes.Map(v1);
+        FriendRoutes.Map(v1);
         GetEventsInBounds.Map(v1);
         GetMyEvents.Map(v1);
+        RotateShareLink.Map(v1);
         CreateEvent.Map(v1);
         AttendanceRoutes.Map(v1);
         GetSharedEvent.Map(v1);

@@ -10,9 +10,18 @@ internal static class ProductionConfiguration
 {
     public const string DevelopmentAuthority = "https://idp.example.com";
 
-    public static void Ensure(IHostEnvironment environment, IConfiguration configuration)
+    public static void Ensure(
+        IHostEnvironment environment,
+        IConfiguration configuration,
+        ForwardedHeaderSettings forwardedHeaders)
     {
-        if (!environment.IsProduction())
+        if (!environment.IsDevelopment() && forwardedHeaders.Enabled && !forwardedHeaders.HasTrustedProxy)
+        {
+            throw new InvalidOperationException(
+                "ForwardedHeaders is enabled outside Development, but no ForwardedHeaders:KnownProxies or ForwardedHeaders:KnownNetworks are configured.");
+        }
+
+        if (!environment.IsProduction() && !environment.IsStaging())
         {
             return;
         }
@@ -21,14 +30,14 @@ internal static class ProductionConfiguration
         if (string.IsNullOrWhiteSpace(connectionString) || IsDevelopmentDatabase(connectionString))
         {
             throw new InvalidOperationException(
-                "ConnectionStrings:Happengo must be configured in Production. The API does not fall back to the local development database.");
+                $"ConnectionStrings:Happengo must be configured outside Development ({environment.EnvironmentName}). The API does not fall back to the local development database.");
         }
 
         var authority = configuration["Authentication:Authority"];
         if (string.IsNullOrWhiteSpace(authority) || IsDevelopmentAuthority(authority))
         {
             throw new InvalidOperationException(
-                "Authentication:Authority must be configured in Production. The development placeholder is not an issuer.");
+                $"Authentication:Authority must be configured outside Development ({environment.EnvironmentName}). The development placeholder is not an issuer.");
         }
     }
 
