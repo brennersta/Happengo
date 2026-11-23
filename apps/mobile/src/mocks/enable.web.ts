@@ -1,5 +1,5 @@
 export async function enableMocks(): Promise<void> {
-  if (!__DEV__) return;
+  if (process.env.EXPO_PUBLIC_API_MOCK !== "true" && !__DEV__) return;
   const { setupWorker } = await import("msw/browser");
   const { handlers } = await import("./handlers");
   const worker = setupWorker(...handlers);
