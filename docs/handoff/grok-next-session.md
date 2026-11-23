@@ -426,3 +426,9 @@ dotnet format whitespace backend/Happengo.sln --verify-no-changes --no-restore -
 ~~~
 
 Result: passed. A full-solution `dotnet format backend/Happengo.sln --verify-no-changes --no-restore` was also attempted but failed on pre-existing checkout-wide CRLF/LF differences. The targeted check above passed after normalizing line endings in the changed C# files.
+
+## Backend hardening follow-up — 2026-11-23
+
+- Merged `origin/main` into `codex/backend-hardening` with a merge commit (no rebase). Git auto-merged the handoff; both existing documentation sections and the Backend hardening section are present.
+- Renamed the backend-hardening review note to `docs/features/reviews/0010-backend-hardening.md` and ensured it has a trailing newline.
+- Reran the full backend suite after the merge and rename. Command: `$env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'; dotnet test backend/Happengo.sln --configuration Release`. Result: **222 passed, 0 failed, 0 skipped**.
