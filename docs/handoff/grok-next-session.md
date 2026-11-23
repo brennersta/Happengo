@@ -432,3 +432,19 @@ Result: passed. A full-solution `dotnet format backend/Happengo.sln --verify-no-
 - Merged `origin/main` into `codex/backend-hardening` with a merge commit (no rebase). Git auto-merged the handoff; both existing documentation sections and the Backend hardening section are present.
 - Renamed the backend-hardening review note to `docs/features/reviews/0010-backend-hardening.md` and ensured it has a trailing newline.
 - Reran the full backend suite after the merge and rename. Command: `$env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'; dotnet test backend/Happengo.sln --configuration Release`. Result: **222 passed, 0 failed, 0 skipped**.
+
+## Backend hardening follow-up — Friends merge (2026-11-23)
+
+- Merged `origin/main` at `361bc75` (Friends, PR #21) into `codex/backend-hardening` using a merge commit; no rebase or force-push.
+- Kept both `FriendRoutes.Map(v1)` and `RotateShareLink.Map(v1)` in `HappengoServices`, with the Friends and RotateShareLink usings.
+- Resolved generated-file conflicts by regenerating from backend/client sources, not by hand-merging. OpenAPI export command:
+
+~~~powershell
+$env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+$env:UPDATE_OPENAPI = '1'
+dotnet test backend/tests/Happengo.Api.Tests/Happengo.Api.Tests.csproj --configuration Release --no-restore --filter FullyQualifiedName~OpenApi_document_matches_committed_contract
+~~~
+
+Result: 1 passed; `api/openapi.json` regenerated. Then, from `packages/api-client`, ran `node ./scripts/generate.mjs` (openapi-typescript 7.13.0). Both generated artifacts contain the Friends and share-link endpoints.
+- Renamed this review note to `docs/features/reviews/0011-backend-hardening.md` (0010 is used by Friends); it ends with a newline.
+- Post-merge full backend test command: `$env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'; dotnet test backend/Happengo.sln --configuration Release`. Result: **229 passed, 0 failed, 0 skipped**.

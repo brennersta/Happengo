@@ -38,4 +38,29 @@ internal static class ApiJson
 
         return request;
     }
+
+    public static HttpRequestMessage Put(string url, object body, string? subject = null)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Put, url)
+        {
+            Content = JsonContent.Create(body, options: Options),
+        };
+        if (subject is not null)
+        {
+            request.Headers.Add(TestAuthHandler.HeaderName, subject);
+        }
+
+        return request;
+    }
+
+    public static HttpRequestMessage Delete(string url, string? subject = null)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Delete, url);
+        if (subject is not null)
+        {
+            request.Headers.Add(TestAuthHandler.HeaderName, subject);
+        }
+
+        return request;
+    }
 }

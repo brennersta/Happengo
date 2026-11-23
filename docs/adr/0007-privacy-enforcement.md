@@ -17,11 +17,11 @@ Every event read goes through one composable filter, `VisibleTo(viewer)`:
 |---|---|
 | Public | Visible while `now < end_at` |
 | Unlisted | Never on the map. Readable only by presenting the event's 128-bit `share_token` |
-| Friends-only | The owner, plus invitees chosen from the owner's friend tags |
+| Friends-only | The owner, plus the owner's friends. Invited friend tags narrow that audience ([ADR 0011](0011-friendships.md)) |
 | Past | Locked to the owner and to Attendance `attending` |
 | Owner | The owner always sees their own events |
 
-The rows compose. An ended event of any visibility is readable by the owner and by `attending` only. Unlisted is never a map result. A share token reads an unlisted event that has not ended, on the direct read, and the owner does not need the token for their own event.
+The rows compose. An ended event of any visibility is readable by the owner and by `attending` only. Unlisted is never a map result. A share token reads an unlisted event that has not ended, on the direct read, and the owner does not need the token for their own event. The friends-only audience is applied only inside `VisibleTo` ([ADR 0011](0011-friendships.md)).
 
 `Interested`, `requested`, `rejected`, and `cancelled` do not count as attending. A friendship grants friends-only access only when the mutual row exists ([ADR 0003](0003-data-model.md)). Opening a share link does not insert Attendance and does not put the event on the map.
 

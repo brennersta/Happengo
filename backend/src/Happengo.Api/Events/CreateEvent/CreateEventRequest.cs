@@ -36,4 +36,6 @@ public sealed record CreateEventRequest
     [Required]
     [MinLength(1)]
     public EventTag[]? Tags { get; init; }
+
+    public string[]? InvitedFriendTags { get; init; }
 }

@@ -19,7 +19,29 @@
     "ended": "Encerrado"
   },
   "friends": {
-    "empty": "Convide amigos para criar eventos privados e compartilhar fotos."
+    "empty": "Convide amigos para criar eventos privados e compartilhar fotos.",
+    "inviteTitle": "Link de convite",
+    "inviteHelp": "Compartilhe este link. O amigo precisa estar conectado para aceitar.",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "rotate": "Gerar novo link",
+    "activeHidden": "Seu link de convite está ativo. Gere um novo para copiar. O link antigo deixa de funcionar.",
+    "privateTags": "Só você vê estas etiquetas.",
+    "remove": "Remover",
+    "addTag": "Adicionar etiqueta",
+    "tagPlaceholder": "Família",
+    "emptyList": "Você ainda não tem amigos. Compartilhe seu link de convite.",
+    "unnamed": "Amigo",
+    "loadError": "Não foi possível carregar seus amigos. Tente novamente.",
+    "signIn": "Entre para convidar amigos e etiquetá-los.",
+    "acceptTitle": "Adicionar {name} como amigo?",
+    "acceptBody": "Vocês dois serão amigos. Você pode remover depois.",
+    "accept": "Aceitar",
+    "accepted": "Você e {name} são amigos.",
+    "openFriends": "Voltar para Amigos",
+    "selfInvite": "Você não pode adicionar a si mesmo.",
+    "unknownInvite": "Este link de convite não está ativo.",
+    "acceptError": "Não foi possível aceitar o convite. Tente novamente."
   },
   "profile": {
     "empty": "Seu nome, foto e idioma aparecerão aqui."
@@ -108,13 +130,16 @@
     "public": "Público",
     "unlisted": "Não listado",
     "friendsOnly": "Somente amigos",
+    "inviteByTag": "Convidar amigos por etiqueta",
+    "inviteByTagHelp": "Só os amigos que você etiquetou com uma etiqueta selecionada veem este evento. Deixe todas desmarcadas para convidar todos os amigos.",
+    "noFriendTags": "Etiquete amigos na aba Amigos e depois convide-os aqui.",
     "approval": "Participação",
     "open": "Aberta",
     "approvalRequired": "Solicitar aprovação",
     "visibilityHelp": {
       "public": "Visível no mapa para todo mundo.",
       "unlisted": "Fora do mapa. As pessoas precisam do link direto.",
-      "friends_only": "Só amigos encontram este evento."
+      "friends_only": "Só seus amigos encontram este evento. Etiquetas podem restringir isso."
     },
     "approvalHelp": {
       "open": "Qualquer pessoa pode participar na hora.",
@@ -170,7 +195,7 @@
     "host": "Organizador",
     "hostedByYou": "Organizado por você",
     "attendees": "Participantes",
-    "access": "Quem pode participar",
+    "access": "Acesso",
     "joiningOpen": "Qualquer pessoa pode participar",
     "joiningApproval": "O organizador aprova os pedidos"
   },

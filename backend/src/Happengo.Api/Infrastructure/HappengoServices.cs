@@ -6,6 +6,7 @@ using Happengo.Api.Events.RotateShareLink;
 using Happengo.Api.Events.GetSharedEvent;
 using Happengo.Api.Events.CreateEvent;
 using Happengo.Api.Attendance;
+using Happengo.Api.Friends;
 using Happengo.Api.Infrastructure.Auth;
 using Happengo.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -228,6 +229,7 @@ public static class HappengoServices
         }).AllowAnonymous();
 
         var v1 = app.MapGroup("/v1");
+        FriendRoutes.Map(v1);
         GetEventsInBounds.Map(v1);
         GetMyEvents.Map(v1);
         RotateShareLink.Map(v1);

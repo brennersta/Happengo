@@ -58,6 +58,22 @@ internal sealed class EventConfiguration : IEntityTypeConfiguration<Event>
     }
 }
 
+internal sealed class EventInvitedFriendTagConfiguration : IEntityTypeConfiguration<EventInvitedFriendTag>
+{
+    public void Configure(EntityTypeBuilder<EventInvitedFriendTag> builder)
+    {
+        builder.ToTable("event_invited_friend_tags", table =>
+            table.HasCheckConstraint("ck_event_invited_friend_tags_length", "char_length(normalized_tag) BETWEEN 1 AND 30"));
+        builder.Property(row => row.NormalizedTag).HasMaxLength(30).IsRequired();
+        builder.Property(row => row.Label).HasMaxLength(30).IsRequired();
+        builder.HasIndex(row => new { row.EventId, row.NormalizedTag }).IsUnique();
+        builder.HasOne<Event>()
+            .WithMany()
+            .HasForeignKey(row => row.EventId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
 internal sealed class EventInviteConfiguration : IEntityTypeConfiguration<EventInvite>
 {
     public void Configure(EntityTypeBuilder<EventInvite> builder)

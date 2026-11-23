@@ -1,4 +1,5 @@
 using Happengo.Api.Attendance;
+using Happengo.Api.Friends;
 using Happengo.Api.Infrastructure.Auth;
 using Happengo.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -35,6 +36,8 @@ internal static class EventQueries
         var map = scope == EventReadScope.Map;
         var ownerMaySee = map ? OwnerVisibility.OnMap : OwnerVisibility.ById;
         var attendingEventIds = AttendanceAccess.EventIdsAttendedBy(db, userId);
+        var links = FriendAccess.Links(db);
+        var ownedTags = FriendAccess.Tags(db);
 
         return events.Where(e =>
             !map || e.EndAt > now).Where(e =>
@@ -49,7 +52,15 @@ internal static class EventQueries
             || (e.Visibility == EventVisibility.FriendsOnly
                 && e.EndAt > now
                 && known
-                && db.EventInvites.Any(invite => invite.EventId == e.Id && invite.InviteeUserId == userId)));
+                && links.Any(link =>
+                    (link.UserLowId == e.OwnerId && link.UserHighId == userId)
+                    || (link.UserHighId == e.OwnerId && link.UserLowId == userId))
+                && (!db.EventInvitedFriendTags.Any(tag => tag.EventId == e.Id)
+                    || ownedTags.Any(tag =>
+                        tag.OwnerId == e.OwnerId
+                        && tag.FriendUserId == userId
+                        && db.EventInvitedFriendTags.Any(invited =>
+                            invited.EventId == e.Id && invited.NormalizedTag == tag.NormalizedTag)))));
     }
 
     /// <summary>

@@ -49,7 +49,7 @@ The page list follows the exported Base44 project. “Incident reporting” and 
 | Human-readable address | Shows a place name/address instead of exposing raw latitude/longitude to users. | Event schema includes address; address components and reverse geocoding are present. | Address field exists in the domain; user-facing search flow remains incomplete. |
 | Visibility choice | Sets whether an event is public, unlisted, or friends-only. | Event schema/form contain all three values and helper text. | Public, unlisted, and friends-only rules exist. Unlisted events are never on any map, including the owner's (ADR 0007, confirmed). |
 | Attendance mode | Lets the host decide whether attendance is open or requires approval. | Form supports `open` and `approval`; attendance UI supports requests. | Create and attendance APIs support both modes. |
-| Invite friends by tags | Lets a host select private tags to invite matching friends to a friends-only event. | FriendTag and create form UI are present. | Friend/invitation lifecycle is not yet implemented. |
+| Invite friends by tags | Lets a host select private tags to invite matching friends to a friends-only event. | FriendTag and create form UI are present. | Create accepts invited friend tags. `VisibleTo` shows the event to friends who have one of those tags (ADR 0011). |
 | Cover photo | Adds a representative image for the event and its cards. | Form uploads a cover using Base44 file storage. | Cover media workflow is not complete. |
 | Create versus edit | Creates a new event or lets only its owner edit an existing event using prefilled values. | CreateEvent supports edit mode and owner check; EventDetail links to it. | Creation exists; edit/update route is not implemented. |
 | Input validation | Prevents incomplete or contradictory event data, such as past starts or end before start. | Validation utilities exist, including the 7-day cap. | Server validates fields, time range and 7-day cap. |
@@ -103,12 +103,12 @@ The page list follows the exported Base44 project. “Incident reporting” and 
 
 | Feature name | What it represents | Base44 source | Rebuild |
 |---|---|---|---|
-| Invite link | Gives a user a link they can share so another person can accept a friendship. | `src/pages/Friends.jsx` creates/copies a link. | Not implemented. |
-| Mutual friendship acceptance | Creates the relationship for both people after the recipient accepts. | `AcceptFriend.jsx` writes reciprocal Friend rows. | Not implemented. |
-| Friends list | Shows accepted friends with display name and photo. | Friends page queries friend rows and users. | Not implemented. |
-| Private friend tags | Lets a user privately label their own friends (for example family or work) to simplify invitations. Other users cannot see the owner's tags. | FriendTag entity and Friends UI are present. | Not implemented. |
-| Remove friend | Lets a user end the relationship and stop using it for future invitation/attendance context. | Friends page has remove mutation. | Not implemented. |
-| Invite by tag | Selects one or more private tags during friends-only event creation and invites matching friends. | CreateEvent and FriendTag schema support this flow. | Not implemented. |
+| Invite link | Gives a user a link they can share so another person can accept a friendship. | `src/pages/Friends.jsx` creates/copies a link. | Opaque 128-bit token, stored as a SHA-256 hash, one active link per user, with rotate (ADR 0011). |
+| Mutual friendship acceptance | Creates the relationship for both people after the recipient accepts. | `AcceptFriend.jsx` writes reciprocal Friend rows. | Accepting the link inserts one unordered friendship. Accepting again is idempotent. |
+| Friends list | Shows accepted friends with display name and photo. | Friends page queries friend rows and users. | The list returns display name only, not email. Profile photos are not implemented. |
+| Private friend tags | Lets a user privately label their own friends (for example family or work) to simplify invitations. Other users cannot see the owner's tags. | FriendTag entity and Friends UI are present. | Tags are normalised, limited, and returned only to the person who set them. |
+| Remove friend | Lets a user end the relationship and stop using it for future invitation/attendance context. | Friends page has remove mutation. | Remove deletes the friendship both ways and the remover's tags. Access drops on the next read. |
+| Invite by tag | Selects one or more private tags during friends-only event creation and invites matching friends. | CreateEvent and FriendTag schema support this flow. | The event stores the invited tags. Friends without a matching tag cannot see it. |
 | Friend attendance | Shows which friends are attending or a count, subject to the attendee privacy decision. | FriendAttendees component; transcript contains conflicting privacy expectations. | Not implemented. |
 | No broad social graph | Excludes global friend search, suggestions, nearby people, followers, public profiles, chat, and a social feed from the initial purpose. | Explicit Base44 conversation non-goals. | Product direction remains event-centered. |
 
@@ -118,10 +118,10 @@ The page list follows the exported Base44 project. “Incident reporting” and 
 
 | Feature name | What it represents | Base44 source | Rebuild |
 |---|---|---|---|
-| Invitation landing | Identifies the person who invited the visitor and prompts login when needed. | `src/pages/AcceptFriend.jsx`. | Not implemented. |
-| Accept friendship | Adds both sides of the friend relationship after confirmation. | Reciprocal bulk-create mutation is present. | Not implemented. |
-| Self-invite protection | Prevents a user from accepting their own invite link. | Page has an explicit check. | Not implemented. |
-| Completion state | Confirms the friendship and links to Friends. | Completion screen exists. | Not implemented. |
+| Invitation landing | Identifies the person who invited the visitor and prompts login when needed. | `src/pages/AcceptFriend.jsx`. | A signed-in user sees the inviter's display name and confirms. Anonymous callers get 401. |
+| Accept friendship | Adds both sides of the friend relationship after confirmation. | Reciprocal bulk-create mutation is present. | Accept inserts the mutual row. Accepting again is idempotent. |
+| Self-invite protection | Prevents a user from accepting their own invite link. | Page has an explicit check. | Accepting your own token returns 409 and does not insert a row. |
+| Completion state | Confirms the friendship and links to Friends. | Completion screen exists. | The accept screen confirms and links back to Friends. |
 
 ## H. Profile
 

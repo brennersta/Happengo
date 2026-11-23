@@ -3,7 +3,7 @@ using NodaTime;
 namespace Happengo.Api.Events;
 
 /// <summary>
-/// Friends-only grant. A friendship row alone does not grant access (ADR 0007).
+/// Stored per-user grant. Friends-only reads do not use this row; they use VisibleTo (ADR 0011).
 /// </summary>
 internal sealed class EventInvite
 {

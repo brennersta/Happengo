@@ -13,6 +13,7 @@ public static class ProblemTypes
     public const string Unauthorized = "https://happengo.app/problems/unauthorized";
     public const string Forbidden = "https://happengo.app/problems/forbidden";
     public const string InvalidAttendance = "https://happengo.app/problems/invalid-attendance";
+    public const string InvalidFriend = "https://happengo.app/problems/invalid-friend";
     public const string RateLimited = "https://happengo.app/problems/rate-limited";
     public const string Internal = "https://happengo.app/problems/internal-error";
 

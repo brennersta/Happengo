@@ -15,6 +15,7 @@ export type CreateEventFormValues = {
   visibility: components["schemas"]["EventVisibility"];
   approvalMode: components["schemas"]["ApprovalMode"];
   tags: EventTag[];
+  invitedFriendTags?: string[];
 };
 
 export type CreateEventFormResult =
@@ -62,6 +63,9 @@ export function validateCreateEventForm(
       visibility: values.visibility,
       approvalMode: values.approvalMode,
       tags: values.tags,
+      ...(values.visibility === "friends_only"
+        ? { invitedFriendTags: values.invitedFriendTags ?? [] }
+        : {}),
     },
   };
 }

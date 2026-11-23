@@ -1,4 +1,14 @@
 import {
+  acceptDemoInvite,
+  createDemoInvite,
+  demoInviteStatus,
+  listDemoFriends,
+  previewDemoInvite,
+  removeDemoFriend,
+  replaceDemoFriendTags,
+  rotateDemoInvite,
+} from "./friends";
+import {
   cancelDemoAttendance,
   createDemoEvent,
   decideDemoAttendance,
@@ -22,6 +32,44 @@ export async function enableFetchMocks(): Promise<void> {
     const request = new Request(input, init);
     const url = new URL(request.url);
     const path = url.pathname;
+
+    if (request.method === "GET" && path.endsWith("/v1/friends/invite")) {
+      return Response.json(demoInviteStatus());
+    }
+    if (request.method === "POST" && path.endsWith("/v1/friends/invite/rotate")) {
+      return Response.json(rotateDemoInvite());
+    }
+    if (request.method === "POST" && path.endsWith("/v1/friends/invite")) {
+      const issued = createDemoInvite();
+      return issued ? Response.json(issued, { status: 201 }) : problem(409);
+    }
+    const accept = path.match(/\/v1\/friends\/invites\/([^/]+)\/accept$/);
+    if (request.method === "POST" && accept?.[1]) {
+      const result = acceptDemoInvite(decodeURIComponent(accept[1]));
+      if (result === "self") return problem(409);
+      if (result === "missing") return problem(404);
+      return Response.json(result);
+    }
+    const preview = path.match(/\/v1\/friends\/invites\/([^/]+)$/);
+    if (request.method === "GET" && preview?.[1]) {
+      const result = previewDemoInvite(decodeURIComponent(preview[1]));
+      if (result === "self") return problem(409);
+      if (result === "missing") return problem(404);
+      return Response.json(result);
+    }
+    const friendTags = path.match(/\/v1\/friends\/([^/]+)\/tags$/);
+    if (request.method === "PUT" && friendTags?.[1]) {
+      const body = await request.json() as { tags?: string[] | null };
+      const updated = replaceDemoFriendTags(friendTags[1], body.tags ?? []);
+      return updated ? Response.json(updated) : problem(404);
+    }
+    const friend = path.match(/\/v1\/friends\/([^/]+)$/);
+    if (request.method === "DELETE" && friend?.[1]) {
+      return removeDemoFriend(friend[1]) ? new Response(null, { status: 204 }) : problem(404);
+    }
+    if (request.method === "GET" && path.endsWith("/v1/friends")) {
+      return Response.json(listDemoFriends());
+    }
 
     const me = path.match(/\/v1\/events\/([^/]+)\/attendance\/me$/);
     if (request.method === "GET" && me?.[1]) {
@@ -74,4 +122,12 @@ export async function enableFetchMocks(): Promise<void> {
     }
     return original(input, init);
   };
+}
+
+function problem(status: number): Response {
+  return Response.json({
+    type: status === 404 ? "https://happengo.app/problems/not-found" : "https://happengo.app/problems/invalid-friend",
+    title: status === 404 ? "Not found" : "Friend invite conflict",
+    status,
+  }, { status });
 }
