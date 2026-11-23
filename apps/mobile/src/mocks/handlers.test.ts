@@ -41,6 +41,13 @@ test("returns a mix of tagged public events around Tallinn, with one live", () =
   expect(live?.latitude).toBe(59.437);
 });
 
+test("tag and happening-now filters narrow the viewport and keep unlisted events off the map", () => {
+  expect(listEvents(bbox, new Date(), { tags: ["Food"] }).items.map((event) => event.title)).toEqual(["Market lunch"]);
+  expect(listEvents(bbox, new Date(), { happeningNow: true }).items.map((event) => event.title)).toEqual(["Harbour choir"]);
+  expect(listEvents(bbox, new Date(), { tags: ["Family"], happeningNow: true }).items).toEqual([]);
+  expect(listEvents(bbox, new Date(atEnd), { happeningNow: true }).items.some((event) => event.id === liveEvent.id)).toBe(false);
+});
+
 test("unlisted events never appear on the map", () => {
   const body = listEvents(bbox);
   expect(body.items.some((event) => event.visibility === "unlisted")).toBe(false);

@@ -46,7 +46,11 @@ export const handlers = [
   http.get("/v1/events", ({ request }) => {
     const bbox = new URL(request.url).searchParams.get("bbox");
     if (!bbox) return new HttpResponse(null, { status: 400 });
-    return HttpResponse.json(listEvents(bbox));
+    const params = new URL(request.url).searchParams;
+    return HttpResponse.json(listEvents(bbox, new Date(), {
+      tags: params.getAll("tags"),
+      happeningNow: params.get("happeningNow") === "true",
+    }));
   }),
   http.post("/v1/events", async ({ request }) => {
     const body = await request.json() as CreateEventRequest;

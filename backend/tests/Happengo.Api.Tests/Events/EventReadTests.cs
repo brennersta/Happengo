@@ -123,6 +123,28 @@ public sealed class EventReadTests(ApiFactory factory) : IntegrationTest
         factory.Clock.Set(now + Duration.FromHours(1));
         var afterLive = await GetMapAsync(null);
         Assert.DoesNotContain(afterLive.Items, item => item.Id == live);
+
+        var onlyNow = await GetMapAsync(null, happeningNow: true);
+        Assert.Contains(onlyNow.Items, item => item.Id == soon);
+        Assert.DoesNotContain(onlyNow.Items, item => item.Id == later || item.Id == live || item.Id == ended);
+
+        Guid unlisted = Guid.Empty;
+        await factory.WithDb(async db =>
+        {
+            var owner = NewUser("hidden-live");
+            db.Users.Add(owner);
+            var secret = NewEvent(
+                owner.Id,
+                "secret",
+                EventVisibility.Unlisted,
+                now + Duration.FromHours(1) - Duration.FromMinutes(5),
+                now + Duration.FromHours(2));
+            unlisted = secret.Id;
+            db.Events.Add(secret);
+            await db.SaveChangesAsync();
+        });
+        var stillHidden = await GetMapAsync(null, happeningNow: true);
+        Assert.DoesNotContain(stillHidden.Items, item => item.Id == unlisted);
     }
 
     [Fact]
@@ -220,11 +242,19 @@ public sealed class EventReadTests(ApiFactory factory) : IntegrationTest
         Assert.Null(user.Language);
     }
 
-    private async Task<EventMapResponse> GetMapAsync(string? subject, params string[] tags)
+    private async Task<EventMapResponse> GetMapAsync(string? subject, params string[] tags) =>
+        await GetMapAsync(subject, happeningNow: false, tags);
+
+    private async Task<EventMapResponse> GetMapAsync(string? subject, bool happeningNow, params string[] tags)
     {
         var query = tags.Length == 0
             ? ""
             : "&" + string.Join("&", tags.Select(tag => "tags=" + Uri.EscapeDataString(tag)));
+        if (happeningNow)
+        {
+            query += "&happeningNow=true";
+        }
+
         var response = await factory.CreateClient().SendAsync(
             ApiJson.Get($"/v1/events?bbox={TestData.Bbox}{query}", subject));
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

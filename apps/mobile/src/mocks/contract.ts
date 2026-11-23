@@ -288,13 +288,20 @@ function publish(event: EventResponse, now: Date): EventResponse {
  * for the owner. A share token is not an input and does not grant access.
  * Events leave the map at endAt (now >= endAt).
  */
-export function listEvents(bbox: string | null, now = new Date()): EventMapResponse {
+export type DemoListFilters = {
+  tags?: readonly string[];
+  happeningNow?: boolean;
+};
+
+export function listEvents(bbox: string | null, now = new Date(), filters: DemoListFilters = {}): EventMapResponse {
   const box = parseBbox(bbox);
   if (!box) return { items: [], limit: mapResultLimit, truncated: false };
   const [minLng, minLat, maxLng, maxLat] = box;
   const items = [...fixtures, ...demoEvents]
     .filter((event) => event.visibility !== "unlisted")
     .filter((event) => !hasEnded(event.endAt, now))
+    .filter((event) => !filters.tags?.length || event.tags.some((tag) => filters.tags?.includes(tag)))
+    .filter((event) => !filters.happeningNow || isHappeningNow(event.startAt, event.endAt, now))
     .filter(
       (event) =>
         event.longitude >= minLng &&

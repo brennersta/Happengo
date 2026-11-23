@@ -13,7 +13,7 @@ export interface paths {
         };
         /**
          * Events in the map viewport that have not ended.
-         * @description bbox is minLng,minLat,maxLng,maxLat (SRID 4326). Uses location && ST_MakeEnvelope. Unlisted events are never returned. At most 500 events, happening-now first, then start time. truncated is true when more events matched. tags keeps events that have any of the named tags.
+         * @description bbox is minLng,minLat,maxLng,maxLat (SRID 4326). Uses location && ST_MakeEnvelope. Unlisted events are never returned. At most 500 events, happening-now first, then start time. truncated is true when more events matched. tags keeps events that have any of the named tags. happeningNow keeps only events with start_at <= now < end_at.
          */
         get: operations["ListEventsInBounds"];
         put?: never;
@@ -289,6 +289,7 @@ export interface operations {
             query: {
                 bbox: string;
                 tags?: string[];
+                happeningNow?: boolean;
             };
             header?: never;
             path?: never;

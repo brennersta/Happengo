@@ -190,6 +190,27 @@ The implementation draft now includes ordered tag chips in event creation, a req
 - Existing event detail and attendance controls were already present; this work connects the first-use paths to them. Friends, albums/photos, cover uploads, identity display for attendance requests, and profile editing remain unimplemented.
 - No tests, typecheck, builds, or visual walkthrough were run. All runtime behavior remains unverified. See the updated page-by-page status in `../business/feature-catalog.md`.
 
+## Discover filters — 2026-11-23
+
+Runtime proof. The demo-pages section below is the previous slice.
+
+`GET /v1/events` already filtered by any named tag. This slice adds `happeningNow=true`, which keeps `start_at <= now < end_at` inside `VisibleTo` map scope. Unlisted events stay off the map. The OpenAPI document and generated client include the new query flag. The demo fetch mock and MSW handler apply the same tag and happening-now filters.
+
+Commands, from `/workspace`:
+
+```text
+dotnet format backend/Happengo.sln --verify-no-changes --no-restore
+dotnet test backend/Happengo.sln --configuration Release
+pnpm --filter @happengo/mobile exec tsc --noEmit
+pnpm --filter @happengo/mobile test
+pnpm --filter @happengo/mobile exec expo lint
+pnpm --filter @happengo/api-client test
+```
+
+`dotnet format --verify-no-changes` exited 0. `dotnet test`: **210 passed, 0 failed**, including PostGIS. The happening-now case is inside `EventReadTests` and checks the half-open end plus an unlisted live event staying hidden. Mobile Jest: **51 passed**. api-client: **2 passed**, including no diff after `node ./scripts/generate.mjs`. Lint and `tsc --noEmit` exited 0.
+
+Code review only: the filter panel was not clicked in a browser for this slice. Native map behavior is unchanged and was not opened on a device.
+
 ## Demo Pages — 2026-11-23
 
 Runtime proof for the public demo. The earlier validation section below it is the first-event-journey run, before this demo build.
