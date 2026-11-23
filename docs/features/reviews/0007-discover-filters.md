@@ -1,7 +1,7 @@
 # 0007. Review of Discover filters
 
+- Pull request: https://github.com/brennersta/Happengo/pull/17
 - Branch: `cursor/discover-filters-c78e`
-- Pull request: opened from this branch against `main`
 
 ## Areas
 
