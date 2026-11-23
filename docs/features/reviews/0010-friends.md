@@ -1,5 +1,6 @@
 # 0010. Review of friendships and the Friends tab
 
+- Pull request: https://github.com/brennersta/Happengo/pull/21
 - Branch: `cursor/friends-tab-c78e`
 - Approved by Brenner on 2026-11-23
 
