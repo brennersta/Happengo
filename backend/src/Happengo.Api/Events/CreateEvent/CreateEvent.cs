@@ -62,7 +62,7 @@ internal static class CreateEvent
             Location = GeoPoint.FromLngLat(validated.Longitude, validated.Latitude),
             Address = validated.Address,
             Visibility = validated.Visibility,
-            ShareToken = ShareToken.New(),
+            ShareTokenHash = ShareToken.Hash(ShareToken.New()),
             ApprovalMode = validated.ApprovalMode,
             Tags = validated.Tags,
             CreatedAt = now,
@@ -74,6 +74,6 @@ internal static class CreateEvent
 
         return TypedResults.Created(
             $"/v1/events/{e.Id}",
-            e.ToResponse(ownerId, now, attendingCount: 1, includeShareToken: true));
+            e.ToResponse(ownerId, now, attendingCount: 1));
     }
 }

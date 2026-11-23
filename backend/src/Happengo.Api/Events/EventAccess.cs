@@ -33,8 +33,18 @@ public static class EventAccess
         Guid eventId,
         Guid userId,
         string? shareToken,
-        CancellationToken cancellationToken) =>
-        db.Events.AsNoTracking()
+        CancellationToken cancellationToken)
+    {
+        // Compare the hash only. The plaintext share token is not stored (PR #11).
+        byte[]? tokenHash = null;
+        if (!string.IsNullOrEmpty(shareToken) && ShareToken.TryCanonicalize(shareToken, out var canonical))
+        {
+            tokenHash = ShareToken.Hash(canonical);
+        }
+
+        var compareHash = tokenHash is not null;
+        var hash = tokenHash ?? [];
+        return db.Events.AsNoTracking()
             .Where(e => e.Id == eventId)
             .Select(e => new EventAttendanceContext(
                 e.OwnerId,
@@ -42,6 +52,7 @@ public static class EventAccess
                 e.ApprovalMode,
                 e.EndAt,
                 db.EventInvites.Any(invite => invite.EventId == e.Id && invite.InviteeUserId == userId),
-                e.ShareToken == shareToken))
+                compareHash && e.ShareTokenHash == hash))
             .FirstOrDefaultAsync(cancellationToken);
+    }
 }

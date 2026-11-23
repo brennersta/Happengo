@@ -38,7 +38,7 @@ internal static class GetMyEvents
         var attendingIds = AttendanceAccess.EventIdsAttendedBy(db, userId);
         var rows = await db.Events.AsNoTracking()
             .Where(e => e.OwnerId == userId
-                || myAttendanceIds.Contains(e.Id) && (e.EndAt >= now || attendingIds.Contains(e.Id)))
+                || (myAttendanceIds.Contains(e.Id) && (e.EndAt > now || attendingIds.Contains(e.Id))))
             .OrderBy(e => e.StartAt <= now)
             .ThenBy(e => e.StartAt)
             .Take(EventQueries.MapResultLimit + 1)
@@ -47,7 +47,7 @@ internal static class GetMyEvents
         if (truncated) rows.RemoveAt(rows.Count - 1);
 
         var counts = await AttendanceAccess.AttendingCountsAsync(db, rows.Select(e => e.Id).ToArray(), cancellationToken);
-        var items = rows.Select(e => e.ToResponse(userId, now, counts.GetValueOrDefault(e.Id), includeShareToken: false)).ToArray();
+        var items = rows.Select(e => e.ToResponse(userId, now, counts.GetValueOrDefault(e.Id))).ToArray();
         return TypedResults.Ok(new EventMapResponse(items, EventQueries.MapResultLimit, truncated));
     }
 }

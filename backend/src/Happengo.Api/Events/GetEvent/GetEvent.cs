@@ -19,7 +19,7 @@ internal static class GetEvent
             .WithSummary("One event the caller is allowed to read.")
             .WithDescription(
                 "Hidden, unlisted (without being the owner), and ended events the caller did not attend return 404. "
-                + "The owner receives shareToken.")
+                + "The share token is not returned; only its hash is stored.")
             .Produces<EventResponse>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
@@ -49,7 +49,6 @@ internal static class GetEvent
         return TypedResults.Ok(e.ToResponse(
             viewer.UserId,
             now,
-            counts.GetValueOrDefault(e.Id),
-            includeShareToken: true));
+            counts.GetValueOrDefault(e.Id)));
     }
 }

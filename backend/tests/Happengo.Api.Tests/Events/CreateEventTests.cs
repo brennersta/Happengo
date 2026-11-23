@@ -29,8 +29,12 @@ public sealed class CreateEventTests(ApiFactory factory) : IntegrationTest
         Assert.Equal(1, created.AttendingCount);
         Assert.Equal("Dinner", created.Title);
         Assert.Equal([EventTag.Food], created.Tags);
-        Assert.NotNull(created.ShareToken);
-        Assert.Equal(22, created.ShareToken.Length);
+        Assert.Null(created.ShareToken);
+        var storedHash = await factory.WithDb(db => db.Events.AsNoTracking()
+            .Where(row => row.Id == created.Id)
+            .Select(row => row.ShareTokenHash)
+            .SingleAsync());
+        Assert.Equal(32, storedHash.Length);
 
         var publicMapResponse = await factory.CreateClient().SendAsync(
             ApiJson.Get($"/v1/events?bbox={TestData.Bbox}"));

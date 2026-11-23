@@ -14,12 +14,14 @@ internal static class GetSharedEvent
     {
         group.MapGet("/events/shared/{token}", Handle)
             .AllowAnonymous()
+            .RequireRateLimiting(RateLimitPolicies.ShareReads)
             .WithName("GetSharedEvent")
             .WithTags("Events")
             .WithSummary("Read a live unlisted event by its share token.")
             .WithDescription("The token does not reveal public or friends-only events, and it does not reveal an event that has ended.")
             .Produces<EventResponse>()
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
         return group;
     }
@@ -52,7 +54,6 @@ internal static class GetSharedEvent
         return TypedResults.Ok(e.ToResponse(
             viewer.UserId,
             now,
-            counts.GetValueOrDefault(e.Id),
-            includeShareToken: true));
+            counts.GetValueOrDefault(e.Id)));
     }
 }

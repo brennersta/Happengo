@@ -107,7 +107,7 @@ public sealed class EventReadTests(ApiFactory factory) : IntegrationTest
         var later = await SeedAsync("later", start: now + Duration.FromHours(3), end: now + Duration.FromHours(4));
         var soon = await SeedAsync("soon", start: now + Duration.FromMinutes(30), end: now + Duration.FromHours(2));
         var live = await SeedAsync("live", start: now - Duration.FromMinutes(10), end: now + Duration.FromHours(1));
-        var ended = await SeedAsync("ended", start: now - Duration.FromHours(2), end: now - Duration.FromMilliseconds(1));
+        var ended = await SeedAsync("ended", start: now - Duration.FromHours(2), end: now);
 
         var page = await GetMapAsync(null);
         Assert.Equal([live, soon, later], page.Items.Select(item => item.Id));
@@ -120,7 +120,7 @@ public sealed class EventReadTests(ApiFactory factory) : IntegrationTest
         var soonRow = Assert.Single(moved.Items, item => item.Id == soon);
         Assert.True(soonRow.HappeningNow);
 
-        factory.Clock.Set(now + Duration.FromHours(1) + Duration.FromMilliseconds(1));
+        factory.Clock.Set(now + Duration.FromHours(1));
         var afterLive = await GetMapAsync(null);
         Assert.DoesNotContain(afterLive.Items, item => item.Id == live);
     }
@@ -264,6 +264,8 @@ public sealed class EventReadTests(ApiFactory factory) : IntegrationTest
         CreatedAt = TestData.Now,
     };
 
+    internal static readonly Dictionary<Guid, string> IssuedShareTokens = [];
+
     internal static Event NewEvent(
         Guid ownerId,
         string title,
@@ -272,7 +274,10 @@ public sealed class EventReadTests(ApiFactory factory) : IntegrationTest
         Instant end,
         double lng = TestData.InsideLng,
         double lat = TestData.InsideLat,
-        EventTag[]? tags = null) => new()
+        EventTag[]? tags = null)
+    {
+        var shareToken = ShareToken.New();
+        var e = new Event
         {
             Id = Guid.CreateVersion7(),
             OwnerId = ownerId,
@@ -285,9 +290,13 @@ public sealed class EventReadTests(ApiFactory factory) : IntegrationTest
             Address = "Telliskivi 60a, Tallinn",
             Visibility = visibility,
             ApprovalMode = ApprovalMode.Open,
-            ShareToken = ShareToken.New(),
+            ShareTokenHash = ShareToken.Hash(shareToken),
             Tags = tags?.ToList() ?? [],
             CreatedAt = TestData.Now,
             UpdatedAt = TestData.Now,
         };
+
+        IssuedShareTokens[e.Id] = shareToken;
+        return e;
+    }
 }

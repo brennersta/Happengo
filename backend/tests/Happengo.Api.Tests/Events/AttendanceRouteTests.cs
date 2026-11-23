@@ -127,12 +127,20 @@ public sealed class AttendanceRouteTests(ApiFactory factory) : IntegrationTest
     {
         await factory.ResetAsync();
         var unlisted = await CreateAsync("unlisted-owner", ApprovalMode.Open, EventVisibility.Unlisted);
+        Assert.Null(unlisted.ShareToken);
+        var token = ShareToken.New();
+        await factory.WithDb(async db =>
+        {
+            var row = await db.Events.SingleAsync(item => item.Id == unlisted.Id);
+            row.ShareTokenHash = ShareToken.Hash(token);
+            await db.SaveChangesAsync();
+        });
         var client = factory.CreateClient();
 
         var withoutToken = await client.SendAsync(ApiJson.Post(
             $"/v1/events/{unlisted.Id}/attendance", new JoinEventRequest(null), "guest"));
         var withToken = await client.SendAsync(ApiJson.Post(
-            $"/v1/events/{unlisted.Id}/attendance", new JoinEventRequest(unlisted.ShareToken), "guest"));
+            $"/v1/events/{unlisted.Id}/attendance", new JoinEventRequest(token), "guest"));
         Assert.Equal(HttpStatusCode.NotFound, withoutToken.StatusCode);
         Assert.Equal(HttpStatusCode.OK, withToken.StatusCode);
 
@@ -187,7 +195,7 @@ public sealed class AttendanceRouteTests(ApiFactory factory) : IntegrationTest
             Latitude = TestData.InsideLat,
             Visibility = visibility,
             ApprovalMode = approvalMode,
-            Tags = [],
+            Tags = [EventTag.Food],
         };
         var response = await factory.CreateClient().SendAsync(ApiJson.Post("/v1/events", body, owner));
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
