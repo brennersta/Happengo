@@ -11,7 +11,15 @@ public sealed class HappengoDbContext(DbContextOptions<HappengoDbContext> option
 
     internal DbSet<Events.EventInvite> EventInvites => Set<Events.EventInvite>();
 
+    internal DbSet<Events.EventInvitedFriendTag> EventInvitedFriendTags => Set<Events.EventInvitedFriendTag>();
+
     internal DbSet<Attendance.Attendance> Attendances => Set<Attendance.Attendance>();
+
+    internal DbSet<Friends.Friendship> Friendships => Set<Friends.Friendship>();
+
+    internal DbSet<Friends.FriendTag> FriendTags => Set<Friends.FriendTag>();
+
+    internal DbSet<Friends.FriendInvite> FriendInvites => Set<Friends.FriendInvite>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

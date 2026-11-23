@@ -55,7 +55,7 @@ internal static class GetMyEvents
         if (truncated) rows.RemoveAt(rows.Count - 1);
 
         var counts = await AttendanceAccess.AttendingCountsAsync(db, rows.Select(e => e.Id).ToArray(), cancellationToken);
-        var items = rows.Select(e => e.ToResponse(userId, now, counts.GetValueOrDefault(e.Id))).ToArray();
+        var items = await rows.ToResponsesAsync(db, userId, now, counts, cancellationToken);
         return TypedResults.Ok(new EventMapResponse(items, EventQueries.MapResultLimit, truncated));
     }
 }

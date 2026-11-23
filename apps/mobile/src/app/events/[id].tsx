@@ -220,8 +220,14 @@ function FactRow({ icon, label, value, children }: {
   value: string;
   children?: ReactNode;
 }) {
+  const named = children == null;
   return (
-    <View style={styles.fact} accessibilityLabel={label}>
+    <View
+      style={styles.fact}
+      accessible={named}
+      accessibilityRole={named ? "text" : undefined}
+      accessibilityLabel={named ? `${label}: ${value}` : undefined}
+    >
       <Ionicons name={icon} size={18} color={theme.brand} />
       <View style={styles.factBody}>
         <Text style={styles.factValue}>{value}</Text>

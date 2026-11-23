@@ -1,4 +1,6 @@
 using System.Text.Json.Serialization;
+using Happengo.Api.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace Happengo.Api.Events;
 
@@ -19,7 +21,8 @@ public sealed record EventResponse(
     double Longitude,
     double Latitude,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    string? ShareToken);
+    string? ShareToken,
+    IReadOnlyList<string>? InvitedFriendTags);
 
 public sealed record EventMapResponse(
     IReadOnlyList<EventResponse> Items,
@@ -32,7 +35,8 @@ internal static class EventMapping
         this Event e,
         Guid? viewerId,
         NodaTime.Instant now,
-        int attendingCount) =>
+        int attendingCount,
+        IReadOnlyList<string>? invitedFriendTags = null) =>
         new(
             e.Id,
             e.Title,
@@ -51,5 +55,43 @@ internal static class EventMapping
             Latitude: e.Location.Y,
             // TODO(event-edit): return the plaintext once, when edit can issue, revoke, and rotate it.
             // Only the SHA-256 is stored, so a read cannot echo the token.
-            ShareToken: null);
+            ShareToken: null,
+            // Null for everyone except the owner, so the tags are not omitted from the contract
+            // and are still absent as values for other readers.
+            InvitedFriendTags: viewerId is not null && e.OwnerId == viewerId ? invitedFriendTags ?? [] : null);
+
+    public static async Task<EventResponse[]> ToResponsesAsync(
+        this IReadOnlyList<Event> events,
+        HappengoDbContext db,
+        Guid? viewerId,
+        NodaTime.Instant now,
+        IReadOnlyDictionary<Guid, int> counts,
+        CancellationToken cancellationToken)
+    {
+        var ownedIds = events
+            .Where(e => viewerId is not null && e.OwnerId == viewerId)
+            .Select(e => e.Id)
+            .ToArray();
+        var labels = new Dictionary<Guid, string[]>();
+        if (ownedIds.Length > 0)
+        {
+            var rows = await db.EventInvitedFriendTags.AsNoTracking()
+                .Where(tag => ownedIds.Contains(tag.EventId))
+                .OrderBy(tag => tag.Label)
+                .ToListAsync(cancellationToken);
+            labels = rows
+                .GroupBy(tag => tag.EventId)
+                .ToDictionary(group => group.Key, group => group.Select(tag => tag.Label).ToArray());
+        }
+
+        return events
+            .Select(e => e.ToResponse(
+                viewerId,
+                now,
+                counts.GetValueOrDefault(e.Id),
+                viewerId is not null && e.OwnerId == viewerId
+                    ? labels.GetValueOrDefault(e.Id) ?? []
+                    : null))
+            .ToArray();
+    }
 }

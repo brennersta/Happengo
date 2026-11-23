@@ -21,6 +21,16 @@ public static class EventAccess
         CancellationToken cancellationToken) =>
         db.Events.AsNoTracking().AnyAsync(e => e.Id == eventId, cancellationToken);
 
+    public static Task<bool> IsVisibleAsync(
+        HappengoDbContext db,
+        Guid eventId,
+        Guid userId,
+        NodaTime.Instant now,
+        CancellationToken cancellationToken) =>
+        db.Events.AsNoTracking()
+            .VisibleTo(db, new Happengo.Api.Infrastructure.Auth.Viewer(userId), now, EventReadScope.Direct)
+            .AnyAsync(row => row.Id == eventId, cancellationToken);
+
     public static Task<bool> IsOwnerAsync(
         HappengoDbContext db,
         Guid eventId,

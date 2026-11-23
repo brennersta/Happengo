@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { auth } from "@/auth";
@@ -11,6 +11,7 @@ import { Map } from "@/map/Map";
 import { mapStyleUrl, TALLINN } from "@/map/config";
 import type { LngLat, MapFocus } from "@/map/types";
 import { defaultLocalSlot, localTimeZone, validateCreateEventForm, type CreateEventFormValues } from "@/events/createEventForm";
+import { uniqueFriendTags } from "@/friends/friendTags";
 import { addMinutes, DURATION_PRESETS, startNowSlot } from "@/events/whenPreset";
 import type { components } from "@happengo/api-client";
 import { EVENT_TAGS, type EventTag } from "@/map/markerStyle";
@@ -41,6 +42,7 @@ export default function CreateEventScreen() {
   const [visibility, setVisibility] = useState<Visibility>("public");
   const [approvalMode, setApprovalMode] = useState<ApprovalMode>("open");
   const [tags, setTags] = useState<EventTag[]>([]);
+  const [invitedFriendTags, setInvitedFriendTags] = useState<string[]>([]);
   const [whenOpen, setWhenOpen] = useState(false);
   const [startNow, setStartNow] = useState(false);
   const [duration, setDuration] = useState<number>(60);
@@ -48,6 +50,15 @@ export default function CreateEventScreen() {
   const [submitError, setSubmitError] = useState<"signInRequired" | "createError" | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const isDemo = mocksEnabled();
+  const friendsQuery = useQuery({
+    queryKey: ["friends"],
+    queryFn: async () => {
+      const { data, error } = await fetchClient.GET("/v1/friends");
+      if (error || !data) throw new Error(t("friends.loadError"));
+      return data;
+    },
+  });
+  const friendTags = uniqueFriendTags(friendsQuery.data ?? []);
 
   function applyWhen(nextStartNow: boolean, minutes: number) {
     const slot = nextStartNow ? startNowSlot() : { date: startDate, time: startTime };
@@ -71,6 +82,7 @@ export default function CreateEventScreen() {
     }
     const values: CreateEventFormValues = {
       title, description, startDate, startTime, endDate, endTime, timeZoneId, address, location, visibility, approvalMode, tags,
+      invitedFriendTags: visibility === "friends_only" ? invitedFriendTags : undefined,
     };
     const result = validateCreateEventForm(values);
     if (!result.ok) {
@@ -160,6 +172,27 @@ export default function CreateEventScreen() {
                 onChange={(value) => setApprovalMode(value as ApprovalMode)}
               />
             </View>
+            {visibility === "friends_only" ? (
+              <View style={styles.inviteTags}>
+                <Text style={styles.label}>{t("createEvent.inviteByTag")}</Text>
+                <Text style={styles.helper}>{t("createEvent.inviteByTagHelp")}</Text>
+                {friendTags.length === 0 ? <Text style={styles.helper}>{t("createEvent.noFriendTags")}</Text> : (
+                  <View style={styles.chips}>
+                    {friendTags.map((tag) => {
+                      const selected = invitedFriendTags.includes(tag);
+                      return (
+                        <Chip
+                          key={tag}
+                          label={tag}
+                          selected={selected}
+                          onPress={() => setInvitedFriendTags((current) => selected ? current.filter((item) => item !== tag) : [...current, tag])}
+                        />
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            ) : null}
             {validationError && validationError !== "tags" ? <Text accessibilityRole="alert" style={styles.error}>{t(`createEvent.errors.${validationError}`)}</Text> : null}
             {submitError ? <Text accessibilityRole="alert" style={styles.error}>{t(`createEvent.${submitError}`)}</Text> : null}
             <GradientButton label={t("createEvent.submit")} onPress={() => void submit()} busy={submitting} />
@@ -279,6 +312,7 @@ function SelectField({ label, value, helper, options, onChange }: {
 }
 
 const styles = StyleSheet.create({
+  inviteTags: { gap: 8 },
   fill: { flex: 1, backgroundColor: theme.page },
   content: { padding: 20, paddingBottom: 48, gap: 14, width: "100%", maxWidth: 1100, alignSelf: "center" },
   back: { alignSelf: "flex-start" },

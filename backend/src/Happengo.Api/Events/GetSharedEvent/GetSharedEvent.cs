@@ -51,9 +51,7 @@ internal static class GetSharedEvent
 
         var viewer = viewerContext.Viewer;
         var counts = await AttendanceAccess.AttendingCountsAsync(db, [e.Id], cancellationToken);
-        return TypedResults.Ok(e.ToResponse(
-            viewer.UserId,
-            now,
-            counts.GetValueOrDefault(e.Id)));
+        var items = await new[] { e }.ToResponsesAsync(db, viewer.UserId, now, counts, cancellationToken);
+        return TypedResults.Ok(items[0]);
     }
 }

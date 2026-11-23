@@ -35,6 +35,7 @@ function createFixtures(now: Date): EventResponse[] {
     happeningNow: false,
     isOwner: false,
     attendingCount: 0,
+    invitedFriendTags: null,
     longitude: tallinn.longitude,
     latitude: tallinn.latitude,
   };
@@ -172,6 +173,7 @@ export function createDemoEvent(request: CreateEventRequest, now = new Date()): 
     happeningNow: isHappeningNow(request.startAt, request.endAt, now),
     isOwner: true,
     attendingCount: 1,
+    invitedFriendTags: request.visibility === "friends_only" ? [...(request.invitedFriendTags ?? [])] : [],
     longitude: request.longitude,
     latitude: request.latitude,
   };
@@ -282,8 +284,12 @@ export function getEvent(id: string, now = new Date()): EventResponse | null {
 }
 
 function publish(event: EventResponse, now: Date): EventResponse {
-  const { shareToken: _shareToken, ...rest } = event;
-  return { ...rest, happeningNow: isHappeningNow(event.startAt, event.endAt, now) };
+  const { shareToken: _shareToken, invitedFriendTags, ...rest } = event;
+  return {
+    ...rest,
+    happeningNow: isHappeningNow(event.startAt, event.endAt, now),
+    invitedFriendTags: event.isOwner ? invitedFriendTags ?? [] : null,
+  };
 }
 
 /**
@@ -302,6 +308,7 @@ export function listEvents(bbox: string | null, now = new Date(), filters: DemoL
   const [minLng, minLat, maxLng, maxLat] = box;
   const items = [...fixtures, ...demoEvents]
     .filter((event) => event.visibility !== "unlisted")
+    .filter((event) => event.visibility !== "friends_only" || event.isOwner)
     .filter((event) => !hasEnded(event.endAt, now))
     .filter((event) => !filters.tags?.length || event.tags.some((tag) => filters.tags?.includes(tag)))
     .filter((event) => !filters.happeningNow || isHappeningNow(event.startAt, event.endAt, now))

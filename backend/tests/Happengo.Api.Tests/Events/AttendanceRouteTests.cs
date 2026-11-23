@@ -1,6 +1,7 @@
 using System.Net;
 using Happengo.Api.Attendance;
 using Happengo.Api.Events;
+using Happengo.Api.Friends;
 using Happengo.Api.Events.CreateEvent;
 using Happengo.Api.Infrastructure;
 using Happengo.Api.Tests.Support;
@@ -149,7 +150,7 @@ public sealed class AttendanceRouteTests(ApiFactory factory) : IntegrationTest
             $"/v1/events/{friendsOnly.Id}/attendance", new JoinEventRequest(null), "invitee"));
         Assert.Equal(HttpStatusCode.NotFound, denied.StatusCode);
 
-        await InviteAsync(friendsOnly.Id, "invitee");
+        await BefriendAsync("friends-owner", "invitee");
         var allowed = await client.SendAsync(ApiJson.Post(
             $"/v1/events/{friendsOnly.Id}/attendance", new JoinEventRequest(null), "invitee"));
         Assert.Equal(HttpStatusCode.OK, allowed.StatusCode);
@@ -205,18 +206,13 @@ public sealed class AttendanceRouteTests(ApiFactory factory) : IntegrationTest
     private Task<Guid> UserIdAsync(string subject) =>
         factory.WithDb(db => db.Users.Where(user => user.Subject == subject).Select(user => user.Id).SingleAsync());
 
-    private async Task InviteAsync(Guid eventId, string subject)
+    private async Task BefriendAsync(string leftSubject, string rightSubject)
     {
-        var userId = await UserIdAsync(subject);
+        var left = await UserIdAsync(leftSubject);
+        var right = await UserIdAsync(rightSubject);
         await factory.WithDb(async db =>
         {
-            db.EventInvites.Add(new EventInvite
-            {
-                Id = Guid.CreateVersion7(),
-                EventId = eventId,
-                InviteeUserId = userId,
-                CreatedAt = TestData.Now,
-            });
+            db.Friendships.Add(Friendship.Between(left, right, TestData.Now));
             await db.SaveChangesAsync();
         });
     }

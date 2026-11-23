@@ -91,9 +91,7 @@ internal static class GetEventsInBounds
         }
 
         var counts = await AttendanceAccess.AttendingCountsAsync(db, rows.Select(e => e.Id).ToArray(), cancellationToken);
-        var items = rows
-            .Select(e => e.ToResponse(viewer.UserId, now, counts.GetValueOrDefault(e.Id)))
-            .ToArray();
+        var items = await rows.ToResponsesAsync(db, viewer.UserId, now, counts, cancellationToken);
 
         return TypedResults.Ok(new EventMapResponse(items, EventQueries.MapResultLimit, truncated));
     }

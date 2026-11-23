@@ -39,5 +39,35 @@ internal static class HappengoRelationships
             .WithMany()
             .HasForeignKey(row => row.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Friends.Friendship>()
+            .HasOne<Identity.User>()
+            .WithMany()
+            .HasForeignKey(row => row.UserLowId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Friends.Friendship>()
+            .HasOne<Identity.User>()
+            .WithMany()
+            .HasForeignKey(row => row.UserHighId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Friends.FriendTag>()
+            .HasOne<Identity.User>()
+            .WithMany()
+            .HasForeignKey(row => row.OwnerId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Friends.FriendTag>()
+            .HasOne<Identity.User>()
+            .WithMany()
+            .HasForeignKey(row => row.FriendUserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Friends.FriendInvite>()
+            .HasOne<Identity.User>()
+            .WithMany()
+            .HasForeignKey(row => row.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

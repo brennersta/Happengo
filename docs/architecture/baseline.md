@@ -44,6 +44,7 @@ Address search calls Photon from the client ([ADR 0010](../adr/0010-geocoding.md
 | [0008](../adr/0008-image-storage.md) | Image storage | Accepted |
 | [0009](../adr/0009-i18n.md) | Internationalization | Accepted |
 | [0010](../adr/0010-geocoding.md) | Geocoding | Accepted |
+| [0011](../adr/0011-friendships.md) | Friendships and friends-only audience | Accepted |
 
 0001, 0004, and 0005 are accepted. Auth0 is the identity provider. Entra External ID was considered and was not selected. No tenant has been created.
 

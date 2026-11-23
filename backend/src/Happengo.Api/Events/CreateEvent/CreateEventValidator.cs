@@ -1,3 +1,4 @@
+using Happengo.Api.Friends;
 using NodaTime;
 
 namespace Happengo.Api.Events.CreateEvent;
@@ -13,7 +14,8 @@ internal sealed record ValidatedCreateEvent(
     double Latitude,
     EventVisibility Visibility,
     ApprovalMode ApprovalMode,
-    List<EventTag> Tags);
+    List<EventTag> Tags,
+    IReadOnlyList<FriendTagName> InvitedFriendTags);
 
 internal static class CreateEventValidator
 {
@@ -139,6 +141,18 @@ internal static class CreateEventValidator
             return false;
         }
 
+        if (!FriendTagRules.TryNormalize(request.InvitedFriendTags, out var invitedFriendTags, out var invitedDetail))
+        {
+            detail = invitedDetail;
+            return false;
+        }
+
+        if (visibility != EventVisibility.FriendsOnly && invitedFriendTags.Count > 0)
+        {
+            detail = "Invited friend tags are only allowed when visibility is friends_only.";
+            return false;
+        }
+
         value = new ValidatedCreateEvent(
             request.Title.Trim(),
             string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim(),
@@ -150,7 +164,8 @@ internal static class CreateEventValidator
             latitude,
             visibility,
             approvalMode,
-            tags);
+            tags,
+            invitedFriendTags);
         detail = "";
         return true;
     }
