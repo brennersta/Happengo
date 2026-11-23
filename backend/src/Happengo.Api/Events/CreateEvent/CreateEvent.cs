@@ -69,11 +69,22 @@ internal static class CreateEvent
             UpdatedAt = now,
         };
         db.Events.Add(e);
+        foreach (var tag in validated.InvitedFriendTags)
+        {
+            db.EventInvitedFriendTags.Add(new EventInvitedFriendTag
+            {
+                Id = Guid.CreateVersion7(),
+                EventId = e.Id,
+                NormalizedTag = tag.Normalized,
+                Label = tag.Label,
+            });
+        }
+
         AttendanceAccess.AddOwnerAttending(db, e.Id, ownerId, now);
         await db.SaveChangesAsync(cancellationToken);
 
         return TypedResults.Created(
             $"/v1/events/{e.Id}",
-            e.ToResponse(ownerId, now, attendingCount: 1));
+            e.ToResponse(ownerId, now, attendingCount: 1, validated.InvitedFriendTags.Select(tag => tag.Label).ToArray()));
     }
 }

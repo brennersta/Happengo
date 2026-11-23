@@ -84,14 +84,14 @@ internal static class AttendanceRoutes
             return Unauthorized();
         }
 
+        var now = clock.GetCurrentInstant();
         var context = await EventAccess.FindAttendanceContextAsync(
             db, eventId, userId, request.ShareToken, cancellationToken);
-        if (context is null || !CanAttend(context, userId))
+        if (context is null || !await CanAttendAsync(db, context, userId, eventId, now, cancellationToken))
         {
             return Problems.NotFoundEvent();
         }
 
-        var now = clock.GetCurrentInstant();
         if (context.EndAt <= now)
         {
             return Problems.InvalidAttendance("Attendance cannot be requested after an event has ended.");
@@ -135,6 +135,7 @@ internal static class AttendanceRoutes
         string? shareToken,
         HappengoDbContext db,
         ViewerContext viewerContext,
+        IClock clock,
         CancellationToken cancellationToken)
     {
         if (viewerContext.Viewer.UserId is not Guid userId)
@@ -142,8 +143,9 @@ internal static class AttendanceRoutes
             return Unauthorized();
         }
 
+        var now = clock.GetCurrentInstant();
         var context = await EventAccess.FindAttendanceContextAsync(db, eventId, userId, shareToken, cancellationToken);
-        if (context is null || !CanAttend(context, userId) && context.OwnerId != userId)
+        if (context is null || !await CanAttendAsync(db, context, userId, eventId, now, cancellationToken) && context.OwnerId != userId)
         {
             return Problems.NotFoundEvent();
         }
@@ -237,14 +239,30 @@ internal static class AttendanceRoutes
         return await CurrentResponse(db, eventId, AttendanceStatus.Cancelled, cancellationToken);
     }
 
-    private static bool CanAttend(EventAttendanceContext context, Guid userId) =>
-        context.OwnerId != userId && (context.Visibility switch
+    /// <summary>
+    /// Friends-only joining uses <c>VisibleTo</c> so the audience cannot drift from reads (ADR 0011).
+    /// </summary>
+    private static async Task<bool> CanAttendAsync(
+        HappengoDbContext db,
+        EventAttendanceContext context,
+        Guid userId,
+        Guid eventId,
+        Instant now,
+        CancellationToken cancellationToken)
+    {
+        if (context.OwnerId == userId)
+        {
+            return false;
+        }
+
+        return context.Visibility switch
         {
             EventVisibility.Public => true,
             EventVisibility.Unlisted => context.ShareTokenMatches,
-            EventVisibility.FriendsOnly => context.IsInvited,
+            EventVisibility.FriendsOnly => await EventAccess.IsVisibleAsync(db, eventId, userId, now, cancellationToken),
             _ => false,
-        });
+        };
+    }
 
     private static async Task<IResult> CurrentResponse(
         HappengoDbContext db,

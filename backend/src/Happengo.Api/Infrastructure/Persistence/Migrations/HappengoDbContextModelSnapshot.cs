@@ -213,6 +213,150 @@ namespace Happengo.Api.Infrastructure.Persistence.Migrations
                     b.ToTable("event_invites", (string)null);
                 });
 
+            modelBuilder.Entity("Happengo.Api.Events.EventInvitedFriendTag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("label");
+
+                    b.Property<string>("NormalizedTag")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("normalized_tag");
+
+                    b.HasKey("Id")
+                        .HasName("pk_event_invited_friend_tags");
+
+                    b.HasIndex("EventId", "NormalizedTag")
+                        .IsUnique()
+                        .HasDatabaseName("ix_event_invited_friend_tags_event_id_normalized_tag");
+
+                    b.ToTable("event_invited_friend_tags", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_event_invited_friend_tags_length", "char_length(normalized_tag) BETWEEN 1 AND 30");
+                        });
+                });
+
+            modelBuilder.Entity("Happengo.Api.Friends.FriendInvite", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Instant>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<byte[]>("TokenHash")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("token_hash");
+
+                    b.HasKey("UserId")
+                        .HasName("pk_friend_invites");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_friend_invites_token_hash");
+
+                    b.ToTable("friend_invites", (string)null);
+                });
+
+            modelBuilder.Entity("Happengo.Api.Friends.FriendTag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("FriendUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("friend_user_id");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("label");
+
+                    b.Property<string>("NormalizedTag")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("normalized_tag");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_friend_tags");
+
+                    b.HasIndex("FriendUserId")
+                        .HasDatabaseName("ix_friend_tags_friend_user_id");
+
+                    b.HasIndex("OwnerId", "FriendUserId")
+                        .HasDatabaseName("ix_friend_tags_owner_id_friend_user_id");
+
+                    b.HasIndex("OwnerId", "FriendUserId", "NormalizedTag")
+                        .IsUnique()
+                        .HasDatabaseName("ix_friend_tags_owner_id_friend_user_id_normalized_tag");
+
+                    b.ToTable("friend_tags", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_friend_tags_distinct", "owner_id <> friend_user_id");
+
+                            t.HasCheckConstraint("ck_friend_tags_length", "char_length(normalized_tag) BETWEEN 1 AND 30");
+                        });
+                });
+
+            modelBuilder.Entity("Happengo.Api.Friends.Friendship", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Instant>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("UserHighId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_high_id");
+
+                    b.Property<Guid>("UserLowId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_low_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_friendships");
+
+                    b.HasIndex("UserHighId")
+                        .HasDatabaseName("ix_friendships_user_high_id");
+
+                    b.HasIndex("UserLowId", "UserHighId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_friendships_user_low_id_user_high_id");
+
+                    b.ToTable("friendships", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_friendships_distinct", "user_low_id <> user_high_id");
+                        });
+                });
+
             modelBuilder.Entity("Happengo.Api.Identity.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -311,6 +455,60 @@ namespace Happengo.Api.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_event_invites_users_invitee_user_id");
+                });
+
+            modelBuilder.Entity("Happengo.Api.Events.EventInvitedFriendTag", b =>
+                {
+                    b.HasOne("Happengo.Api.Events.Event", null)
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_invited_friend_tags_events_event_id");
+                });
+
+            modelBuilder.Entity("Happengo.Api.Friends.FriendInvite", b =>
+                {
+                    b.HasOne("Happengo.Api.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_friend_invites_users_user_id");
+                });
+
+            modelBuilder.Entity("Happengo.Api.Friends.FriendTag", b =>
+                {
+                    b.HasOne("Happengo.Api.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("FriendUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_friend_tags_users_friend_user_id");
+
+                    b.HasOne("Happengo.Api.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_friend_tags_users_owner_id");
+                });
+
+            modelBuilder.Entity("Happengo.Api.Friends.Friendship", b =>
+                {
+                    b.HasOne("Happengo.Api.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserHighId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_friendships_users_user_high_id");
+
+                    b.HasOne("Happengo.Api.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserLowId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_friendships_users_user_low_id");
                 });
 #pragma warning restore 612, 618
         }

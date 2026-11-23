@@ -4,6 +4,8 @@ using NodaTime;
 
 namespace Happengo.Api.Identity;
 
+public sealed record UserName(Guid Id, string? DisplayName);
+
 public static class UserDirectory
 {
     public static async Task<Guid> GetOrCreateAsync(
@@ -50,6 +52,31 @@ public static class UserDirectory
                 .SingleAsync(cancellationToken);
         }
     }
+
+    public static async Task<IReadOnlyList<UserName>> DisplayNamesAsync(
+        HappengoDbContext db,
+        IReadOnlyCollection<Guid> userIds,
+        CancellationToken cancellationToken)
+    {
+        if (userIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await db.Users.AsNoTracking()
+            .Where(user => userIds.Contains(user.Id))
+            .Select(user => new UserName(user.Id, user.DisplayName))
+            .ToListAsync(cancellationToken);
+    }
+
+    public static Task<string?> DisplayNameAsync(
+        HappengoDbContext db,
+        Guid userId,
+        CancellationToken cancellationToken) =>
+        db.Users.AsNoTracking()
+            .Where(user => user.Id == userId)
+            .Select(user => user.DisplayName)
+            .FirstAsync(cancellationToken);
 
     private static string? Fit(string? value, int max)
     {

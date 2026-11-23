@@ -2,6 +2,7 @@ using System.Net;
 using Happengo.Api.Attendance;
 using AttendanceRow = Happengo.Api.Attendance.Attendance;
 using Happengo.Api.Events;
+using Happengo.Api.Friends;
 using Happengo.Api.Infrastructure;
 using Happengo.Api.Tests.Support;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +26,16 @@ public sealed class VisibleToMatrixTests(ApiFactory factory) : IntegrationTest, 
             var attending = EventReadTests.NewUser("attending");
             var requested = EventReadTests.NewUser("requested");
             db.Users.AddRange(owner, invited, other, stranger, attending, requested);
+            db.Friendships.Add(Friendship.Between(owner.Id, invited.Id, TestData.Now));
+            db.Friendships.Add(Friendship.Between(owner.Id, other.Id, TestData.Now));
+            db.FriendTags.Add(new FriendTag
+            {
+                Id = Guid.CreateVersion7(),
+                OwnerId = owner.Id,
+                FriendUserId = invited.Id,
+                NormalizedTag = "close",
+                Label = "Close",
+            });
 
             foreach (var visibility in Enum.GetValues<EventVisibility>())
             {
@@ -37,12 +48,12 @@ public sealed class VisibleToMatrixTests(ApiFactory factory) : IntegrationTest, 
 
                     if (visibility == EventVisibility.FriendsOnly)
                     {
-                        db.EventInvites.Add(new EventInvite
+                        db.EventInvitedFriendTags.Add(new EventInvitedFriendTag
                         {
                             Id = Guid.CreateVersion7(),
                             EventId = e.Id,
-                            InviteeUserId = invited.Id,
-                            CreatedAt = TestData.Now,
+                            NormalizedTag = "close",
+                            Label = "Close",
                         });
                     }
 
@@ -148,7 +159,7 @@ public sealed class VisibleToMatrixTests(ApiFactory factory) : IntegrationTest, 
     /// <summary>
     /// ADR 0006: the map requires <c>now &lt; end_at</c> and never lists unlisted events.
     /// ADR 0007: direct reads allow the owner always, attendees only after the end,
-    /// invitees for live friends-only, and a share token only for a live unlisted event.
+    /// friends tagged with an invited tag for live friends-only, and a share token only for a live unlisted event.
     /// </summary>
     private static bool Expected(ViewerKind viewer, EventVisibility visibility, Phase phase, Surface surface)
     {

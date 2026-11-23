@@ -247,6 +247,7 @@ public static class HappengoServices
         }).AllowAnonymous();
 
         var v1 = app.MapGroup("/v1");
+        Happengo.Api.Friends.FriendRoutes.Map(v1);
         GetEventsInBounds.Map(v1);
         GetMyEvents.Map(v1);
         CreateEvent.Map(v1);

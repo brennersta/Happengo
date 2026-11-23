@@ -23,11 +23,11 @@ Every table has a uuid primary key. Instants are `timestamptz` in UTC. Event sta
 
 **Interested.** Unique `(event_id, user_id)`, separate from Attendance. It grants nothing else.
 
-**Friendship.** Mutual. One row per unordered pair, so a one-sided acceptance cannot exist. Accepting an invite link inserts that row.
+**Friendship.** Mutual. One row per unordered pair, so a one-sided acceptance cannot exist. Accepting an invite link inserts that row. The token, the private tags, and who can see a friends-only event are in [ADR 0011](0011-friendships.md).
 
 **FriendTag.** `owner_id`, `friend_user_id`, tags. Readable only by the owner. Used to pick invitees.
 
-**EventInvite.** `event_id` and invitee. A friends-only create writes one invite per friend whose tags match, and an Attendance row in `attending` or `requested` according to `approval_mode`.
+**EventInvite.** `event_id` and invitee. This row is not the friends-only read gate. A friends-only event stores the invited friend tags and `VisibleTo` applies them to the current friendship ([ADR 0011](0011-friendships.md)).
 
 **Album and Photo.** One album per event. A photo belongs to that album and records `uploader_id` and a private blob reference. The cover stays on the event, not in the album.
 
