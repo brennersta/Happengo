@@ -6,6 +6,16 @@ export const EVENT_TAG_COLORS: Record<EventTag, string> = {
   Tech: "#4f46e5", Nightlife: "#9333ea", Outdoor: "#15803d", Culture: "#b45309", Education: "#0f766e",
 };
 
+export const NEUTRAL_MARKER_COLOR = "#5b5bd6";
+
 export function markerColor(tag?: string | null): string {
-  return tag && tag in EVENT_TAG_COLORS ? EVENT_TAG_COLORS[tag as EventTag] : "#5b5bd6";
+  return tag && tag in EVENT_TAG_COLORS ? EVENT_TAG_COLORS[tag as EventTag] : NEUTRAL_MARKER_COLOR;
+}
+
+export type LiveAuraMode = "none" | "static" | "pulse";
+
+/** A live pin pulses unless the platform asks for reduced motion, which keeps a static ring. */
+export function liveAuraMode(happeningNow: boolean | undefined, prefersReducedMotion: boolean): LiveAuraMode {
+  if (!happeningNow) return "none";
+  return prefersReducedMotion ? "static" : "pulse";
 }

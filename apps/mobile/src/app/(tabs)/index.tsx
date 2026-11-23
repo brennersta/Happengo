@@ -5,6 +5,7 @@ import { Map } from "@/map/Map";
 import { TALLINN, mapStyleUrl } from "@/map/config";
 import type { MapBounds, MapMarker } from "@/map/types";
 import { fetchClient } from "@/api/client";
+import { isHappeningNow } from "@/events/liveState";
 import { bboxForBounds, formatEventTime, type MapEvent } from "@/events/mapEvents";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
@@ -40,7 +41,7 @@ export default function DiscoverScreen() {
     title: event.title,
     coordinate: { longitude: event.longitude, latitude: event.latitude },
     mainTag: event.tags[0] ?? null,
-    happeningNow: Date.parse(event.startAt) <= now && now <= Date.parse(event.endAt),
+    happeningNow: isHappeningNow(event.startAt, event.endAt, new Date(now)),
   }));
 
   return (
@@ -82,6 +83,7 @@ export default function DiscoverScreen() {
             renderItem={({ item }) => (
               <EventRow
                 event={item}
+                now={now}
                 onPress={() => router.push({ pathname: "/events/[id]", params: { id: item.id } })}
               />
             )}
@@ -92,13 +94,13 @@ export default function DiscoverScreen() {
   );
 }
 
-function EventRow({ event, onPress }: { event: MapEvent; onPress: () => void }) {
+function EventRow({ event, now, onPress }: { event: MapEvent; now: number; onPress: () => void }) {
   const { t } = useTranslation();
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={t("discover.openDetails", { title: event.title })} onPress={onPress} style={styles.eventCard}>
       <View style={styles.titleRow}>
         <Text numberOfLines={1} style={styles.eventTitle}>{event.title}</Text>
-        {event.happeningNow ? <Text style={styles.liveBadge}>{t("discover.happeningNow")}</Text> : null}
+        {isHappeningNow(event.startAt, event.endAt, new Date(now)) ? <Text style={styles.liveBadge}>{t("discover.happeningNow")}</Text> : null}
       </View>
       <Text style={styles.eventMeta}>{formatEventTime(event, t("localeCode"))}</Text>
       <Text numberOfLines={1} style={styles.eventMeta}>{event.address}</Text>

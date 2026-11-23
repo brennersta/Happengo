@@ -1,42 +1,40 @@
-# Auth0 client setup
+# OIDC client setup
 
 ## Status
 
-Auth0 is the selected OIDC provider for the initial project. The client-side authorization-code flow with PKCE and backend JWT validation are implemented. No Auth0 tenant, applications, API, social connections, or callback allowlists have been created/configured yet, so live sign-in is not verified. The app remains safe to build with blank local values.
+The identity provider is still Brenner's decision. [ADR 0005](adr/0005-authentication.md) is Proposed: Microsoft Entra External ID is the recorded default and Auth0 is the recorded fallback. This client does not choose one. It speaks ordinary OIDC: discovery, authorization code with PKCE, and a bearer access token for the API audience.
 
-The owner selected Auth0 because it is a straightforward starting point and its current Free plan is listed at $0 for up to 25,000 monthly active users. Start with the provided Auth0 domain; a custom domain is unnecessary for the initial release. See [Auth0 pricing](https://auth0.com/pricing) and [ADR 0005](adr/0005-authentication.md).
+No tenant, application registration, API identifier, social connection, or callback allowlist has been created. Live sign-in is not verified. Blank local values are safe; sign-in stays disabled until issuer, client id, and API audience are set.
 
-## Auth0 dashboard setup (pending)
+## What either provider must supply
 
-When the owner is ready to configure the account:
+1. An issuer URL that publishes OIDC discovery.
+2. A public native client and, if the web app is registered separately, a public web client. Do not put a client secret in the Expo app.
+3. An API audience that matches `Authentication:Audience` on the API. Some providers, including Auth0, expect that value as an `audience` authorize parameter. Others, including Entra External ID, usually request the API with a scope such as `api://<app-id>/access_as_user`. Set `EXPO_PUBLIC_OIDC_API_AUDIENCE` to the audience the API validates. Set `EXPO_PUBLIC_OIDC_API_SCOPE` when the provider requires an API scope. The client sends `audience` only when the audience variable is set; it does not hard-code a vendor host.
+4. Exact callback allowlists: native `happengo://auth/callback`, and web callbacks ending in `/auth/callback`. Also configure logout URLs and web origins for the web app.
+5. Google and Apple connections only when those sign-in methods are needed. Apple sign-in needs an Apple Developer account.
 
-1. Create an Auth0 tenant and note its domain, such as `example.eu.auth0.com`.
-2. Register public native and web applications as needed. The app uses authorization code + PKCE; do not add a client secret to the Expo app.
-3. Create an Auth0 API and use its **Identifier** as `EXPO_PUBLIC_OIDC_API_AUDIENCE`.
-4. Add the exact native callback `happengo://auth/callback` and local/production web callbacks ending in `/auth/callback` to the appropriate allowlists. Also configure allowed logout URLs and web origins for the web app.
-5. Configure Google and Apple social connections only when those sign-in methods are needed. Apple sign-in requires an Apple Developer account and its provider credentials.
-6. Put the tenant domain, client IDs, API identifier, and callback URIs in an ignored local env file based on `apps/mobile/.env.example`.
-
-Do not commit tenant secrets or credentials. All `EXPO_PUBLIC_*` values are embedded as public client configuration; no client secret belongs in them. Keep any provider credentials for social connections in Auth0's dashboard.
+Do not commit tenant secrets. Every `EXPO_PUBLIC_*` value is public client configuration.
 
 ## Client and API behavior
 
-- `expo-auth-session` performs discovery, authorization request creation, state/PKCE validation and code exchange. The app never embeds a client secret.
-- `EXPO_PUBLIC_OIDC_ISSUER` is the Auth0 issuer URL with a trailing slash, for example `https://example.eu.auth0.com/`.
-- `EXPO_PUBLIC_OIDC_CLIENT_ID` configures the native public client. A separate `EXPO_PUBLIC_OIDC_CLIENT_ID_WEB` can configure the web app.
-- `EXPO_PUBLIC_OIDC_API_AUDIENCE` is the Auth0 API Identifier. `EXPO_PUBLIC_OIDC_API_SCOPE` is optional and only needed if the API defines scopes.
-- Access tokens stay in memory. Native refresh tokens use `expo-secure-store`. Web refresh tokens stay in memory and are never written to `localStorage`; a browser reload therefore requires a new sign-in.
-- The API validates access-token signature, issuer, audience and expiry. The client does not treat an ID token as an API access token.
-- Sign-out clears local tokens. It does not revoke the Auth0 browser session.
+- `expo-auth-session` performs discovery, the authorization request, state/PKCE checks, and the code exchange.
+- Access tokens stay in memory. Native refresh tokens use `expo-secure-store`. Web refresh tokens stay in memory and are never written to `localStorage`, so a browser reload requires a new sign-in. ADR 0005 leaves the durable web store open.
+- The API validates signature, issuer, audience, and expiry against the configured authority. It does not name Entra or Auth0. The client does not send an ID token as the API access token.
+- Sign-out clears local tokens. It does not revoke the provider's browser session.
 
 ## Redirect and development build
 
-The native scheme is `happengo`; the default native callback is `happengo://auth/callback`. The web callback uses the current origin plus `/auth/callback`. Redirect URIs must match the registered values exactly.
+The native scheme is `happengo`. The web callback is the current origin plus `/auth/callback`. Redirect URIs must match the registered values exactly.
 
-Exercise native OAuth in a custom Expo development build, not Expo Go, because the callback scheme must be compiled into the app. See [Expo AuthSession](https://docs.expo.dev/versions/v58.0.0/sdk/auth-session/), [Expo OAuth/OIDC guide](https://docs.expo.dev/guides/authentication/), and [Auth0 PKCE flow](https://auth0.com/docs/get-started/authentication-and-authorization-flow/authorization-code-flow-with-pkce/add-login-using-the-authorization-code-flow-with-pkce).
+Exercise native OAuth in a custom Expo development build, not Expo Go, because the callback scheme is compiled into the app. See [Expo AuthSession](https://docs.expo.dev/versions/v58.0.0/sdk/auth-session/) and the [Expo OAuth/OIDC guide](https://docs.expo.dev/guides/authentication/).
 
 ## Not yet verified
 
-- Auth0 discovery, browser sign-in, callbacks, code exchange, refresh, and sign-out have not been exercised against a configured tenant.
-- Protected API access and real authenticated event creation need a configured Auth0 API audience and a development build.
-- A durable web refresh-token session is intentionally not implemented; the ADR rules out `localStorage` and leaves the replacement open.
+- Discovery, browser sign-in, callbacks, code exchange, refresh, and sign-out have not been exercised against a configured issuer.
+- Real authenticated event creation needs that issuer and a development build.
+- A durable web refresh-token session is intentionally not implemented.
+
+## Flag from the unvalidated draft
+
+The Codex draft edited ADR 0005 to Accepted and named Auth0 as the chosen provider, including an Auth0-only setup guide and an architecture diagram that showed only Auth0. Those edits presumed a decision Brenner has not made. This note and ADR 0005 put the choice back to Proposed. The authorize `audience` parameter remains, because the draft required an API audience before sign-in; it is configuration, not a vendor selection. Confirm with the chosen provider whether that parameter should be sent.

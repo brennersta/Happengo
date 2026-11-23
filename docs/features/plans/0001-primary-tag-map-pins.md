@@ -12,7 +12,7 @@ When someone creates an event and sees it on the map, they can recognize its mai
 
 - `backend/src/Happengo.Api/Events/EventTag.cs` defines the current fixed tag vocabulary: Music, Sports, Food, Art, Family, Tech, Nightlife, Outdoor, Culture, Education.
 - The event entity stores `Tags`; `CreateEventRequest` accepts tags; creation validation checks the supported vocabulary; `EventResponse` returns tags. Backend support exists, but its end-to-end order preservation has not been established in this review.
-- `EventMapping.ToResponse` currently calculates `HappeningNow` as `startAt <= now && now < endAt`. The accepted owner rule for the visual aura is inclusive at the end (`startAt <= now && now <= endAt`), so align the API/client live-state boundary in this slice.
+- `EventMapping.ToResponse` calculates `HappeningNow` as `startAt <= now && now < endAt`. That half-open window is the rebuild rule (ADR 0003). The event has ended at exactly `endAt`. The Base44 client used an inclusive end; do not copy that into the aura.
 - `apps/mobile/src/app/events/create.tsx` currently has no tag state or tag selector and sends no tags in the create request.
 - `apps/mobile/src/map/types.ts` currently gives `MapMarker` only an ID, coordinate, and title. Web and native map components render the same fixed purple marker.
 - The rebuild map components do not currently receive a live-state flag or render an aura.
@@ -25,7 +25,7 @@ When someone creates an event and sees it on the map, they can recognize its mai
 2. Require at least one tag for a newly created event, because each event needs a main type.
 3. Use selection order: the first selected tag is the main type; remaining selected tags are additional descriptors. If the main tag is deselected, the next still-selected tag becomes main. Keep the order when submitting, storing, returning, and rendering the event.
 4. Give each supported main tag a stable, distinct pin color. Use one shared mapping for web and native. The pin face uses this color; do not show all tags as separate colors on one pin.
-5. Compute live state from the event's absolute start/end instants: `startAt <= now && now <= endAt`.
+5. Compute live state from the event's absolute start/end instants: `startAt <= now && now < endAt`.
 6. Render a separate subtle pulsing aura only for live events. The aura must not replace or obscure the main-tag pin color.
 7. Use a neutral fallback for legacy or demo events with no tags so old records still render. Do not let untagged records break the map.
 
@@ -53,8 +53,8 @@ Out of scope: adding new incident-specific tags; changing visibility, attendance
 ### Live-event aura
 
 - [ ] At `now < startAt`, the pin has no pulse.
-- [x] For `startAt <= now <= endAt`, a separate, subtle aura pulses around the pin while the main-tag color remains visible. The exact end instant is included, matching the owner's stated definition.
-- [ ] At `now > endAt`, the pin has no pulse.
+- [x] For `startAt <= now < endAt`, a separate, subtle aura pulses around the pin while the main-tag color remains visible.
+- [x] At `now >= endAt`, the pin has no pulse. The exact end instant has ended.
 - [ ] API/event detail and both platform maps agree on the live-state rule; update the existing `HappeningNow` mapping/tests if needed.
 - [ ] Web and native use the same time rule and visually equivalent states. Do not confuse an upcoming event with a live one.
 - [x] Where reduced-motion preferences are available, respect them by showing a static live ring instead of animating.

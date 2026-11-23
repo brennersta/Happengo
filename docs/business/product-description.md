@@ -66,7 +66,7 @@ Happengo is not only a party-finding app, a traffic-only incident tool, or a rep
 
 ## Product decisions still open
 
-Some details need an explicit product decision before they are built: how unlisted events appear in discovery, whether public event attendees are shown by name or only through counts/friend context, and whether the first release limits events to one day. Incident categories, confirmation signals, expiry, and moderation also need to be defined. These choices do not change the core idea described above.
+Unlisted events never appear on any map, including the owner's. That is decided (ADR 0007): a share link creates no persisted grant and no attendance, and there is no `invited` status. Details that still need an explicit product decision before they are built: whether public event attendees are shown by name or only through counts/friend context, and whether the first release limits events to one day. Incident categories, confirmation signals, expiry, and moderation also need to be defined. These choices do not change the core idea described above.
 
 ## Current implementation context
 

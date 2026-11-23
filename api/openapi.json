@@ -124,7 +124,7 @@
           "Events"
         ],
         "summary": "List events the caller owns or attends, including past events.",
-        "description": "Requires authentication. Includes upcoming and past events created by the caller or events they are attending, plus active attendance requests.",
+        "description": "Requires authentication. Returns events the caller owns, events they are attending (including after the event ends), and events with an active request. Rejected and cancelled attendance is omitted, and other users\u0027 events are omitted.",
         "operationId": "GetMyEvents",
         "responses": {
           "200": {
@@ -733,8 +733,8 @@
             ]
           },
           "tags": {
-            "type": "array",
             "minItems": 1,
+            "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventTag"
             }

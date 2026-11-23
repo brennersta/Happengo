@@ -1,5 +1,19 @@
 # Happengo handoff for Grok
 
+Updated: 2026-11-23
+
+## Correction before the 2026-11-20 notes
+
+The notes below were written with the unvalidated Codex draft and are not the current rules where they disagree with this section.
+
+- Happening now is half-open: `startAt <= now < endAt`. The event has ended at exactly `endAt`. Map visibility uses the same end (`now < endAt`). The draft's `<= endAt` was wrong and has been removed from the API, the demo mock, and both map clients.
+- Unlisted events are never on any map, including the owner's. Brenner confirmed ADR 0007. A share link creates no persisted grant and no attendance. There is no `invited` status. This is no longer an open product decision.
+- The identity provider is still open. ADR 0005 stays Proposed (Entra External ID default, Auth0 fallback). The draft's edits that marked ADR 0005 Accepted and named Auth0 as chosen were reverted. The OIDC client stays provider-agnostic. It does send an `audience` authorize parameter when `EXPO_PUBLIC_OIDC_API_AUDIENCE` is set; that parameter is an Auth0 convention and must be confirmed with whichever provider Brenner picks.
+- Share tokens are stored as SHA-256 only (PR #11). Reads, including create, do not return `shareToken`. Create stores the hash and discards the plaintext, so the owner cannot yet show a share link. Returning the plaintext once belongs with event edit, which is not in this slice.
+- Attendee identity display, maximum duration (24 hours vs 7 days), incident tags and moderation, and livestream links stay open. Current behavior is unchanged: 7-day cap, count plus the existing request-id prefix, no incident tags, no livestream field.
+
+Validation commands and results for 2026-11-23 are recorded at the end of this file.
+
 Updated: 2026-11-20
 
 ## Purpose
@@ -10,7 +24,7 @@ Continue the Base44-to-owned-code rebuild in small, reviewable slices. This is a
 
 Read the plain-language [`business product description`](../business/product-description.md), page-by-page [`feature catalog`](../business/feature-catalog.md), [`product vision`](../product-vision.md), and [`feature requirements and Base44 inventory`](../product-features.md) before reprioritizing. The saved Base44 AI conversation and Base44 ZIP have now been reviewed at source level. The feature brief separates the owner's current target, historical requests and AI claims, what the ZIP contains, and rebuild status. Do not treat old chat text or Base44 client-side checks as authority to alter privacy or as proof of backend enforcement.
 
-The current implementation is mainly a scheduled social-events/map/API foundation, not a full rebuild of the Base44 app or the owner's three use cases. The owner wants incidents, public events, and private gatherings together in one app and map with user-controlled filters. Keep type-aware details/actions. For event creation, the existing predefined tags are the type choices: the first tag selected is the event's main type and determines pin color; any additional tags are descriptors. Do not add a separate type field or second taxonomy step. While an event is live (`startAt <= now <= endAt`), its pin also gets a separate subtle pulsating aura. The old ZIP uses the first tag to color a ring while the pin body remains purple; the target is to color the pin by that tag and keep the live aura separate. Waze is a relevant precedent for quick location-based reports and freshness feedback. Do not tell the owner to restate the product direction or reduce it to parties. Distinguish abuse flags from “still present/not there” feedback, and define provenance, correction, expiry, and moderation before broad incident reporting.
+The current implementation is mainly a scheduled social-events/map/API foundation, not a full rebuild of the Base44 app or the owner's three use cases. The owner wants incidents, public events, and private gatherings together in one app and map with user-controlled filters. Keep type-aware details/actions. For event creation, the existing predefined tags are the type choices: the first tag selected is the event's main type and determines pin color; any additional tags are descriptors. Do not add a separate type field or second taxonomy step. While an event is live (`startAt <= now < endAt`; ended at exactly `endAt`), its pin also gets a separate subtle pulsating aura. The old ZIP uses the first tag to color a ring while the pin body remains purple; the target is to color the pin by that tag and keep the live aura separate. Waze is a relevant precedent for quick location-based reports and freshness feedback. Do not tell the owner to restate the product direction or reduce it to parties. Distinguish abuse flags from “still present/not there” feedback, and define provenance, correction, expiry, and moderation before broad incident reporting.
 
 ### What the Base44 ZIP contains (source inspection, not runtime validation)
 
@@ -43,7 +57,7 @@ The detailed requirements and evidence are in [`docs/product-features.md`](../pr
 
 Implement [`feature plan 0001`](../features/plans/0001-primary-tag-map-pins.md) before starting a broader product area. The owner clarified that the first selected existing tag is already the event's main type; additional selected tags are descriptors. Do not add a separate type field or a second selection step.
 
-The API has a fixed EventTag vocabulary and carries tags, but the rebuild create screen currently sends none. Both rebuild map renderers currently use a fixed purple pin and have no live aura. Complete the create-to-map path: add tag selection, require one tag for new events, preserve selection order end to end, map the first tag to a stable color shared by web/native, and show a separate subtle pulse exactly while `startAt <= now <= endAt`. The detailed acceptance criteria, legacy fallback, accessibility, tests, and verification expectations are in the feature plan.
+The API has a fixed EventTag vocabulary and carries tags, but the rebuild create screen currently sends none. Both rebuild map renderers currently use a fixed purple pin and have no live aura. Complete the create-to-map path: add tag selection, require one tag for new events, preserve selection order end to end, map the first tag to a stable color shared by web/native, and show a separate subtle pulse exactly while `startAt <= now < endAt`. The detailed acceptance criteria, legacy fallback, accessibility, tests, and verification expectations are in the feature plan.
 
 The live Base44 URL could not be opened from this workspace. Do not state that the live app was inspected; use the saved screenshots and ZIP source as historical evidence and record what was actually validated in the rebuild.
 
@@ -76,7 +90,7 @@ The live Base44 URL could not be opened from this workspace. Do not state that t
 - Added a create-event screen with title/description, local date and time fields, device IANA time zone, address, visibility, join approval mode, and map-tap location selection.
 - Client validation mirrors backend constraints: required/maximum field lengths, valid local date/time, start in the future, end after start and in the future, maximum seven-day duration, valid time zone and coordinates.
 - Successful create invalidates Discover queries and navigates to the new event detail route. Detail reads use `GET /v1/events/{id}` and show the map pin, event time, address, description, visibility and attendee count.
-- Auth0 is the selected identity provider (ADR 0005 accepted). In production/no-mock mode, event creation stops with a sign-in-required message until Auth0 issuer/client/resource configuration is filled and verified rather than pretending to authenticate.
+- The identity provider is not selected. ADR 0005 is Proposed. In production/no-mock mode, event creation stops with a sign-in-required message until issuer, client, and API audience configuration is filled and verified rather than pretending to authenticate.
 - Development mock mode now supports in-memory create, detail read and Discover refresh. The create screen clearly labels these events as temporary. Mock events are not persisted or sent to the real API; real creation remains unavailable until Auth0 configuration and live authentication are verified.
 - Required request DTO values stay nullable internally so missing JSON fields reach the validator and produce 400. `[Required]` metadata plus the OpenAPI transformer mark them required and non-nullable in the API contract/client types.
 
@@ -86,7 +100,7 @@ The live Base44 URL could not be opened from this workspace. Do not state that t
 - The token manager keeps access tokens in memory, refreshes near expiry, serializes concurrent refreshes, and stores native refresh tokens in SecureStore. The web refresh-token store remains memory-only; refresh tokens are never written to `localStorage`.
 - Sign-in controls are available from Profile, and the create screen links to sign-in when the API requires authentication. The app exposes web/native client ID and redirect URI config plus API scope/audience settings.
 - OIDC configuration is blank in `apps/mobile/.env.example`. No Auth0 tenant, app registration, redirect allowlist, API resource/audience, or social connections have been configured. Live login/refresh has not been tested. The client requires an API audience before enabling sign-in because API access tokens must target the configured backend audience.
-- The owner explicitly selected Auth0 for the easier $0 initial-project path. ADR 0005 is Accepted. Auth0's listed free tier covers up to 25,000 MAU; Entra External ID remains a possible future alternative for Azure alignment and its larger core free tier. Do not describe provider selection as pending. See `docs/authentication-setup.md`.
+- The draft claimed Brenner had selected Auth0 and that ADR 0005 was Accepted. That claim is withdrawn. The provider pick is still open. See `docs/authentication-setup.md`.
 
 ### Event creation API
 

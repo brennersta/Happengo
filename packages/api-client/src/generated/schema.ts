@@ -37,7 +37,7 @@ export interface paths {
         };
         /**
          * List events the caller owns or attends, including past events.
-         * @description Requires authentication. Includes upcoming and past events created by the caller or events they are attending, plus active attendance requests.
+         * @description Requires authentication. Returns events the caller owns, events they are attending (including after the event ends), and events with an active request. Rejected and cancelled attendance is omitted, and other users' events are omitted.
          */
         get: operations["GetMyEvents"];
         put?: never;
@@ -77,7 +77,7 @@ export interface paths {
         };
         /**
          * One event the caller is allowed to read.
-         * @description Hidden, unlisted (without being the owner), and ended events the caller did not attend return 404. The owner receives shareToken.
+         * @description Hidden, unlisted (without being the owner), and ended events the caller did not attend return 404. The share token is not returned; only its hash is stored.
          */
         get: operations["GetEvent"];
         put?: never;
@@ -314,6 +314,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
         };
     };
     CreateEvent: {
@@ -409,6 +418,15 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

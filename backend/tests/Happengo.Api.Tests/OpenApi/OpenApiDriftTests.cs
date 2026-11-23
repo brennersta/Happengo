@@ -54,7 +54,9 @@ public sealed class OpenApiDriftTests : IClassFixture<WebApplicationFactory<Prog
         var document = await LoadDocumentAsync();
         var schema = document["components"]!["schemas"]!["CreateEventRequest"]!;
         var required = schema["required"]!.AsArray().Select(node => node!.GetValue<string>()).ToArray();
-        Assert.Equal(9, required.Length);
+        Assert.Equal(
+            ["title", "startAt", "endAt", "timeZoneId", "address", "longitude", "latitude", "visibility", "approvalMode", "tags"],
+            required);
         foreach (var name in required)
         {
             Assert.DoesNotContain("null", schema["properties"]![name]!.ToJsonString(), StringComparison.Ordinal);

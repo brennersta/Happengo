@@ -15,6 +15,10 @@ internal static class GetMyEvents
             .WithName("GetMyEvents")
             .WithTags("Events")
             .WithSummary("List events the caller owns or attends, including past events.")
+            .WithDescription(
+                "Requires authentication. Returns events the caller owns, events they are attending "
+                + "(including after the event ends), and events with an active request. "
+                + "Rejected and cancelled attendance is omitted, and other users' events are omitted.")
             .Produces<EventMapResponse>()
             .ProducesProblem(StatusCodes.Status401Unauthorized);
 

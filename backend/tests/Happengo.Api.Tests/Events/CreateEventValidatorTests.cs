@@ -45,6 +45,22 @@ public sealed class CreateEventValidatorTests
     }
 
     [Fact]
+    public void Tag_order_survives_duplicate_removal_and_empty_tags_are_rejected()
+    {
+        var request = Request() with
+        {
+            Tags = [EventTag.Nightlife, EventTag.Food, EventTag.Nightlife, EventTag.Music],
+        };
+        var valid = CreateEventValidator.TryValidate(request, Now, out var value, out var detail);
+        Assert.True(valid, detail);
+        Assert.Equal([EventTag.Nightlife, EventTag.Food, EventTag.Music], value!.Tags);
+        Assert.Equal(EventTag.Nightlife, value.Tags[0]);
+
+        AssertInvalid(Request() with { Tags = [] }, "At least one event tag is required; the first tag is the main type.");
+        AssertInvalid(Request() with { Tags = null }, "At least one event tag is required; the first tag is the main type.");
+    }
+
+    [Fact]
     public void Invalid_coordinates_and_time_zones_are_rejected()
     {
         AssertInvalid(Request() with { Longitude = 181 }, "Longitude must be a finite number between -180 and 180.");

@@ -6,6 +6,7 @@ import {
   getDemoPendingRequests,
   getEvent,
   listEvents,
+  listMyEvents,
   requestDemoAttendance,
   type CreateEventRequest,
 } from "./contract";
@@ -49,6 +50,9 @@ export async function enableMocks(): Promise<void> {
       const decision = decisionMatch[3] === "approve" ? "attending" : "rejected";
       const response = decideDemoAttendance(decisionMatch[1], decisionMatch[2], decision);
       return response ? Response.json(response) : new Response(null, { status: 409 });
+    }
+    if (request.method === "GET" && url.pathname.endsWith("/v1/events/mine")) {
+      return Response.json(listMyEvents());
     }
     if (request.method === "GET" && url.pathname.endsWith("/v1/events")) {
       const bbox = url.searchParams.get("bbox");

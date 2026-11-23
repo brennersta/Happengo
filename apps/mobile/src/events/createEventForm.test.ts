@@ -53,6 +53,14 @@ test("rejects invalid time order, duration, timezone, and location", () => {
   expect(validateCreateEventForm({ ...base, location: { longitude: 181, latitude: 59 } }, now)).toEqual({ ok: false, error: "location" });
 });
 
+test("keeps tag selection order and requires at least one tag", () => {
+  const ordered = validateCreateEventForm({ ...formValues(), tags: ["Nightlife", "Music", "Food"] }, now);
+  expect(ordered.ok).toBe(true);
+  if (!ordered.ok) throw new Error("Expected a valid event form.");
+  expect(ordered.request.tags).toEqual(["Nightlife", "Music", "Food"]);
+  expect(validateCreateEventForm({ ...formValues(), tags: [] }, now)).toEqual({ ok: false, error: "tags" });
+});
+
 test("default slots are future local times on the hour", () => {
   const slots = defaultLocalSlot(1, new Date(2026, 10, 17, 10, 42));
   expect(slots).toEqual({ date: "2026-11-17", time: "11:00" });

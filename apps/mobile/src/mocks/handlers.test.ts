@@ -1,10 +1,14 @@
 import {
   cancelDemoAttendance,
   createDemoEvent,
+  decideDemoAttendance,
+  demoPendingRequesterId,
   getDemoAttendance,
+  getDemoPendingRequests,
   getEvent,
   isHappeningNow,
   listEvents,
+  listMyEvents,
   requestDemoAttendance,
   resetDemoEvents,
 } from "./contract";
@@ -36,19 +40,12 @@ test("unlisted events never appear on the map", () => {
   expect(body.items.some((event) => event.title === "Unlisted gathering")).toBe(false);
 });
 
-test("an event remains live at endAt and leaves the map immediately after", () => {
-  expect(listEvents(bbox, new Date(atEnd.getTime() + 1)).items).toEqual([]);
-  expect(
-    isHappeningNow("2026-11-16T08:43:00.000Z", "2026-11-16T12:43:00.000Z", during),
-  ).toBe(true);
-  expect(
-    isHappeningNow(
-      "2026-11-16T08:43:00.000Z",
-      "2026-11-16T12:43:00.000Z",
-      new Date("2026-11-16T08:43:00.000Z"),
-    ),
-  ).toBe(true);
-  expect(isHappeningNow("2026-11-16T08:43:00.000Z", "2026-11-16T12:43:00.000Z", atEnd)).toBe(true);
+test("an event leaves the map and stops being live at endAt", () => {
+  expect(listEvents(bbox, new Date(atEnd.getTime() - 1)).items).toHaveLength(1);
+  expect(listEvents(bbox, atEnd).items).toEqual([]);
+  expect(isHappeningNow(liveEvent.startAt, liveEvent.endAt, new Date(liveEvent.startAt))).toBe(true);
+  expect(isHappeningNow(liveEvent.startAt, liveEvent.endAt, new Date(atEnd.getTime() - 1))).toBe(true);
+  expect(isHappeningNow(liveEvent.startAt, liveEvent.endAt, atEnd)).toBe(false);
 });
 
 test("includes a point that sits on the bbox boundary", () => {
@@ -105,6 +102,34 @@ test("keeps demo unlisted events out of Discover but lets their creator open det
   expect(listEvents(bbox).items.some((event) => event.id === created?.id)).toBe(false);
   expect(getEvent(created!.id)?.visibility).toBe("unlisted");
   expect(getEvent("00000000-0000-4000-8000-000000000002")).toBeNull();
+});
+
+test("my events returns only the demo user's owned, attending, or requested events", () => {
+  expect(listMyEvents().items).toEqual([]);
+  const created = createDemoEvent({
+    title: "Owner dinner",
+    description: null,
+    startAt: new Date(Date.now() + 60 * 60_000).toISOString(),
+    endAt: new Date(Date.now() + 3 * 60 * 60_000).toISOString(),
+    timeZoneId: "Europe/Tallinn",
+    address: "Tallinn, Estonia",
+    longitude: 24.7536,
+    latitude: 59.437,
+    visibility: "public",
+    approvalMode: "approval",
+    tags: ["Nightlife", "Music"],
+  });
+  expect(created?.tags).toEqual(["Nightlife", "Music"]);
+  const mine = listMyEvents().items.map((event) => event.id);
+  expect(mine).toEqual([created!.id]);
+  expect(getDemoPendingRequests(created!.id)?.userIds).toEqual([demoPendingRequesterId]);
+  expect(decideDemoAttendance(created!.id, demoPendingRequesterId, "rejected")?.status).toBe("rejected");
+  expect(getDemoPendingRequests(created!.id)?.userIds).toEqual([]);
+
+  const sample = listEvents(bbox).items[0]!;
+  expect(listMyEvents().items.some((event) => event.id === sample.id)).toBe(false);
+  expect(requestDemoAttendance(sample.id, null)?.status).toBe("attending");
+  expect(listMyEvents().items.map((event) => event.id)).toContain(sample.id);
 });
 
 test("joins a public demo event idempotently and updates the attendee count on cancellation", () => {

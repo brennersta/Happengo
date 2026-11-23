@@ -1,8 +1,8 @@
 import { Camera, Map as NativeMap, Marker } from "@maplibre/maplibre-react-native";
 import { AccessibilityInfo, Animated, StyleSheet, View } from "react-native";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { HappengoMapProps } from "./types";
-import { markerColor } from "./markerStyle";
+import { liveAuraMode, markerColor } from "./markerStyle";
 
 const worldBounds: [number, number, number, number] = [-180, -85, 180, 85];
 
@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
 });
 
 function NativeMarker({ title, mainTag, happeningNow }: { title: string; mainTag?: string | null; happeningNow?: boolean }) {
-  const progress = useRef(new Animated.Value(0)).current;
+  const [progress] = useState(() => new Animated.Value(0));
   const [reduceMotion, setReduceMotion] = useState(false);
   useEffect(() => {
     let mounted = true;
@@ -63,20 +63,21 @@ function NativeMarker({ title, mainTag, happeningNow }: { title: string; mainTag
     const subscription = AccessibilityInfo.addEventListener("reduceMotionChanged", setReduceMotion);
     return () => { mounted = false; subscription.remove(); };
   }, []);
+  const aura = liveAuraMode(happeningNow, reduceMotion);
   useEffect(() => {
-    if (!happeningNow || reduceMotion) { progress.stopAnimation(); progress.setValue(0); return; }
+    if (aura !== "pulse") { progress.stopAnimation(); progress.setValue(0); return; }
     const animation = Animated.loop(Animated.sequence([
       Animated.timing(progress, { toValue: 1, duration: 850, useNativeDriver: true }),
       Animated.timing(progress, { toValue: 0, duration: 850, useNativeDriver: true }),
     ]));
     animation.start();
     return () => animation.stop();
-  }, [happeningNow, progress, reduceMotion]);
+  }, [aura, progress]);
   const scale = progress.interpolate({ inputRange: [0, 1], outputRange: [1, 1.75] });
   const opacity = progress.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0] });
   return (
     <View accessible accessibilityLabel={`${title}${mainTag ? `, ${mainTag}` : ""}${happeningNow ? ", happening now" : ""}`} style={styles.markerContainer}>
-      {happeningNow ? <Animated.View style={[styles.aura, reduceMotion ? styles.staticAura : { transform: [{ scale }], opacity }]} /> : null}
+      {aura !== "none" ? <Animated.View style={[styles.aura, aura === "static" ? styles.staticAura : { transform: [{ scale }], opacity }]} /> : null}
       <View style={[styles.marker, { backgroundColor: markerColor(mainTag) }]} />
     </View>
   );

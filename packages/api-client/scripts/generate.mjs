@@ -5,7 +5,9 @@ import { fileURLToPath } from "node:url";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const spec = resolve(packageRoot, "../../api/openapi.json");
-const out = resolve(packageRoot, "src/generated/schema.ts");
+const out = process.env.OPENAPI_TYPES_OUT
+  ? resolve(process.env.OPENAPI_TYPES_OUT)
+  : resolve(packageRoot, "src/generated/schema.ts");
 
 if (!existsSync(spec)) {
   console.error("api/openapi.json is missing. The backend owns that file.");

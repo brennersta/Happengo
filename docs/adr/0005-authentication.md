@@ -1,7 +1,7 @@
 # 0005. Authentication
 
-- Status: Accepted
-- Date: 2026-11-17
+- Status: Proposed
+- Date: 2026-11-16
 
 ## Context
 
@@ -9,7 +9,11 @@ Anyone can open the map and read public events that have not ended. Creating an 
 
 ## Decision
 
-Use Auth0 as the managed OIDC provider, with Google and Apple as social connections. The owner selected Auth0 for the simpler setup and a $0 starting tier suitable for this initial project (currently up to 25,000 monthly active users). Start with Auth0's default domain; a custom domain is not needed for v1.
+Use a managed OIDC provider with Google and Apple as social connections.
+
+- Default: Microsoft Entra External ID.
+- Fallback: Auth0.
+- Brenner picks. This ADR stays Proposed until that pick is written down.
 
 The Expo client uses the authorization code flow with PKCE. On iOS and Android the refresh token is stored in `expo-secure-store`. On web the refresh token is never written to `localStorage`.
 
@@ -19,11 +23,11 @@ Public discovery and public event reads accept anonymous callers. Every other ro
 
 ## Consequences
 
-- The API remains provider-agnostic. Moving to another OIDC provider requires configuration and app registrations; existing accounts may need migration because user identity is keyed by (`iss`, `sub`).
+- Moving between Entra External ID and Auth0 is configuration and app registration, as long as both issue OIDC tokens with `iss` and `sub`.
 - Google and Apple are connections on that provider. The API does not verify Google or Apple tokens itself.
 - Tests inject a test principal. They do not call the live provider.
 
 ## Open
 
-- Auth0 tenant, application registrations, API identifier, social connections, and callback allowlists must be configured before live sign-in can be tested.
+- The provider itself (this ADR).
 - Where the web client keeps the refresh token. `localStorage` is ruled out. The replacement is open.

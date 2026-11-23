@@ -23,7 +23,7 @@ Happengo is one app with one location-based map/list experience. Users choose wh
 - Nearby map and corresponding list; their results track the visible viewport and active filters.
 - Filters for item type/category, event tags, and date/time, including a “happening now” choice.
 - The creator selects from a predefined tag list curated by the product owner. The first tag selected is the event's main type; any additional selected tags add detail. Use that first tag to determine the map pin color; no separate type field is needed.
-- Give a pin a separate, subtle pulsating aura only while its event is happening (`startAt <= now <= endAt`). Keep the type color visible underneath the aura.
+- Give a pin a separate, subtle pulsating aura only while its event is happening (`startAt <= now < endAt`). The event has ended at exactly `endAt`. Keep the type color visible underneath the aura. The older Base44 client used an inclusive end instant; the rebuild follows ADR 0003.
 - Clear item type in pins/cards. Use an appropriate detail/action flow per type.
 - Public events can show how many friends are attending and support seeing attending friends, subject to a final privacy decision below.
 - Private items are available only to their permitted audience.
@@ -111,7 +111,7 @@ The saved `HappengoChat/Untitled-1.md` is the Base44 conversation export: it inc
 ### Interaction and reliability requirements
 
 - Cards and map previews should carry the same key facts (especially date/time and address); map/list hover or selection should highlight the matching pin; clicking a pin should reveal the selected event, including when events share coordinates.
-- In “happening now” state, require `startAt <= now <= endAt`; only then show the status pill and map pulse. Upcoming or past events must not show either.
+- In “happening now” state, require `startAt <= now < endAt`; only then show the status pill and map pulse. At `endAt` the event has ended. Upcoming or past events must not show either.
 - Mobile map should occupy a stable viewport, avoid page scrollbars/control overlap, and provide a top toolbar for Map/List, Filter, and Create. List results should match the visible map viewport. These were repeatedly reported as broken after purported fixes.
 - Address search should be worldwide, appear on both map and create-event screens, display concise human-readable addresses, avoid map controls, and close suggestions after selection.
 - Selecting a date must not submit/create the event; only the Create Event action does. Multi-day selection must persist as multi-day.
@@ -131,22 +131,22 @@ Base44 AI also said a publish action was required to make unpublished changes li
 - Older chat specifies strict no-past starts, end after start, and max 7 days. The current 24-hour launch proposal is newer and needs an explicit decision.
 - Old UX requests include bilingual English/PT-BR, readable human addresses (street/number/neighborhood/city/state/country where available), image placeholders, helpful empty states, friend-tag helper text, and no technical error wording. ZIP contains language provider and address/photo components; quality and coverage were not manually tested.
 
-## 7. Privacy decision conflict: unlisted events
+## 7. Unlisted events on the map
 
-There are conflicting historical/rebuild rules:
+Historical notes disagreed:
 
-1. A **FINAL** decision in the saved chat says public events are map-visible while live; friends-only are visible to creator and invited friends; unlisted are map-visible to creator and people who were invited or reached them through the share link. Creator should always see own events.
-2. Rebuild ADR 0007 and API behavior say unlisted events are never map results, including for the owner; an unlisted event is opened only by share token (owner can read by ID). The older complete specification also included an earlier rule “unlisted not on map,” then later changed it.
+1. A later “FINAL” note in the saved Base44 chat said the owner, invitees, and share-link audience could see unlisted events on the map.
+2. ADR 0007 says unlisted events are never map results, including for the owner. The owner reads them from My Events or by id. A share token reads a live unlisted event and does not create attendance.
 
-The current owner says private events are hidden from outsiders but has not resolved this precise unlisted-map rule in the current conversation. Preserve the privacy boundary and ask the owner to reconcile before changing it. Do not weaken server-side privacy based only on the old client code.
+**Decided by Brenner:** ADR 0007 stands. Unlisted events are never on any map, including the owner's. A share link creates no persisted grant and no attendance. There is no `invited` attendance status. Do not reopen this from the old chat.
 
 ## 8. Rebuild status and first-release focus
 
-The rebuild has a credible event/map/API foundation, not feature parity with Base44 and not all three product use cases. Current gaps include Discover filters, incident lifecycle/reporting, friend/invitation lifecycle, private albums/media access, profile/My Events, stream links, and live Auth0 setup. Small-city launch is an owner-stated option: seed local content and review it manually while volume is manageable, with a later moderation path.
+The rebuild has a credible event/map/API foundation, not feature parity with Base44 and not all three product use cases. Current gaps include Discover filters, incident lifecycle/reporting, friend/invitation lifecycle, private albums/media access, profile editing, stream links, and a still-unpicked identity provider (ADR 0005 is Proposed). Small-city launch is an owner-stated option: seed local content and review it manually while volume is manageable, with a later moderation path.
 
 ## Decisions to resolve
 
-1. Unlisted visibility on the map: saved chat final rule vs accepted ADR 0007.
+1. Unlisted visibility on the map: **decided**. ADR 0007 stands. See section 7.
 2. Attendee identity display: historical count-only privacy vs current request to show who is attending.
 3. Event max duration: 24 hours proposed for initial release vs 7 days in saved chat, Base44 validation, and rebuild.
 4. Incident categories, freshness signals, evidence/verification labels, correction and expiry rules.

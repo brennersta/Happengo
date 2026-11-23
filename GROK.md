@@ -18,7 +18,7 @@ Complete and validate the first-use event journey: create an event, find it in D
 
 Happengo is one location-based app for local incident awareness, public event discovery, and private gathering memories. Keep these uses together in a shared map/list experience with filters and type-appropriate details and permissions.
 
-For scheduled events, the existing predefined tag chips are the type choices: the first tag selected is the main type and determines pin color; additional selected tags add detail. A separate, subtle pulsing aura marks a pin only while its event is happening (`startAt <= now <= endAt`). Do not add a separate event-type field for this behavior.
+For scheduled events, the existing predefined tag chips are the type choices: the first tag selected is the main type and determines pin color; additional selected tags add detail. A separate, subtle pulsing aura marks a pin only while its event is happening (`startAt <= now < endAt`). The event has ended at exactly `endAt`. Do not add a separate event-type field for this behavior.
 
 ## Important working rules
 
@@ -30,7 +30,7 @@ For scheduled events, the existing predefined tag chips are the type choices: th
 
 ## Decisions still open
 
-- Unlisted-event map visibility: historical Base44 conversation and rebuild ADR 0007 conflict.
+- Unlisted-event map visibility: **decided**. Brenner confirmed ADR 0007. Unlisted events are never on any map, including the owner's. A share link creates no persisted grant and no attendance. There is no `invited` attendance status.
 - Attendee identity display: earlier count-only privacy request conflicts with later requests to show attending friends/people.
 - Maximum event duration: 24 hours proposed for initial release versus 7 days in Base44 and rebuild.
 - Which predefined tags incident reports need, such as Fire or Traffic Collision.

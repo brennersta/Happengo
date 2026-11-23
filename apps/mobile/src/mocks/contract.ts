@@ -1,4 +1,7 @@
 import type { components } from "@happengo/api-client";
+import { hasEnded, isHappeningNow } from "../events/liveState";
+
+export { hasEnded, isHappeningNow };
 
 export type EventMapResponse = components["schemas"]["EventMapResponse"];
 export type EventResponse = components["schemas"]["EventResponse"];
@@ -48,6 +51,8 @@ const demoEvents: EventResponse[] = [];
 const attendance = new Map<string, AttendanceStatus>();
 const pendingUsers = new Map<string, string[]>();
 const demoUserId = "demo-current-user";
+/** Synthetic requester so the single-user demo can exercise owner approve and decline. */
+export const demoPendingRequesterId = "00000000-0000-4000-8000-0000000000aa";
 let nextDemoId = 101;
 
 function attendanceKey(eventId: string, userId = demoUserId): string {
@@ -83,6 +88,10 @@ export function createDemoEvent(request: CreateEventRequest, now = new Date()): 
   };
   demoEvents.unshift(event);
   attendance.set(attendanceKey(event.id), "attending");
+  if (request.approvalMode === "approval") {
+    pendingUsers.set(id, [demoPendingRequesterId]);
+    attendance.set(attendanceKey(id, demoPendingRequesterId), "requested");
+  }
   return event;
 }
 
@@ -91,6 +100,10 @@ export function resetDemoEvents(): void {
   attendance.clear();
   pendingUsers.clear();
   nextDemoId = 101;
+  for (let index = 0; index < fixtures.length; index += 1) {
+    const event = fixtures[index];
+    if (event) fixtures[index] = { ...event, attendingCount: 0 };
+  }
 }
 
 export function getDemoAttendance(eventId: string): MyAttendanceResponse | null {
@@ -106,7 +119,7 @@ export function getDemoPendingRequests(eventId: string): PendingAttendanceRespon
 
 export function requestDemoAttendance(eventId: string, shareToken: string | null): AttendanceResponse | null {
   const event = getEvent(eventId);
-  if (!event || event.isOwner || Date.parse(event.endAt) <= Date.now()) return null;
+  if (!event || event.isOwner || hasEnded(event.endAt, new Date())) return null;
   if (event.visibility === "unlisted" && event.shareToken !== shareToken) return null;
   if (event.visibility === "friends_only") return null;
 
@@ -165,20 +178,15 @@ function updateDemoAttendingCount(eventId: string, attendingCount: number): void
 export function getEvent(id: string, now = new Date()): EventResponse | null {
   const event = [...demoEvents, ...fixtures].find((item) => item.id === id);
   if (!event || (event.visibility !== "public" && !event.isOwner)) return null;
-  if (Date.parse(event.endAt) < now.getTime() && !event.isOwner) return null;
+  const attending = attendance.get(attendanceKey(event.id)) === "attending";
+  if (hasEnded(event.endAt, now) && !event.isOwner && !attending) return null;
   return { ...event, happeningNow: isHappeningNow(event.startAt, event.endAt, now) };
-}
-
-/** Happening now includes both event boundary instants. */
-export function isHappeningNow(startAt: string, endAt: string, now: Date): boolean {
-  const time = now.getTime();
-  return Date.parse(startAt) <= time && time <= Date.parse(endAt);
 }
 
 /**
  * Viewport events for the map. Unlisted events are never returned, including
  * for the owner. A share token is not an input and does not grant access.
- * Events disappear from the map after their end instant (endAt < now).
+ * Events leave the map at endAt (now >= endAt).
  */
 export function listEvents(bbox: string | null, now = new Date()): EventMapResponse {
   const box = parseBbox(bbox);
@@ -186,7 +194,7 @@ export function listEvents(bbox: string | null, now = new Date()): EventMapRespo
   const [minLng, minLat, maxLng, maxLat] = box;
   const items = [...fixtures, ...demoEvents]
     .filter((event) => event.visibility !== "unlisted")
-    .filter((event) => Date.parse(event.endAt) >= now.getTime())
+    .filter((event) => !hasEnded(event.endAt, now))
     .filter(
       (event) =>
         event.longitude >= minLng &&

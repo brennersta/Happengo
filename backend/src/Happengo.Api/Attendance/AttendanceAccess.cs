@@ -109,7 +109,7 @@ public static class AttendanceAccess
     public static IQueryable<Guid> EventIdsForMyEvents(HappengoDbContext db, Guid userId) =>
         db.Attendances
             .Where(row => row.UserId == userId
-                && row.Status is AttendanceStatus.Attending or AttendanceStatus.Requested)
+                && (row.Status == AttendanceStatus.Attending || row.Status == AttendanceStatus.Requested))
             .Select(row => row.EventId);
 
     public static async Task<IReadOnlyDictionary<Guid, int>> AttendingCountsAsync(

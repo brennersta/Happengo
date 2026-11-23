@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import type { Map as MapLibreMap, Marker as MapLibreMarker } from "maplibre-gl";
 import { MAPLIBRE_WORKER_URL } from "./config";
 import type { HappengoMapProps } from "./types";
-import { markerColor } from "./markerStyle";
+import { liveAuraMode, markerColor } from "./markerStyle";
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./attribution.css";
@@ -100,7 +100,7 @@ export function Map({ center, zoom = 11, styleUrl, markers = [], onMapIdle, onMa
           width: "36px", height: "36px", borderRadius: "50%", border: `3px solid ${item.happeningNow ? "#18a879" : "white"}`,
           background: color, boxShadow: item.happeningNow ? "0 0 0 5px rgba(24,168,121,.22), 0 2px 8px rgba(0,0,0,.3)" : "0 2px 8px rgba(0,0,0,.3)", cursor: "pointer",
         });
-        if (item.happeningNow && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        if (liveAuraMode(item.happeningNow, window.matchMedia("(prefers-reduced-motion: reduce)").matches) === "pulse") {
           element.animate(
             [{ boxShadow: "0 0 0 0 rgba(24,168,121,.42), 0 2px 8px rgba(0,0,0,.3)" }, { boxShadow: "0 0 0 11px rgba(24,168,121,0), 0 2px 8px rgba(0,0,0,.3)" }],
             { duration: 1600, iterations: Infinity },
@@ -113,7 +113,7 @@ export function Map({ center, zoom = 11, styleUrl, markers = [], onMapIdle, onMa
       });
     });
     return () => { cancelled = true; };
-  }, [mapReady, markers]);
+  }, [mapReady, markers, onMarkerPress]);
 
   return <View ref={hostRef} style={styles.map} />;
 }

@@ -66,6 +66,31 @@ public sealed class CreateEventTests(ApiFactory factory) : IntegrationTest
     }
 
     [Fact]
+    public async Task Tag_order_survives_create_and_read_and_the_first_tag_is_main()
+    {
+        await factory.ResetAsync();
+        var body = RequestBody() with
+        {
+            Tags = [EventTag.Nightlife, EventTag.Food, EventTag.Nightlife, EventTag.Music],
+        };
+        var response = await factory.CreateClient().SendAsync(ApiJson.Post("/v1/events", body, "tag-owner"));
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var created = await response.Content.Read<EventResponse>();
+        Assert.Equal([EventTag.Nightlife, EventTag.Food, EventTag.Music], created!.Tags);
+        Assert.Equal(EventTag.Nightlife, created.Tags[0]);
+
+        var read = await factory.CreateClient().SendAsync(ApiJson.Get($"/v1/events/{created.Id}"));
+        var loaded = await read.Content.Read<EventResponse>();
+        Assert.Equal(created.Tags, loaded!.Tags);
+
+        var stored = await factory.WithDb(db => db.Events.AsNoTracking()
+            .Where(row => row.Id == created.Id)
+            .Select(row => row.Tags)
+            .SingleAsync());
+        Assert.Equal(created.Tags, stored);
+    }
+
+    [Fact]
     public async Task Past_start_is_rejected_without_inserting_an_event()
     {
         await factory.ResetAsync();

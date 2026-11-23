@@ -8,7 +8,7 @@ test("requires issuer, client id and API audience", () => {
   })).toBeNull();
 });
 
-test("builds standard OIDC scopes and an Auth0-style API audience", () => {
+test("builds standard OIDC scopes and passes a configured API audience", () => {
   const config = loadOidcConfiguration({
     EXPO_PUBLIC_OIDC_ISSUER: "https://tenant.example/",
     EXPO_PUBLIC_OIDC_CLIENT_ID: "public-client-id",

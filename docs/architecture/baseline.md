@@ -9,7 +9,7 @@ flowchart TB
   person["Person"]
   app["Expo app\niOS, Android, web\nMapLibre"]
   api["API\nASP.NET Core\nmodular monolith"]
-  idp["Auth0\nOIDC provider"]
+  idp["OIDC IdP\nEntra External ID or Auth0"]
   db[("PostgreSQL\nPostGIS")]
   blob["Blob Storage\nprivate containers"]
   kv["Key Vault"]
@@ -39,15 +39,16 @@ Geocoding is behind one adapter. Whether that adapter runs in the API or the cli
 | [0002](../adr/0002-stack-and-modular-monolith.md) | Stack and modular monolith | Accepted |
 | [0003](../adr/0003-data-model.md) | Data model | Accepted |
 | [0004](../adr/0004-backend-baseline.md) | Backend baseline | Accepted |
-| [0005](../adr/0005-authentication.md) | Authentication | Accepted |
+| [0005](../adr/0005-authentication.md) | Authentication | Proposed |
 | [0006](../adr/0006-geo-queries.md) | Geo queries | Accepted |
 | [0007](../adr/0007-privacy-enforcement.md) | Privacy enforcement | Accepted |
 | [0008](../adr/0008-image-storage.md) | Image storage | Accepted |
 | [0009](../adr/0009-i18n.md) | Internationalization | Accepted |
 
-All listed ADRs are accepted.
+0001 and 0004 are accepted. 0005 stays Proposed until Brenner picks the identity provider.
 
 ## Open for Brenner
 
+- Identity provider: Entra External ID (default) or Auth0 — [ADR 0005](../adr/0005-authentication.md)
 - Geocoding provider — [ADR 0006](../adr/0006-geo-queries.md)
 - Tile provider for MapLibre — [ADR 0006](../adr/0006-geo-queries.md)

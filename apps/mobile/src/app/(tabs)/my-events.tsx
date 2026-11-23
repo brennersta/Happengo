@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { auth } from "@/auth";
 import { fetchClient } from "@/api/client";
 import { mocksEnabled } from "@/mocks/config";
+import { hasEnded, isHappeningNow } from "@/events/liveState";
 import { formatEventTime } from "@/events/mapEvents";
 
 type EventPeriod = "upcoming" | "past";
@@ -41,8 +42,8 @@ export default function MyEventsScreen() {
 
   const filtered = useMemo(() => {
     const visible = (eventsQuery.data ?? []).filter((event) => period === "past"
-      ? Date.parse(event.endAt) < now
-      : Date.parse(event.endAt) >= now);
+      ? hasEnded(event.endAt, new Date(now))
+      : !hasEnded(event.endAt, new Date(now)));
     return visible.sort((a, b) => period === "past"
       ? Date.parse(b.endAt) - Date.parse(a.endAt)
       : Date.parse(a.startAt) - Date.parse(b.startAt));
@@ -93,7 +94,7 @@ export default function MyEventsScreen() {
               onPress={() => router.push({ pathname: "/events/[id]", params: { id: item.id } })} style={styles.card}>
               <View style={styles.cardHeading}>
                 <Text numberOfLines={1} style={styles.eventTitle}>{item.title}</Text>
-                {item.happeningNow ? <Text style={styles.live}>{t("discover.happeningNow")}</Text> : null}
+                {isHappeningNow(item.startAt, item.endAt, new Date(now)) ? <Text style={styles.live}>{t("discover.happeningNow")}</Text> : null}
               </View>
               <Text style={styles.meta}>{formatEventTime(item, t("localeCode"))}</Text>
               <Text numberOfLines={1} style={styles.meta}>{item.address}</Text>
