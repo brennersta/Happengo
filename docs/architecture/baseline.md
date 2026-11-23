@@ -14,22 +14,21 @@ flowchart TB
   blob["Blob Storage\nprivate containers"]
   kv["Key Vault"]
   tiles["Map tiles\nprovider open"]
-  geo["Geocoding\nprovider open"]
+  geo["Photon\ngeocoder"]
 
   person --> app
   app -->|"auth code + PKCE"| idp
   app -->|"HTTPS /v1"| api
   app -->|"write-only SAS"| blob
   app --> tiles
+  app --> geo
   api -->|"validate JWT via JWKS"| idp
   api --> db
   api --> blob
   api --> kv
-  api -.-> geo
-  app -.-> geo
 ```
 
-Geocoding is behind one adapter. Whether that adapter runs in the API or the client is open with the provider choice ([ADR 0006](../adr/0006-geo-queries.md)).
+Address search calls Photon from the client ([ADR 0010](../adr/0010-geocoding.md)). The API has no geocoding endpoint. `EXPO_PUBLIC_GEOCODER_URL` can point at a self-hosted Photon.
 
 ## ADR index
 
@@ -44,10 +43,10 @@ Geocoding is behind one adapter. Whether that adapter runs in the API or the cli
 | [0007](../adr/0007-privacy-enforcement.md) | Privacy enforcement | Accepted |
 | [0008](../adr/0008-image-storage.md) | Image storage | Accepted |
 | [0009](../adr/0009-i18n.md) | Internationalization | Accepted |
+| [0010](../adr/0010-geocoding.md) | Geocoding | Accepted |
 
 0001, 0004, and 0005 are accepted. Auth0 is the identity provider. Entra External ID was considered and was not selected. No tenant has been created.
 
 ## Open for Brenner
 
-- Geocoding provider — [ADR 0006](../adr/0006-geo-queries.md)
 - Tile provider for MapLibre — [ADR 0006](../adr/0006-geo-queries.md)

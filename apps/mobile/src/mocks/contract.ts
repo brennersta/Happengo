@@ -47,6 +47,7 @@ function createFixtures(now: Date): EventResponse[] {
       endAt: new Date(nowMs + 90 * 60_000).toISOString(),
       tags: ["Music"],
       happeningNow: true,
+      description: "A short harbour rehearsal, open to anyone nearby.",
     },
     {
       ...base,
@@ -92,6 +93,7 @@ function createFixtures(now: Date): EventResponse[] {
       startAt: new Date(nowMs + 6 * 60 * 60_000).toISOString(),
       endAt: new Date(nowMs + 9 * 60 * 60_000).toISOString(),
       tags: ["Art"],
+      description: "An evening in the studio. The host approves each request.",
       approvalMode: "approval",
       isOwner: true,
       attendingCount: 1,
@@ -116,6 +118,7 @@ function createFixtures(now: Date): EventResponse[] {
       startAt: new Date(nowMs - 26 * 60 * 60_000).toISOString(),
       endAt: new Date(nowMs - 24 * 60 * 60_000).toISOString(),
       tags: ["Family"],
+      description: "A family picnic that has already ended.",
       isOwner: true,
       attendingCount: 1,
       longitude: 24.748,

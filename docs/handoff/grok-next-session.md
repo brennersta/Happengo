@@ -190,6 +190,53 @@ The implementation draft now includes ordered tag chips in event creation, a req
 - Existing event detail and attendance controls were already present; this work connects the first-use paths to them. Friends, albums/photos, cover uploads, identity display for attendance requests, and profile editing remain unimplemented.
 - No tests, typecheck, builds, or visual walkthrough were run. All runtime behavior remains unverified. See the updated page-by-page status in `../business/feature-catalog.md`.
 
+## Target design and address search — 2026-11-23
+
+Runtime proof is separated from code review below.
+
+### Runtime proof: live filters on the previous Pages deploy
+
+Pages run https://github.com/brennersta/Happengo/actions/runs/45154233288 succeeded for `c1fae62`. Headless Chromium then opened `https://brennersta.github.io/Happengo/?v=c1fae62`.
+
+1. Open Filters, select Food, Apply. The list was only Market lunch. The only pin was `Market lunch, Food`. Screenshot `live-filter-food.png`.
+2. Clear all, open Filters, turn on Happening now, Apply. The list was only Harbour choir. The only pin was `Harbour choir, Music, happening now`. Screenshot `live-filter-now.png`.
+
+### Runtime proof: this design, local web export
+
+From `/workspace`, `EXPO_PUBLIC_DEMO_MODE=true pnpm --filter @happengo/mobile export:web` completed with base path `/Happengo`. Playwright served that export at `http://127.0.0.1:4174/Happengo/` at 1280×800. Photon was stubbed in the browser. No request left the machine for Photon.
+
+Checked in the page:
+
+- Discover map: search field, map/list toggle, filter button, gradient Create Event, count pill "5 events", colored teardrop pins, floating text nav.
+- List: "Events near you (5)" and View Event cards with gradient placeholders.
+- Food then Apply left only Market lunch. Happening now then Apply left only Harbour choir.
+- Typing `santa` showed "Santa Luzia, Minas Gerais, Brazil" and "Santa Luzia, Maranhão, Brazil", with the Photon attribution.
+- Event detail, create, the start-now duration picker, My Events upcoming, and My Events past. The past list did not show a raw coordinate.
+
+Before shots of the previous UI, same viewport: `before-discover-map.png`, `before-filters.png`, `before-event-detail.png`, `before-create.png`, `before-my-events.png`, `before-my-events-past.png`.
+
+After shots: `after-discover-map.png`, `after-discover-list.png`, `after-filters.png`, `after-address-search.png`, `after-event-detail.png`, `after-create.png`, `after-create-when.png`, `after-my-events.png`, `after-my-events-past.png`.
+
+Commands that were run for this slice:
+
+```text
+pnpm --filter @happengo/mobile exec tsc --noEmit
+pnpm --filter @happengo/mobile test
+pnpm --filter @happengo/mobile exec expo lint
+```
+
+`tsc` and lint exited 0. Mobile Jest: **60 passed**, including the pick-then-centre search test and `displayAddress`. The API was not changed, so `dotnet test` was not re-run here. CI still runs it when the workflow asks.
+
+Address search requests Photon only when the typed text changes. Choosing a result does not search that label, and a later map-centre change does not either. `expo-linear-gradient` is `~58.0.4`.
+
+The first `after-create.png` was blank because the shot landed before OpenFreeMap tiles arrived. The when-picker shot of the same screen already showed Tallinn, and the refreshed `after-create.png` waits for a tile. The refreshed `after-address-search.png` is after choosing Santa Luzia: the list is closed, the field keeps that label, and the count is 0 because the map moved. The browser log showed one Photon request, for `santa` only.
+
+### Code review only
+
+- Native teardrop pins and `Camera.easeTo` were not opened on a device. `tsc` includes `Map.native.tsx`.
+- The public Photon host was not called. `photon.test.ts` stubs fetch and checks the URL, the limit, the centre bias, the language rule, and that no identifier is sent. A live search on the Pages demo belongs after this merges.
+- Cover upload, albums, reactions, the friends graph, a profile photo, and the date-range filter are not in this slice.
+
 ## Discover filters — 2026-11-23
 
 Runtime proof. The demo-pages section below is the previous slice.
