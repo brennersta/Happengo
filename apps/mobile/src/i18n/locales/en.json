@@ -19,7 +19,29 @@
     "ended": "Ended"
   },
   "friends": {
-    "empty": "Invite friends to create private events and share photos."
+    "empty": "Invite friends to create private events and share photos.",
+    "inviteTitle": "Invite link",
+    "inviteHelp": "Share this link. A friend has to be signed in to accept it.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "rotate": "Rotate link",
+    "activeHidden": "Your invite link is active. Rotate it to copy a new one. The old link stops working.",
+    "privateTags": "Only you can see these tags.",
+    "remove": "Remove",
+    "addTag": "Add tag",
+    "tagPlaceholder": "Family",
+    "emptyList": "No friends yet. Share your invite link.",
+    "unnamed": "Friend",
+    "loadError": "Could not load your friends. Try again.",
+    "signIn": "Sign in to invite friends and tag them.",
+    "acceptTitle": "Add {name} as a friend?",
+    "acceptBody": "You'll both be friends. You can remove them later.",
+    "accept": "Accept",
+    "accepted": "You and {name} are friends.",
+    "openFriends": "Back to Friends",
+    "selfInvite": "You can't add yourself.",
+    "unknownInvite": "This invite link is not active.",
+    "acceptError": "The invite could not be accepted. Try again."
   },
   "profile": {
     "empty": "Your name, photo, and language will show up here."
@@ -108,13 +130,16 @@
     "public": "Public",
     "unlisted": "Unlisted",
     "friendsOnly": "Friends only",
+    "inviteByTag": "Invite Friends by Tag",
+    "inviteByTagHelp": "Only friends you tagged with a selected tag can see this event. Leave them all off to invite every friend.",
+    "noFriendTags": "Tag friends on the Friends tab, then invite them here.",
     "approval": "Joining",
     "open": "Open",
     "approvalRequired": "Request approval",
     "visibilityHelp": {
       "public": "Visible on the map for everyone.",
       "unlisted": "Hidden from the map. People need the direct link.",
-      "friends_only": "Only friends can find this event."
+      "friends_only": "Only your friends can find this event. Tags can narrow that."
     },
     "approvalHelp": {
       "open": "Anyone can join instantly.",
@@ -170,7 +195,7 @@
     "host": "Host",
     "hostedByYou": "Hosted by you",
     "attendees": "Attendees",
-    "access": "Who can join",
+    "access": "Access",
     "joiningOpen": "Anyone can join",
     "joiningApproval": "The host approves requests"
   },
