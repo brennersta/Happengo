@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { fetchClient } from "@/api/client";
 import { mocksEnabled } from "@/mocks/config";
 import { displayAddress } from "@/events/displayAddress";
+import { eventGridColumns } from "@/events/eventGrid";
 import { hasEnded, isHappeningNow } from "@/events/liveState";
 import { formatEventTime } from "@/events/mapEvents";
 import { theme } from "@/theme/theme";
@@ -17,6 +18,9 @@ type EventPeriod = "upcoming" | "past";
 export default function MyEventsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const columns = eventGridColumns(width);
+  const cardWidth = columns === 1 ? "100%" : columns === 2 ? "48.5%" : "32%";
   const [signedIn, setSignedIn] = useState(false);
   const [period, setPeriod] = useState<EventPeriod>("upcoming");
   const isDemo = mocksEnabled();
@@ -80,31 +84,36 @@ export default function MyEventsScreen() {
           <View style={styles.message}>
             <Text style={styles.body}>{t(period === "past" ? "myEvents.emptyPast" : "myEvents.emptyUpcoming")}</Text>
           </View>
-        ) : filtered.map((item) => {
-          const live = isHappeningNow(item.startAt, item.endAt, new Date(now));
-          const ended = hasEnded(item.endAt, new Date(now));
-          const address = displayAddress(item.address);
-          return (
-            <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={t("discover.openDetails", { title: item.title })}
-              onPress={() => router.push({ pathname: "/events/[id]", params: { id: item.id } })} style={styles.card}>
-              <View style={styles.cover}><CoverPlaceholder tag={item.tags[0]} /></View>
-              <View style={styles.cardBody}>
-                <View style={styles.heading}>
-                  <Text style={styles.eventTitle}>{item.title}</Text>
-                  {live ? <Text style={styles.badge}>{t("myEvents.ongoing")}</Text> : null}
-                  {ended ? <Text style={styles.ended}>{t("myEvents.ended")}</Text> : null}
-                </View>
-                {item.description ? <Text numberOfLines={2} style={styles.description}>{item.description}</Text> : null}
-                <Text style={styles.meta}>{address ?? t("discover.addressUnavailable")}</Text>
-                <Text style={styles.meta}>{formatEventTime(item, t("localeCode"))}</Text>
-                <Text style={styles.meta}>{t("eventDetail.attendingCount", { count: item.attendingCount })}</Text>
-                <View style={styles.tags}>
-                  {item.tags.map((tag) => <Chip key={tag} label={t(`tags.${tag}`)} />)}
-                </View>
-              </View>
-            </Pressable>
-          );
-        })}
+        ) : (
+          <View style={styles.grid}>
+            {filtered.map((item) => {
+              const live = isHappeningNow(item.startAt, item.endAt, new Date(now));
+              const ended = hasEnded(item.endAt, new Date(now));
+              const address = displayAddress(item.address);
+              return (
+                <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={t("discover.openDetails", { title: item.title })}
+                  onPress={() => router.push({ pathname: "/events/[id]", params: { id: item.id } })}
+                  style={[styles.card, { width: cardWidth }, ended && styles.past]}>
+                  <View style={styles.cover}><CoverPlaceholder tag={item.tags[0]} /></View>
+                  <View style={styles.cardBody}>
+                    <View style={styles.heading}>
+                      <Text style={[styles.eventTitle, ended && styles.pastTitle]}>{item.title}</Text>
+                      {live ? <Text style={styles.badge}>{t("myEvents.ongoing")}</Text> : null}
+                      {ended ? <Text style={styles.ended}>{t("myEvents.ended")}</Text> : null}
+                    </View>
+                    {item.description ? <Text numberOfLines={2} style={styles.description}>{item.description}</Text> : null}
+                    <Text style={styles.meta}>{address ?? t("discover.addressUnavailable")}</Text>
+                    <Text style={styles.meta}>{formatEventTime(item, t("localeCode"))}</Text>
+                    <Text style={styles.meta}>{t("eventDetail.attendingCount", { count: item.attendingCount })}</Text>
+                    <View style={styles.tags}>
+                      {item.tags.map((tag) => <Chip key={tag} label={t(`tags.${tag}`)} />)}
+                    </View>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -112,7 +121,8 @@ export default function MyEventsScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.page },
-  content: { padding: 20, paddingBottom: 120, gap: 14, width: "100%", maxWidth: 920, alignSelf: "center" },
+  content: { padding: 20, paddingBottom: 120, gap: 14, width: "100%", maxWidth: 1120, alignSelf: "center" },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 14 },
   title: { color: theme.brand, fontSize: 32, fontWeight: "800" },
   tabs: { flexDirection: "row", gap: 8 },
   tab: { borderRadius: 12, backgroundColor: "white", paddingHorizontal: 14, paddingVertical: 8 },
@@ -120,6 +130,8 @@ const styles = StyleSheet.create({
   tabText: { color: theme.muted, fontWeight: "700" },
   tabTextOn: { color: "white" },
   card: { backgroundColor: "white", borderRadius: 18, overflow: "hidden", ...theme.shadow },
+  past: { opacity: 0.62 },
+  pastTitle: { color: theme.muted },
   cover: { height: 140 },
   cardBody: { padding: 14, gap: 6 },
   heading: { flexDirection: "row", alignItems: "center", gap: 8 },

@@ -164,7 +164,15 @@
     "visibility": "Visibility",
     "public": "Public",
     "unlisted": "Unlisted",
-    "friends_only": "Friends only"
+    "friends_only": "Friends only",
+    "when": "When",
+    "where": "Where",
+    "host": "Host",
+    "hostedByYou": "Hosted by you",
+    "attendees": "Attendees",
+    "access": "Who can join",
+    "joiningOpen": "Anyone can join",
+    "joiningApproval": "The host approves requests"
   },
   "auth": {
     "intro": "Sign in to create and manage your events.",
