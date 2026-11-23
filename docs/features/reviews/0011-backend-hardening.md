@@ -1,4 +1,4 @@
-# Review 0008: Backend hardening
+# Review 0011: Backend hardening
 **Date:** 2026-11-23
 **Branch:** codex/backend-hardening
 **Scope:** forwarded-header trust/rate-limit IPs, Staging startup guards, and unlisted share-link rotation.
@@ -11,7 +11,7 @@
 ## Verification
 - ShareLinkRotationTests: 2 passed.
 - OpenAPI export test in update mode: 1 passed; then the full suite reran the drift assertion without update mode.
-- dotnet test backend/Happengo.sln --configuration Release: 222 passed, 0 failed, 0 skipped, with Testcontainers/PostGIS.
+- Post-Friends-merge `dotnet test backend/Happengo.sln --configuration Release`: 229 passed, 0 failed, 0 skipped, with Testcontainers/PostGIS.
 - Exact commands and Docker version are recorded in the 2026-11-23 handoff section.
 ## Review boundaries
 - Reviewed code and tests in the requested backend/API/docs scope. No mobile files changed.

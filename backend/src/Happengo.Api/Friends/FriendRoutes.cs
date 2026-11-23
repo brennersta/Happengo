@@ -165,7 +165,6 @@ internal static class FriendRoutes
             return Unauthorized("A valid user identity is required to rotate an invite link.");
         }
 
-        var token = InviteToken.New();
         var now = clock.GetCurrentInstant();
         var existing = await db.FriendInvites.FirstOrDefaultAsync(row => row.UserId == userId, cancellationToken);
         if (existing is null)
@@ -174,6 +173,7 @@ internal static class FriendRoutes
             return TypedResults.Ok(issued);
         }
 
+        var token = InviteToken.New();
         existing.TokenHash = InviteToken.Hash(token);
         existing.CreatedAt = now;
         await db.SaveChangesAsync(cancellationToken);

@@ -448,3 +448,13 @@ dotnet test backend/tests/Happengo.Api.Tests/Happengo.Api.Tests.csproj --configu
 Result: 1 passed; `api/openapi.json` regenerated. Then, from `packages/api-client`, ran `node ./scripts/generate.mjs` (openapi-typescript 7.13.0). Both generated artifacts contain the Friends and share-link endpoints.
 - Renamed this review note to `docs/features/reviews/0011-backend-hardening.md` (0010 is used by Friends); it ends with a newline.
 - Post-merge full backend test command: `$env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'; dotnet test backend/Happengo.sln --configuration Release`. Result: **229 passed, 0 failed, 0 skipped**.
+
+## Backend maintenance — 2026-11-23
+
+- Created `codex/backend-maintenance` from latest `origin/main` (`1f39679`).
+- Applied the Dependabot updates intended to supersede PRs #8, #9, #10, #13, and #14: Npgsql EF Core PostgreSQL and NetTopologySuite 10.0.4; Microsoft.NET.Test.Sdk 18.12.0; Testcontainers.PostgreSql 4.17.0; coverlet.collector 10.1.1; xunit.runner.visualstudio 4.0.1. All package restores and tests passed.
+- In `FriendRoutes.RotateInvite`, token generation now occurs only after the existing-row path is selected; a new invite row continues to get its token from `IssueAsync`.
+- Updated the backend-hardening review note heading and test count to **229 passed, 0 failed, 0 skipped** (post-Friends merge).
+- OpenAPI drift check command: `$env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'; Remove-Item Env:UPDATE_OPENAPI -ErrorAction SilentlyContinue; dotnet test backend/tests/Happengo.Api.Tests/Happengo.Api.Tests.csproj --configuration Release --filter FullyQualifiedName~OpenApi_document_matches_committed_contract`. Result: **1 passed, 0 failed, 0 skipped**.
+- Full backend command: `$env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'; dotnet test backend/Happengo.sln --configuration Release`. Result: **229 passed, 0 failed, 0 skipped**.
+- No mobile, migration, infrastructure, or deployment changes were made in this maintenance branch.
