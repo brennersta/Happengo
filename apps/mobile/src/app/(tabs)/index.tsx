@@ -1,15 +1,136 @@
-import { StyleSheet, View } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { useQuery } from "@tanstack/react-query";
 import { Map } from "@/map/Map";
 import { TALLINN, mapStyleUrl } from "@/map/config";
+import type { MapBounds, MapMarker } from "@/map/types";
+import { fetchClient } from "@/api/client";
+import { bboxForBounds, formatEventTime, type MapEvent } from "@/events/mapEvents";
+import { useTranslation } from "react-i18next";
+import { useRouter } from "expo-router";
+
+const initialBounds: MapBounds = {
+  southWest: { longitude: TALLINN.longitude - 0.05, latitude: TALLINN.latitude - 0.03 },
+  northEast: { longitude: TALLINN.longitude + 0.05, latitude: TALLINN.latitude + 0.03 },
+};
 
 export default function DiscoverScreen() {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const [bounds, setBounds] = useState(initialBounds);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
+  const onMapIdle = useCallback((next: MapBounds) => setBounds(next), []);
+  const bbox = useMemo(() => bboxForBounds(bounds), [bounds]);
+  const eventsQuery = useQuery({
+    queryKey: ["discover-events", bbox],
+    queryFn: async () => {
+      const { data, error, response } = await fetchClient.GET("/v1/events", { params: { query: { bbox } } });
+      if (error || !data) throw new Error(response.statusText || t("discover.loadError"));
+      return data;
+    },
+    staleTime: 15_000,
+  });
+  const events: MapEvent[] = eventsQuery.data?.items ?? [];
+  const markers: MapMarker[] = events.map((event) => ({
+    id: event.id,
+    title: event.title,
+    coordinate: { longitude: event.longitude, latitude: event.latitude },
+    mainTag: event.tags[0] ?? null,
+    happeningNow: Date.parse(event.startAt) <= now && now <= Date.parse(event.endAt),
+  }));
+
   return (
-    <View style={styles.fill}>
-      <Map center={TALLINN} zoom={11} styleUrl={mapStyleUrl()} />
+    <View style={styles.screen}>
+      <View style={styles.mapContainer}>
+        <Map center={TALLINN} zoom={11} styleUrl={mapStyleUrl()} markers={markers} onMapIdle={onMapIdle}
+          onMarkerPress={(id) => router.push({ pathname: "/events/[id]", params: { id } })} />
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push("/events/create")}
+          style={styles.createButton}
+        >
+          <Text style={styles.createButtonText}>＋ {t("discover.createEvent")}</Text>
+        </Pressable>
+        <View accessibilityLiveRegion="polite" style={styles.status}>
+          {eventsQuery.isFetching ? <ActivityIndicator size="small" color="#5b5bd6" /> : null}
+          <Text style={styles.statusText}>{t("discover.eventCount", { count: events.length })}</Text>
+          {eventsQuery.data?.truncated ? <Text style={styles.note}>{t("discover.truncated")}</Text> : null}
+        </View>
+      </View>
+      <View style={styles.listPanel}>
+        <Text style={styles.heading}>{t("discover.eventsInView")}</Text>
+        {eventsQuery.isError ? (
+          <View style={styles.message}>
+            <Text style={styles.errorText}>{t("discover.loadError")}</Text>
+            <Pressable accessibilityRole="button" onPress={() => void eventsQuery.refetch()} style={styles.retryButton}>
+              <Text style={styles.retryText}>{t("discover.retry")}</Text>
+            </Pressable>
+          </View>
+        ) : eventsQuery.isLoading ? (
+          <View style={styles.message}><ActivityIndicator /><Text style={styles.muted}>{t("discover.loading")}</Text></View>
+        ) : events.length === 0 ? (
+          <Text style={styles.muted}>{t("discover.empty")}</Text>
+        ) : (
+          <FlatList
+            data={events}
+            keyExtractor={(event) => event.id}
+            contentContainerStyle={styles.eventList}
+            renderItem={({ item }) => (
+              <EventRow
+                event={item}
+                onPress={() => router.push({ pathname: "/events/[id]", params: { id: item.id } })}
+              />
+            )}
+          />
+        )}
+      </View>
     </View>
   );
 }
 
+function EventRow({ event, onPress }: { event: MapEvent; onPress: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={t("discover.openDetails", { title: event.title })} onPress={onPress} style={styles.eventCard}>
+      <View style={styles.titleRow}>
+        <Text numberOfLines={1} style={styles.eventTitle}>{event.title}</Text>
+        {event.happeningNow ? <Text style={styles.liveBadge}>{t("discover.happeningNow")}</Text> : null}
+      </View>
+      <Text style={styles.eventMeta}>{formatEventTime(event, t("localeCode"))}</Text>
+      <Text numberOfLines={1} style={styles.eventMeta}>{event.address}</Text>
+      <View style={styles.cardFooter}>
+        {event.tags[0] ? <Text style={styles.tag}>{event.tags[0]}</Text> : <View />}
+        <Text style={styles.eventMeta}>{t("eventDetail.attendingCount", { count: event.attendingCount })}</Text>
+      </View>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
+  screen: { flex: 1, backgroundColor: "#f7f7fb" },
+  mapContainer: { flex: 1, minHeight: 260 },
+  status: { position: "absolute", top: 12, right: 12, backgroundColor: "white", borderRadius: 18, paddingHorizontal: 12, paddingVertical: 8, flexDirection: "row", alignItems: "center", gap: 8, shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 },
+  createButton: { position: "absolute", top: 12, left: 12, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: "#5b5bd6", shadowColor: "#000", shadowOpacity: 0.18, shadowRadius: 8, elevation: 3 },
+  createButtonText: { color: "white", fontSize: 13, fontWeight: "700" },
+  statusText: { color: "#26263a", fontSize: 13, fontWeight: "600" },
+  note: { color: "#69697d", fontSize: 11 },
+  listPanel: { maxHeight: "42%", minHeight: 150, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8, backgroundColor: "white", borderTopLeftRadius: 18, borderTopRightRadius: 18 },
+  heading: { color: "#24243a", fontSize: 18, fontWeight: "700", marginBottom: 10 },
+  eventList: { paddingBottom: 8 },
+  eventCard: { paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#e4e4ed", gap: 4 },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  eventTitle: { flex: 1, color: "#26263a", fontWeight: "600", fontSize: 15 },
+  eventMeta: { color: "#69697d", fontSize: 12 },
+  cardFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 3 },
+  tag: { color: "#3730a3", backgroundColor: "#eeeeff", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, fontSize: 10, fontWeight: "600" },
+  liveBadge: { overflow: "hidden", color: "#176b57", backgroundColor: "#dff5ed", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, fontSize: 10, fontWeight: "700" },
+  message: { alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 18 },
+  muted: { color: "#69697d", fontSize: 14 },
+  errorText: { color: "#a33333", fontSize: 14 },
+  retryButton: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: "#5b5bd6" },
+  retryText: { color: "white", fontWeight: "600" },
 });

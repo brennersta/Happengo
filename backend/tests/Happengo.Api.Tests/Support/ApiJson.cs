@@ -24,4 +24,18 @@ internal static class ApiJson
 
         return request;
     }
+
+    public static HttpRequestMessage Post(string url, object body, string? subject = null)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = JsonContent.Create(body, options: Options),
+        };
+        if (subject is not null)
+        {
+            request.Headers.Add(TestAuthHandler.HeaderName, subject);
+        }
+
+        return request;
+    }
 }

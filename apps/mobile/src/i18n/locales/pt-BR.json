@@ -6,7 +6,13 @@
     "profile": "Perfil"
   },
   "myEvents": {
-    "empty": "Os eventos que você cria ou participa aparecerão aqui."
+    "empty": "Os eventos que você cria ou participa aparecerão aqui.",
+    "upcoming": "Próximos",
+    "past": "Passados",
+    "signIn": "Entre para ver os eventos que você criou ou vai participar.",
+    "loadError": "Não foi possível carregar seus eventos. Verifique sua conexão e tente novamente.",
+    "emptyUpcoming": "Você ainda não tem eventos próximos. Crie um ou participe de um evento por perto.",
+    "emptyPast": "Os eventos anteriores aparecerão aqui depois que terminarem."
   },
   "friends": {
     "empty": "Convide amigos para criar eventos privados e compartilhar fotos."
@@ -16,5 +22,93 @@
   },
   "dates": {
     "today": "Hoje"
-  }
+  },
+  "discover": {
+    "eventCount": "{count, plural, one {# evento nesta área} other {# eventos nesta área}}",
+    "eventsInView": "Eventos nesta visualização",
+    "happeningNow": "Acontecendo agora",
+    "loading": "Carregando eventos…",
+    "empty": "Ainda não há eventos nesta área do mapa.",
+    "loadError": "Não foi possível carregar os eventos. Verifique sua conexão e tente novamente.",
+    "retry": "Tentar novamente",
+    "truncated": "Mostrando os primeiros 500 eventos. Aumente o zoom para restringir a área.",
+    "createEvent": "Criar evento",
+    "openDetails": "Abrir detalhes do evento {{title}}"
+  },
+  "createEvent": {
+    "title": "Criar evento",
+    "subtitle": "Adicione os detalhes e toque no mapa para escolher um local.",
+    "titleLabel": "Nome do evento",
+    "descriptionLabel": "Descrição (opcional)",
+    "startDate": "Data de início (AAAA-MM-DD)",
+    "startTime": "Horário de início (HH:MM)",
+    "endDate": "Data de término (AAAA-MM-DD)",
+    "endTime": "Horário de término (HH:MM)",
+    "timeZone": "Fuso horário",
+    "address": "Endereço",
+    "location": "Local no mapa",
+    "locationHelp": "Toque no mapa para posicionar o evento.",
+    "tags": "Tags",
+    "tagsHelp": "Escolha uma ou mais. A primeira tag selecionada será o tipo principal e definirá a cor do marcador.",
+    "mainType": "Tipo principal",
+    "visibility": "Quem pode encontrar este evento?",
+    "public": "Público",
+    "unlisted": "Não listado",
+    "friendsOnly": "Somente amigos",
+    "approval": "Participação",
+    "open": "Aberta",
+    "approvalRequired": "Solicitar aprovação",
+    "demoNotice": "Modo de demonstração: os eventos são temporários e visíveis apenas nesta sessão de desenvolvimento.",
+    "signInRequired": "O login ainda não está conectado. Escolha um provedor de identidade antes de criar eventos reais.",
+    "createError": "Não foi possível criar o evento. Confira os dados e tente novamente.",
+    "creating": "Criando…",
+    "submit": "Criar evento",
+    "cancel": "Cancelar",
+    "errors": {
+      "title": "Informe um nome para o evento (até 200 caracteres).",
+      "description": "A descrição deve ter no máximo 4.000 caracteres.",
+      "start": "Escolha uma data e horário de início válidos no futuro.",
+      "end": "Escolha um término futuro depois do início.",
+      "duration": "Os eventos podem durar até sete dias.",
+      "timeZone": "Informe um fuso horário válido, como Europe/Tallinn.",
+      "address": "Informe um endereço (até 500 caracteres).",
+      "location": "Toque no mapa para escolher um local válido.",
+      "tags": "Escolha pelo menos uma tag."
+    }
+  },
+  "eventDetail": {
+    "title": "Detalhes do evento",
+    "loading": "Carregando evento…",
+    "notFound": "Este evento não foi encontrado ou não está mais disponível.",
+    "attendingCount": "{count, plural, one {# pessoa participando} other {# pessoas participando}}",
+    "join": "Participar do evento",
+    "requestToJoin": "Solicitar participaÃ§Ã£o",
+    "youAreAttending": "VocÃª estÃ¡ participando deste evento.",
+    "requested": "Sua solicitaÃ§Ã£o aguarda o organizador do evento.",
+    "cancelAttendance": "Cancelar participaÃ§Ã£o",
+    "requestsTitle": "SolicitaÃ§Ãµes de participaÃ§Ã£o",
+    "noRequests": "NÃ£o hÃ¡ solicitaÃ§Ãµes pendentes.",
+    "approve": "Aprovar",
+    "reject": "Recusar",
+    "actionError": "NÃ£o foi possÃ­vel concluir esta aÃ§Ã£o. Tente novamente.",
+    "attendance": {
+      "rejected": "Sua solicitaÃ§Ã£o foi recusada.",
+      "cancelled": "VocÃª cancelou sua participaÃ§Ã£o. Fale com o organizador se precisar participar novamente."
+    },
+    "visibility": "Visibilidade",
+    "public": "Público",
+    "unlisted": "Não listado",
+    "friends_only": "Somente amigos"
+  },
+  "auth": {
+    "intro": "Entre para criar e gerenciar seus eventos.",
+    "notConfigured": "A configuração do login depende da escolha do provedor de identidade e do cadastro do aplicativo.",
+    "discoveryError": "Não foi possível carregar a configuração do provedor. Confira o endereço do emissor e tente novamente.",
+    "signInError": "Não foi possível concluir o login. Tente novamente.",
+    "signIn": "Continuar para entrar",
+    "goToSignIn": "Abrir login",
+    "signedIn": "Você está conectado. As ações protegidas podem usar sua conta.",
+    "signOut": "Sair"
+  },
+  "localeCode": "pt-BR"
 }

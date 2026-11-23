@@ -26,6 +26,7 @@ appsettings.*.local.json
 
 # Node / Expo / pnpm
 node_modules/
+.tools/
 .pnpm-store/
 .pnp
 .pnp.*

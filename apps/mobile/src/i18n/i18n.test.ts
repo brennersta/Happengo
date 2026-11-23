@@ -43,3 +43,12 @@ test("ICU plurals are available for later copy", async () => {
   expect(i18n.t("dev.icu", { count: 1 })).toBe("1 event");
   expect(i18n.t("dev.icu", { count: 2 })).toBe("2 events");
 });
+
+test("Discover event count uses localized ICU plurals", async () => {
+  await i18n.changeLanguage("en");
+  expect(i18n.t("discover.eventCount", { count: 1 })).toBe("1 event in this area");
+  expect(i18n.t("discover.eventCount", { count: 2 })).toBe("2 events in this area");
+  await i18n.changeLanguage("pt-BR");
+  expect(i18n.t("discover.eventCount", { count: 1 })).toBe("1 evento nesta área");
+  expect(i18n.t("discover.eventCount", { count: 2 })).toBe("2 eventos nesta área");
+});

@@ -45,7 +45,7 @@ internal static class EventMapping
             e.Tags,
             e.Visibility,
             e.ApprovalMode,
-            HappeningNow: e.StartAt <= now && now < e.EndAt,
+            HappeningNow: e.StartAt <= now && now <= e.EndAt,
             IsOwner: viewerId is not null && e.OwnerId == viewerId,
             attendingCount,
             Longitude: e.Location.X,

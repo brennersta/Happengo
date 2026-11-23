@@ -202,7 +202,7 @@ public sealed class VisibleToMatrixTests(ApiFactory factory) : IntegrationTest, 
     {
         Phase.Upcoming => (TestData.Now + Duration.FromHours(1), TestData.Now + Duration.FromHours(2)),
         Phase.Now => (TestData.Now - Duration.FromMinutes(30), TestData.Now + Duration.FromMinutes(30)),
-        Phase.Ended => (TestData.Now - Duration.FromHours(2), TestData.Now),
+        Phase.Ended => (TestData.Now - Duration.FromHours(2), TestData.Now - Duration.FromMilliseconds(1)),
         _ => throw new ArgumentOutOfRangeException(nameof(phase)),
     };
 

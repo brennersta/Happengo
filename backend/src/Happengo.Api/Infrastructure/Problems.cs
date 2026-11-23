@@ -18,10 +18,24 @@ internal static class Problems
             detail: detail,
             type: ProblemTypes.InvalidTags);
 
+    public static ProblemHttpResult InvalidEvent(string detail) =>
+        TypedResults.Problem(
+            statusCode: StatusCodes.Status400BadRequest,
+            title: "Invalid event",
+            detail: detail,
+            type: ProblemTypes.InvalidEvent);
+
     public static ProblemHttpResult NotFoundEvent() =>
         TypedResults.Problem(
             statusCode: StatusCodes.Status404NotFound,
             title: "Not found",
             detail: "No visible event exists for this request.",
             type: ProblemTypes.NotFound);
+
+    public static ProblemHttpResult InvalidAttendance(string detail) =>
+        TypedResults.Problem(
+            statusCode: StatusCodes.Status409Conflict,
+            title: "Attendance conflict",
+            detail: detail,
+            type: ProblemTypes.InvalidAttendance);
 }

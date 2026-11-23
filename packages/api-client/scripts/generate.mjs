@@ -14,7 +14,9 @@ if (!existsSync(spec)) {
 
 mkdirSync(dirname(out), { recursive: true });
 console.log(`openapi-typescript: ${spec}`);
-execFileSync("pnpm", ["exec", "openapi-typescript", spec, "-o", out], {
+const openApiPackage = fileURLToPath(import.meta.resolve("openapi-typescript"));
+const openApiCli = resolve(dirname(openApiPackage), "../bin/cli.js");
+execFileSync(process.execPath, [openApiCli, spec, "-o", out], {
   cwd: packageRoot,
   stdio: "inherit",
 });

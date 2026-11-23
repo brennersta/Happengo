@@ -19,7 +19,7 @@ internal static class EventQueries
     /// <summary>
     /// One visibility filter (ADR 0007).
     /// Map scope drops unlisted events for every caller, including the owner,
-    /// and drops every ended event (<c>end_at &lt;= now</c>), including the owner's
+    /// and drops events after their end instant (<c>end_at &lt; now</c>), including the owner's
     /// and attendees' (ADR 0006). Direct reads still return ended events to those people.
     /// </summary>
     public static IQueryable<Event> VisibleTo(
@@ -35,7 +35,7 @@ internal static class EventQueries
         var attendingEventIds = AttendanceAccess.EventIdsAttendedBy(db, userId);
 
         return events.Where(e =>
-            !map || e.EndAt > now).Where(e =>
+            !map || e.EndAt >= now).Where(e =>
             (known
                 && e.OwnerId == userId
                 && (!map || e.Visibility != EventVisibility.Unlisted))
@@ -43,9 +43,9 @@ internal static class EventQueries
                 && e.EndAt <= now
                 && !map
                 && attendingEventIds.Contains(e.Id))
-            || (e.Visibility == EventVisibility.Public && e.EndAt > now)
+            || (e.Visibility == EventVisibility.Public && e.EndAt >= now)
             || (e.Visibility == EventVisibility.FriendsOnly
-                && e.EndAt > now
+                && e.EndAt >= now
                 && known
                 && db.EventInvites.Any(invite => invite.EventId == e.Id && invite.InviteeUserId == userId)));
     }
@@ -60,7 +60,7 @@ internal static class EventQueries
         events.Where(e =>
             e.Visibility == EventVisibility.Unlisted
             && e.ShareToken == token
-            && e.EndAt > now);
+            && e.EndAt >= now);
 
     public static IQueryable<Event> InBoundingBox(this DbSet<Event> events, BoundingBox box)
     {

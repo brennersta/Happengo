@@ -107,7 +107,7 @@ public sealed class EventReadTests(ApiFactory factory) : IntegrationTest
         var later = await SeedAsync("later", start: now + Duration.FromHours(3), end: now + Duration.FromHours(4));
         var soon = await SeedAsync("soon", start: now + Duration.FromMinutes(30), end: now + Duration.FromHours(2));
         var live = await SeedAsync("live", start: now - Duration.FromMinutes(10), end: now + Duration.FromHours(1));
-        var ended = await SeedAsync("ended", start: now - Duration.FromHours(2), end: now);
+        var ended = await SeedAsync("ended", start: now - Duration.FromHours(2), end: now - Duration.FromMilliseconds(1));
 
         var page = await GetMapAsync(null);
         Assert.Equal([live, soon, later], page.Items.Select(item => item.Id));
@@ -120,7 +120,7 @@ public sealed class EventReadTests(ApiFactory factory) : IntegrationTest
         var soonRow = Assert.Single(moved.Items, item => item.Id == soon);
         Assert.True(soonRow.HappeningNow);
 
-        factory.Clock.Set(now + Duration.FromHours(1));
+        factory.Clock.Set(now + Duration.FromHours(1) + Duration.FromMilliseconds(1));
         var afterLive = await GetMapAsync(null);
         Assert.DoesNotContain(afterLive.Items, item => item.Id == live);
     }

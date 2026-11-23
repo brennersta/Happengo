@@ -1,6 +1,6 @@
 # Happengo architecture baseline
 
-Happengo is a map-first app for discovering and creating short-lived local events. One Expo client (iOS, Android, and web) calls one ASP.NET Core API. The API is a modular monolith on PostgreSQL/PostGIS. Azure runs it on Container Apps (consumption plan, scale to zero) with Blob Storage and Key Vault.
+Happengo's product vision includes local incident awareness, nearby event discovery, and private gathering memories, with location, time, and audience as shared concepts. See the [product vision](../product-vision.md). This architecture baseline currently covers the social-event and map-discovery foundation; incident reporting, private albums, and external live-stream links are not implemented. One Expo client (iOS, Android, and web) calls one ASP.NET Core API. The API is a modular monolith on PostgreSQL/PostGIS. Azure is planned for Container Apps (consumption plan, scale to zero) with Blob Storage and Key Vault.
 
 Anonymous visitors can browse public events that have not ended. Sign-in is required to create events, attend, manage friends, and use albums. v1 is one codebase, one API process, local development, and one deployed environment.
 
@@ -9,7 +9,7 @@ flowchart TB
   person["Person"]
   app["Expo app\niOS, Android, web\nMapLibre"]
   api["API\nASP.NET Core\nmodular monolith"]
-  idp["OIDC IdP\nEntra External ID or Auth0"]
+  idp["Auth0\nOIDC provider"]
   db[("PostgreSQL\nPostGIS")]
   blob["Blob Storage\nprivate containers"]
   kv["Key Vault"]
@@ -39,16 +39,15 @@ Geocoding is behind one adapter. Whether that adapter runs in the API or the cli
 | [0002](../adr/0002-stack-and-modular-monolith.md) | Stack and modular monolith | Accepted |
 | [0003](../adr/0003-data-model.md) | Data model | Accepted |
 | [0004](../adr/0004-backend-baseline.md) | Backend baseline | Accepted |
-| [0005](../adr/0005-authentication.md) | Authentication | Proposed |
+| [0005](../adr/0005-authentication.md) | Authentication | Accepted |
 | [0006](../adr/0006-geo-queries.md) | Geo queries | Accepted |
 | [0007](../adr/0007-privacy-enforcement.md) | Privacy enforcement | Accepted |
 | [0008](../adr/0008-image-storage.md) | Image storage | Accepted |
 | [0009](../adr/0009-i18n.md) | Internationalization | Accepted |
 
-0001 and 0004 are accepted.
+All listed ADRs are accepted.
 
 ## Open for Brenner
 
-- Identity provider: Entra External ID (default) or Auth0 — [ADR 0005](../adr/0005-authentication.md)
 - Geocoding provider — [ADR 0006](../adr/0006-geo-queries.md)
 - Tile provider for MapLibre — [ADR 0006](../adr/0006-geo-queries.md)
