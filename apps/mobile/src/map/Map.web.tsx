@@ -8,7 +8,7 @@ import { liveAuraMode, markerColor } from "./markerStyle";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./attribution.css";
 
-export function Map({ center, zoom = 11, styleUrl, markers = [], onMapIdle, onMapPress, onMarkerPress }: HappengoMapProps) {
+export function Map({ center, zoom = 11, styleUrl, markers = [], focus = null, onMapIdle, onMapPress, onMarkerPress }: HappengoMapProps) {
   const hostRef = useRef<ComponentRef<typeof View>>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markersRef = useRef<MapLibreMarker[]>([]);
@@ -83,6 +83,17 @@ export function Map({ center, zoom = 11, styleUrl, markers = [], onMapIdle, onMa
 
   useEffect(() => {
     const map = mapRef.current;
+    if (!map || !mapReady || !focus) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    map.easeTo({
+      center: [focus.longitude, focus.latitude],
+      zoom: Math.max(map.getZoom(), 14),
+      duration: reduce ? 0 : 600,
+    });
+  }, [focus, mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
     if (!map || !mapReady) return;
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
@@ -92,21 +103,26 @@ export function Map({ center, zoom = 11, styleUrl, markers = [], onMapIdle, onMa
       markersRef.current = markers.map((item) => {
         const element = document.createElement("button");
         element.type = "button";
-        element.setAttribute("aria-label", `${item.title}${item.mainTag ? `, ${item.mainTag}` : ""}${item.happeningNow ? ", happening now" : ""}`);
+        const tag = item.tagLabel || item.mainTag;
+        element.setAttribute("aria-label", `${item.title}${tag ? `, ${tag}` : ""}${item.happeningNow ? ", happening now" : ""}`);
         element.title = item.title;
         element.addEventListener("click", () => onMarkerPress?.(item.id));
         const color = markerColor(item.mainTag);
-        Object.assign(element.style, {
-          width: "36px", height: "36px", borderRadius: "50%", border: `3px solid ${item.happeningNow ? "#18a879" : "white"}`,
-          background: color, boxShadow: item.happeningNow ? "0 0 0 5px rgba(24,168,121,.22), 0 2px 8px rgba(0,0,0,.3)" : "0 2px 8px rgba(0,0,0,.3)", cursor: "pointer",
-        });
+        element.style.cssText = "width:36px;height:46px;padding:0;border:0;background:transparent;cursor:pointer;position:relative;";
+        const aura = document.createElement("span");
+        aura.style.cssText = "position:absolute;left:2px;top:2px;width:32px;height:32px;border-radius:50%;pointer-events:none;";
+        const pin = document.createElement("span");
+        pin.style.cssText = `position:absolute;left:5px;top:4px;width:26px;height:26px;background:${color};border:2px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,.28);pointer-events:none;`;
+        element.append(aura, pin);
         if (liveAuraMode(item.happeningNow, window.matchMedia("(prefers-reduced-motion: reduce)").matches) === "pulse") {
-          element.animate(
-            [{ boxShadow: "0 0 0 0 rgba(24,168,121,.42), 0 2px 8px rgba(0,0,0,.3)" }, { boxShadow: "0 0 0 11px rgba(24,168,121,0), 0 2px 8px rgba(0,0,0,.3)" }],
+          aura.animate(
+            [{ boxShadow: "0 0 0 0 rgba(24,168,121,.45)" }, { boxShadow: "0 0 0 12px rgba(24,168,121,0)" }],
             { duration: 1600, iterations: Infinity },
           );
+        } else if (item.happeningNow) {
+          aura.style.boxShadow = "0 0 0 4px rgba(24,168,121,.35)";
         }
-        return new maplibre.Marker({ element })
+        return new maplibre.Marker({ element, anchor: "bottom" })
           .setLngLat([item.coordinate.longitude, item.coordinate.latitude])
           .setPopup(new maplibre.Popup({ offset: 16 }).setText(item.title))
           .addTo(map);
