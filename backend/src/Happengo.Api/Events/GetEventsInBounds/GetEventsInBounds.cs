@@ -24,7 +24,7 @@ internal sealed record ListEventsRequest
     public string? When { get; init; }
 
     [FromQuery(Name = "timeZoneId")]
-    public string? TimeZoneId { get; init; } = "Europe/Tallinn";
+    public string? TimeZoneId { get; init; }
 }
 
 internal static class GetEventsInBounds
@@ -122,9 +122,8 @@ internal static class GetEventsInBounds
         out string detail)
     {
         window = null;
-        var zone = string.IsNullOrWhiteSpace(timeZoneId)
-            ? null
-            : DateTimeZoneProviders.Tzdb.GetZoneOrNull(timeZoneId);
+        var effectiveTimeZoneId = string.IsNullOrWhiteSpace(timeZoneId) ? "Europe/Tallinn" : timeZoneId;
+        var zone = DateTimeZoneProviders.Tzdb.GetZoneOrNull(effectiveTimeZoneId);
         if (zone is null)
         {
             detail = "timeZoneId must be a valid IANA time zone.";

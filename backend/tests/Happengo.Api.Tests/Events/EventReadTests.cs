@@ -79,6 +79,16 @@ public sealed class EventReadTests(ApiFactory factory) : IntegrationTest
     }
 
     [Fact]
+    public async Task Map_query_without_date_filter_parameters_uses_default_time_zone()
+    {
+        await factory.ResetAsync();
+        var response = await factory.CreateClient().SendAsync(ApiJson.Get($"/v1/events?bbox={TestData.Bbox}"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(await response.Content.Read<EventMapResponse>());
+    }
+
+    [Fact]
     public async Task Tag_filter_matches_any_named_tag_and_rejects_unknown_tags()
     {
         await factory.ResetAsync();
