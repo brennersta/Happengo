@@ -7,6 +7,13 @@ export const EVENT_TAG_COLORS: Record<EventTag, string> = {
 };
 
 export const NEUTRAL_MARKER_COLOR = "#5b5bd6";
+export const MARKER_PIN_SIZE = 26;
+export const LIVE_AURA_SIZE = 32;
+
+export function centeredAuraPosition(pinLeft: number, pinTop: number) {
+  const inset = (MARKER_PIN_SIZE - LIVE_AURA_SIZE) / 2;
+  return { left: pinLeft + inset, top: pinTop + inset };
+}
 
 export function markerColor(tag?: string | null): string {
   return tag && tag in EVENT_TAG_COLORS ? EVENT_TAG_COLORS[tag as EventTag] : NEUTRAL_MARKER_COLOR;
