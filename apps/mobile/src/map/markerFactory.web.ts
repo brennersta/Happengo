@@ -1,12 +1,13 @@
 import type { Map as MapLibreMap, Marker as MapLibreMarker } from "maplibre-gl";
 import type { HappengoMapProps, MapMarker } from "./types";
-import { liveAuraMode, markerColor } from "./markerStyle";
+import { centeredAuraPosition, LIVE_AURA_SIZE, liveAuraMode, MARKER_PIN_SIZE, markerColor } from "./markerStyle";
 
 type MapLibreModule = typeof import("maplibre-gl");
 
 const popupOffset = 16;
 const markerWidth = 36;
 const markerHeight = 46;
+const pinLeft = 5;
 const rotatedTipInset = 18.3848;
 
 export function createWebMarker(
@@ -28,10 +29,11 @@ export function createWebMarker(
   const wrapper = documentRef.createElement("span");
   wrapper.style.cssText = `display:block;position:relative;width:${markerWidth}px;height:${markerHeight}px;`;
   const aura = documentRef.createElement("span");
-  aura.style.cssText = "position:absolute;left:2px;top:2px;width:32px;height:32px;border-radius:50%;pointer-events:none;";
+  const pinTop = markerHeight - rotatedTipInset - MARKER_PIN_SIZE / 2;
+  const auraPosition = centeredAuraPosition(pinLeft, pinTop);
+  aura.style.cssText = `position:absolute;left:${auraPosition.left}px;top:${auraPosition.top}px;width:${LIVE_AURA_SIZE}px;height:${LIVE_AURA_SIZE}px;border-radius:50%;pointer-events:none;`;
   const pin = documentRef.createElement("span");
-  const pinTop = markerHeight - rotatedTipInset - 13;
-  pin.style.cssText = `position:absolute;left:5px;top:${pinTop}px;width:26px;height:26px;background:${markerColor(item.mainTag)};border:2px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,.28);pointer-events:none;`;
+  pin.style.cssText = `position:absolute;left:${pinLeft}px;top:${pinTop}px;width:${MARKER_PIN_SIZE}px;height:${MARKER_PIN_SIZE}px;box-sizing:border-box;background:${markerColor(item.mainTag)};border:2px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,.28);pointer-events:none;`;
   wrapper.append(aura, pin);
   element.append(wrapper);
 

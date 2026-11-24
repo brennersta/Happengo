@@ -2,9 +2,14 @@ import { Camera, Map as NativeMap, Marker, type CameraRef } from "@maplibre/mapl
 import { AccessibilityInfo, Animated, StyleSheet, View } from "react-native";
 import { useEffect, useRef, useState } from "react";
 import type { HappengoMapProps } from "./types";
-import { liveAuraMode, markerColor } from "./markerStyle";
+import { centeredAuraPosition, LIVE_AURA_SIZE, liveAuraMode, MARKER_PIN_SIZE, markerColor } from "./markerStyle";
 
 const worldBounds: [number, number, number, number] = [-180, -85, 180, 85];
+const nativeMarkerWidth = 40;
+const nativeMarkerHeight = 48;
+const nativePinLeft = 7;
+const nativePinTop = nativeMarkerHeight - 18.3848 - MARKER_PIN_SIZE / 2;
+const nativeAuraPosition = centeredAuraPosition(nativePinLeft, nativePinTop);
 
 export function Map({ center, zoom = 11, styleUrl, markers = [], focus = null, onMapIdle, onMapPress, onMarkerPress }: HappengoMapProps) {
   const cameraRef = useRef<CameraRef>(null);
@@ -65,9 +70,9 @@ export function Map({ center, zoom = 11, styleUrl, markers = [], focus = null, o
 
 const styles = StyleSheet.create({
   map: { flex: 1 },
-  markerContainer: { position: "relative", width: 40, height: 48 },
-  marker: { position: "absolute", top: 16.6152, left: 7, width: 26, height: 26, backgroundColor: "white", borderTopLeftRadius: 13, borderTopRightRadius: 13, borderBottomRightRadius: 13, borderBottomLeftRadius: 2, borderWidth: 2, borderColor: "white", transform: [{ rotate: "45deg" }] },
-  aura: { position: "absolute", top: 8, left: 6, width: 28, height: 28, borderRadius: 14, backgroundColor: "#18a879" },
+  markerContainer: { position: "relative", width: nativeMarkerWidth, height: nativeMarkerHeight },
+  marker: { position: "absolute", top: nativePinTop, left: nativePinLeft, width: MARKER_PIN_SIZE, height: MARKER_PIN_SIZE, backgroundColor: "white", borderTopLeftRadius: 13, borderTopRightRadius: 13, borderBottomRightRadius: 13, borderBottomLeftRadius: 2, borderWidth: 2, borderColor: "white", transform: [{ rotate: "45deg" }] },
+  aura: { position: "absolute", top: nativeAuraPosition.top, left: nativeAuraPosition.left, width: LIVE_AURA_SIZE, height: LIVE_AURA_SIZE, borderRadius: LIVE_AURA_SIZE / 2, backgroundColor: "#18a879" },
   staticAura: { borderWidth: 3, borderColor: "#18a879", backgroundColor: "rgba(24,168,121,.14)" },
 });
 
