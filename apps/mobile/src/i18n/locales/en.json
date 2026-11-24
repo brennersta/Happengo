@@ -45,7 +45,20 @@
     "acceptError": "The invite could not be accepted. Try again."
   },
   "profile": {
-    "empty": "Your name, photo, and language will show up here."
+    "empty": "Your name, photo, and language will show up here.",
+    "displayName": "Display name",
+    "namePlaceholder": "Your name",
+    "save": "Save name",
+    "saving": "Saving…",
+    "saveError": "Could not save your name. Try again.",
+    "loadError": "Could not load your profile. Check your connection and try again.",
+    "loading": "Loading your profile…",
+    "language": "Language",
+    "languageError": "Could not save your language preference.",
+    "languages": {
+      "en": "English",
+      "pt-BR": "Português (Brasil)"
+    }
   },
   "dates": {
     "today": "Today"

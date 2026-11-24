@@ -22,6 +22,7 @@ import {
   requestDemoAttendance,
   type CreateEventRequest,
 } from "./contract";
+import { getDemoProfile, updateDemoDisplayName } from "./profile";
 
 let patched = false;
 
@@ -34,6 +35,19 @@ export async function enableFetchMocks(): Promise<void> {
     const request = new Request(input, init);
     const url = new URL(request.url);
     const path = url.pathname;
+
+    if (request.method === "GET" && path.endsWith("/v1/me")) {
+      return Response.json(getDemoProfile());
+    }
+    if (request.method === "PUT" && path.endsWith("/v1/me/display-name")) {
+      const body = await request.json() as { displayName?: unknown };
+      const profile = updateDemoDisplayName(body.displayName);
+      return profile ? Response.json(profile) : Response.json({
+        type: "https://happengo.app/problems/invalid-profile",
+        title: "Invalid profile",
+        status: 400,
+      }, { status: 400 });
+    }
 
     if (request.method === "GET" && path.endsWith("/v1/friends/invite")) {
       return Response.json(demoInviteStatus());

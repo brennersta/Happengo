@@ -9,6 +9,7 @@ using Happengo.Api.Events.EditEvent;
 using Happengo.Api.Events.CancelEvent;
 using Happengo.Api.Attendance;
 using Happengo.Api.Friends;
+using Happengo.Api.Identity.Profile;
 using Happengo.Api.Infrastructure.Auth;
 using Happengo.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -232,6 +233,7 @@ public static class HappengoServices
 
         var v1 = app.MapGroup("/v1");
         FriendRoutes.Map(v1);
+        ProfileRoutes.Map(v1);
         GetEventsInBounds.Map(v1);
         GetMyEvents.Map(v1);
         RotateShareLink.Map(v1);

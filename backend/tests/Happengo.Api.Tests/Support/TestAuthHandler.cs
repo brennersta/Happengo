@@ -14,6 +14,7 @@ internal sealed class TestAuthHandler(
     public const string SchemeName = "Test";
 
     public const string HeaderName = "X-Test-User";
+    public const string DisplayNameHeaderName = "X-Test-Display-Name";
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
@@ -23,12 +24,15 @@ internal sealed class TestAuthHandler(
         }
 
         var subject = value.ToString();
+        var displayName = Request.Headers.TryGetValue(DisplayNameHeaderName, out var nameValue)
+            ? nameValue.ToString()
+            : subject;
         var identity = new ClaimsIdentity(
             [
                 new Claim("iss", TestData.Issuer),
                 new Claim("sub", subject),
                 new Claim("email", $"{subject}@example.com"),
-                new Claim("name", subject),
+                new Claim("name", displayName),
             ],
             SchemeName);
         var principal = new ClaimsPrincipal(identity);
