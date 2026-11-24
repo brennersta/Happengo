@@ -85,6 +85,11 @@ internal static class CreateEvent
 
         return TypedResults.Created(
             $"/v1/events/{e.Id}",
-            e.ToResponse(ownerId, now, attendingCount: 1, validated.InvitedFriendTags.Select(tag => tag.Label).ToArray()));
+            e.ToResponse(
+                ownerId,
+                now,
+                attendingCount: 1,
+                validated.InvitedFriendTags.Select(tag => tag.Label).ToArray(),
+                friendsGoing: new FriendsGoingResponse(0, [])));
     }
 }

@@ -6,6 +6,8 @@ namespace Happengo.Api.Identity;
 
 public sealed record UserName(Guid Id, string? DisplayName);
 
+public sealed record AttendanceSharingProfile(Guid UserId, string? DisplayName, bool ShareAttendanceWithFriends);
+
 public static class UserDirectory
 {
     public static async Task<Guid> GetOrCreateAsync(
@@ -68,6 +70,13 @@ public static class UserDirectory
             .Select(user => new UserName(user.Id, user.DisplayName))
             .ToListAsync(cancellationToken);
     }
+
+    public static IQueryable<AttendanceSharingProfile> AttendanceProfiles(HappengoDbContext db) =>
+        db.Users.AsNoTracking()
+            .Select(user => new AttendanceSharingProfile(
+                user.Id,
+                user.DisplayName,
+                user.ShareAttendanceWithFriends));
 
     public static Task<string?> DisplayNameAsync(
         HappengoDbContext db,

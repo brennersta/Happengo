@@ -233,6 +233,12 @@ function EventCard({ event, now, onPress }: { event: MapEvent; now: number; onPr
           <Text style={styles.meta}>{formatEventTime(event, t("localeCode"))}</Text>
           <Text numberOfLines={1} style={styles.meta}>{address ?? t("discover.addressUnavailable")}</Text>
           <Text style={styles.meta}>{t("eventDetail.attendingCount", { count: event.attendingCount })}</Text>
+          {event.friendsGoing && event.friendsGoing.count > 0 ? (
+            <View accessibilityRole="text" accessibilityLabel={t("discover.friendsGoingBadge", { count: event.friendsGoing.count })} style={styles.friendsBadge}>
+              <Ionicons name="people-outline" size={13} color={theme.brand} />
+              <Text style={styles.friendsBadgeText}>{t("discover.friendsGoingBadge", { count: event.friendsGoing.count })}</Text>
+            </View>
+          ) : null}
         </View>
       </View>
       <GradientButton label={t("discover.viewEvent")} onPress={onPress} />
@@ -344,6 +350,8 @@ const styles = StyleSheet.create({
   cardTitle: { flex: 1, color: theme.ink, fontSize: 16, fontWeight: "700" },
   nowBadge: { color: theme.live, backgroundColor: theme.liveBg, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3, fontSize: 11, fontWeight: "700", overflow: "hidden" },
   meta: { color: theme.muted, fontSize: 12 },
+  friendsBadge: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 4, marginTop: 3, borderRadius: 10, backgroundColor: "#EEEEFF", paddingHorizontal: 7, paddingVertical: 3 },
+  friendsBadgeText: { color: theme.brand, fontSize: 11, fontWeight: "700" },
   message: { padding: 24, gap: 10, alignItems: "center" },
   muted: { color: theme.muted, fontSize: 14, padding: 16 },
   errorText: { color: theme.danger, fontSize: 14 },

@@ -485,6 +485,57 @@
         }
       }
     },
+    "/v1/me/attendance-sharing": {
+      "put": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Set whether the signed-in user\u0027s friends can see their event attendance.",
+        "operationId": "UpdateCurrentUserAttendanceSharing",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAttendanceSharingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/events": {
       "get": {
         "tags": [
@@ -1551,7 +1602,8 @@
           "longitude",
           "latitude",
           "invitedFriendTags",
-          "cancelledAt"
+          "cancelledAt",
+          "friendsGoing"
         ],
         "type": "object",
         "properties": {
@@ -1633,6 +1685,16 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "friendsGoing": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FriendsGoingResponse"
+              }
+            ]
           }
         }
       },
@@ -1718,6 +1780,25 @@
             ]
           },
           "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "FriendsGoingResponse": {
+        "required": [
+          "count",
+          "names"
+        ],
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "names": {
             "type": "array",
             "items": {
               "type": "string"
@@ -1839,7 +1920,8 @@
       "ProfileResponse": {
         "required": [
           "id",
-          "displayName"
+          "displayName",
+          "shareAttendanceWithFriends"
         ],
         "type": "object",
         "properties": {
@@ -1852,6 +1934,9 @@
               "null",
               "string"
             ]
+          },
+          "shareAttendanceWithFriends": {
+            "type": "boolean"
           }
         }
       },
@@ -1885,6 +1970,17 @@
           },
           "shareToken": {
             "type": "string"
+          }
+        }
+      },
+      "UpdateAttendanceSharingRequest": {
+        "required": [
+          "shareAttendanceWithFriends"
+        ],
+        "type": "object",
+        "properties": {
+          "shareAttendanceWithFriends": {
+            "type": "boolean"
           }
         }
       },

@@ -1,5 +1,5 @@
 import { http, HttpResponse } from "msw";
-import { getDemoProfile, updateDemoDisplayName } from "./profile";
+import { getDemoProfile, updateDemoAttendanceSharing, updateDemoDisplayName } from "./profile";
 import {
   acceptDemoInvite,
   createDemoInvite,
@@ -31,6 +31,11 @@ export const handlers = [
     const body = await request.json() as { displayName?: unknown };
     const profile = updateDemoDisplayName(body.displayName);
     return profile ? HttpResponse.json(profile) : HttpResponse.json({ title: "Invalid display name", status: 400 }, { status: 400 });
+  }),
+  http.put("/v1/me/attendance-sharing", async ({ request }) => {
+    const body = await request.json() as { shareAttendanceWithFriends?: unknown };
+    const profile = updateDemoAttendanceSharing(body.shareAttendanceWithFriends);
+    return profile ? HttpResponse.json(profile) : HttpResponse.json({ title: "Invalid request", status: 400 }, { status: 400 });
   }),
   http.get("/v1/friends/invite", () => HttpResponse.json(demoInviteStatus())),
   http.post("/v1/friends/invite/rotate", () => HttpResponse.json(rotateDemoInvite())),

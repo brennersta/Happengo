@@ -209,6 +209,20 @@ export default function EventDetailScreen() {
                 );
               })}
             </View>
+            {event.friendsGoing && event.friendsGoing.count > 0 ? (
+              <View accessibilityRole="text" style={styles.friendsGoing}>
+                <Ionicons name="people-outline" size={18} color={theme.brand} />
+                <Text style={styles.friendsGoingText}>
+                  {event.friendsGoing.count === 1
+                    ? event.friendsGoing.names[0]
+                      ? t("eventDetail.friendGoingOne", { name: event.friendsGoing.names[0] })
+                      : t("eventDetail.friendsGoingGeneric", { count: 1 })
+                    : event.friendsGoing.names[0]
+                      ? t("eventDetail.friendsGoingOthers", { name: event.friendsGoing.names[0], count: event.friendsGoing.count - 1 })
+                      : t("eventDetail.friendsGoingGeneric", { count: event.friendsGoing.count })}
+                </Text>
+              </View>
+            ) : null}
             {event.isOwner && !event.cancelledAt ? (
               <View style={styles.requests}>
                 <Text style={styles.sectionTitle}>{t("eventDetail.requestsTitle")}</Text>
@@ -318,6 +332,8 @@ const styles = StyleSheet.create({
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   description: { color: theme.ink, fontSize: 15, lineHeight: 22, paddingTop: 4 },
   facts: { gap: 14, paddingTop: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.line },
+  friendsGoing: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, backgroundColor: "#EEEEFF", paddingHorizontal: 12, paddingVertical: 10 },
+  friendsGoingText: { color: theme.brand, fontSize: 14, fontWeight: "700" },
   fact: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   factBody: { flex: 1, gap: 2 },
   factValue: { color: theme.ink, fontSize: 15, lineHeight: 21 },

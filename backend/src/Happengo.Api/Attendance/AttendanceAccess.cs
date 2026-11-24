@@ -10,6 +10,13 @@ namespace Happengo.Api.Attendance;
 /// </summary>
 public static class AttendanceAccess
 {
+    public static IQueryable<AttendingEventUser> AttendingUsers(
+        HappengoDbContext db,
+        IReadOnlyCollection<Guid> eventIds) =>
+        db.Attendances.AsNoTracking()
+            .Where(row => eventIds.Contains(row.EventId) && row.Status == AttendanceStatus.Attending)
+            .Select(row => new AttendingEventUser(row.EventId, row.UserId));
+
     public static async Task<AttendanceStatus?> GetStatusAsync(
         HappengoDbContext db,
         Guid eventId,
@@ -147,3 +154,5 @@ public static class AttendanceAccess
 }
 
 public sealed record AttendanceMutationResult(bool Succeeded, AttendanceStatus? Status);
+
+public sealed record AttendingEventUser(Guid EventId, Guid UserId);

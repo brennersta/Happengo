@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { auth } from "@/auth";
@@ -7,7 +7,7 @@ import { SignInButton } from "@/auth/SignInButton";
 import i18n, { locales, resolveLocale, saveLocale, type AppLocale } from "@/i18n";
 import { fetchClient } from "@/api/client";
 
-interface ProfileData { id: string; displayName: string | null }
+interface ProfileData { id: string; displayName: string | null; shareAttendanceWithFriends: boolean }
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
@@ -41,6 +41,16 @@ export default function ProfileScreen() {
       queryClient.setQueryData(["my-profile"], updated);
       setDraft(null);
     },
+  });
+  const updateAttendanceSharing = useMutation({
+    mutationFn: async (shareAttendanceWithFriends: boolean) => {
+      const response = await fetchClient.PUT("/v1/me/attendance-sharing", {
+        body: { shareAttendanceWithFriends },
+      });
+      if (!response.data) throw new Error("attendance-sharing-save");
+      return response.data as ProfileData;
+    },
+    onSuccess: (updated) => queryClient.setQueryData(["my-profile"], updated),
   });
 
   async function onSignedIn() {
@@ -95,6 +105,21 @@ export default function ProfileScreen() {
                 >
                   <Text style={styles.actionText}>{saveName.isPending ? t("profile.saving") : t("profile.save")}</Text>
                 </Pressable>
+                <View style={styles.sharingRow}>
+                  <View style={styles.sharingCopy}>
+                    <Text style={styles.label}>{t("profile.shareAttendance")}</Text>
+                    <Text style={styles.body}>{t("profile.shareAttendanceHelp")}</Text>
+                  </View>
+                  <Switch
+                    accessibilityLabel={t("profile.shareAttendance")}
+                    disabled={updateAttendanceSharing.isPending}
+                    onValueChange={(value) => updateAttendanceSharing.mutate(value)}
+                    value={profile.data.shareAttendanceWithFriends}
+                  />
+                </View>
+                {updateAttendanceSharing.isError ? (
+                  <Text accessibilityRole="alert" style={styles.error}>{t("profile.shareAttendanceError")}</Text>
+                ) : null}
               </>
             ) : null}
             <Text style={styles.label}>{t("profile.language")}</Text>
@@ -138,6 +163,8 @@ const styles = StyleSheet.create({
   actionText: { color: "white", fontWeight: "700" },
   disabled: { opacity: 0.45 },
   localeRow: { flexDirection: "row", gap: 10 },
+  sharingRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 4 },
+  sharingCopy: { flex: 1, gap: 2 },
   localeButton: { flex: 1, minHeight: 44, justifyContent: "center", alignItems: "center", borderRadius: 10, borderWidth: 1, borderColor: "#d8d8e5" },
   localeSelected: { borderColor: "#5b5bd6", backgroundColor: "#eeeeff" },
   localeText: { color: "#55556b", fontWeight: "600" },
