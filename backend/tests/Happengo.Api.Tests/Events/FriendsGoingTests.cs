@@ -157,8 +157,12 @@ public sealed class FriendsGoingTests(ApiFactory factory) : IntegrationTest
         return client.SendAsync(request);
     }
 
-    private Task<Guid> UserIdAsync(string subject) =>
-        factory.WithDb(db => db.Users.Where(user => user.Subject == subject).Select(user => user.Id).SingleAsync());
+    private async Task<Guid> UserIdAsync(string subject)
+    {
+        var response = await factory.CreateClient().SendAsync(ApiJson.Get("/v1/me", subject));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return await factory.WithDb(db => db.Users.Where(user => user.Subject == subject).Select(user => user.Id).SingleAsync());
+    }
 
     private Task LinkFriendsAsync(Guid left, Guid right) => factory.WithDb(async db =>
     {
