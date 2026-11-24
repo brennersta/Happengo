@@ -53,6 +53,7 @@ export function Map({ center, zoom = 11, styleUrl, markers = [], focus = null, o
           key={marker.id}
           id={marker.id}
           lngLat={[marker.coordinate.longitude, marker.coordinate.latitude]}
+          anchor="bottom"
           onPress={() => onMarkerPress?.(marker.id)}
         >
           <NativeMarker title={marker.title} mainTag={marker.mainTag} tagLabel={marker.tagLabel} happeningNow={marker.happeningNow} />
@@ -64,9 +65,9 @@ export function Map({ center, zoom = 11, styleUrl, markers = [], focus = null, o
 
 const styles = StyleSheet.create({
   map: { flex: 1 },
-  markerContainer: { width: 40, height: 48, alignItems: "center", justifyContent: "flex-start" },
-  marker: { marginTop: 8, width: 26, height: 26, backgroundColor: "white", borderTopLeftRadius: 13, borderTopRightRadius: 13, borderBottomRightRadius: 13, borderBottomLeftRadius: 2, borderWidth: 2, borderColor: "white", transform: [{ rotate: "45deg" }] },
-  aura: { position: "absolute", width: 28, height: 28, borderRadius: 14, backgroundColor: "#18a879" },
+  markerContainer: { position: "relative", width: 40, height: 48 },
+  marker: { position: "absolute", top: 16.6152, left: 7, width: 26, height: 26, backgroundColor: "white", borderTopLeftRadius: 13, borderTopRightRadius: 13, borderBottomRightRadius: 13, borderBottomLeftRadius: 2, borderWidth: 2, borderColor: "white", transform: [{ rotate: "45deg" }] },
+  aura: { position: "absolute", top: 8, left: 6, width: 28, height: 28, borderRadius: 14, backgroundColor: "#18a879" },
   staticAura: { borderWidth: 3, borderColor: "#18a879", backgroundColor: "rgba(24,168,121,.14)" },
 });
 
