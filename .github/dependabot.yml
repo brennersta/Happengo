@@ -3,48 +3,41 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
+    groups:
+      all-updates:
+        patterns: ["*"]
+    open-pull-requests-limit: 2
 
-  # npm stays commented out on purpose.
-  # Dependabot errors when the configured directory has no manifest.
-  # There is no package.json or pnpm-lock.yaml yet.
-  # The npm ecosystem is what Dependabot uses for a pnpm lockfile
-  # (ADR 0002). Point it at the workspace root (/), not at each package.
-  #
-  # - package-ecosystem: npm
-  #   directory: /
-  #   schedule:
-  #     interval: weekly
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      all-updates:
+        patterns: ["*"]
+    open-pull-requests-limit: 2
 
-  # Happengo.sln is at /backend. The API and test projects live under it.
   - package-ecosystem: nuget
     directory: /backend
     schedule:
-      interval: weekly
+      interval: monthly
+    groups:
+      all-updates:
+        patterns: ["*"]
+    open-pull-requests-limit: 2
 
-  # One entry per Terraform root and module. Dependabot does not recurse
-  # from /infra, and each directory has its own .terraform.lock.hcl.
   - package-ecosystem: terraform
-    directory: /infra/envs/dev
+    directories:
+      - /infra/envs/dev
+      - /infra/modules/container-apps
+      - /infra/modules/key-vault
+      - /infra/modules/log-analytics
+      - /infra/modules/postgres
+      - /infra/modules/storage
     schedule:
-      interval: weekly
-  - package-ecosystem: terraform
-    directory: /infra/modules/container-apps
-    schedule:
-      interval: weekly
-  - package-ecosystem: terraform
-    directory: /infra/modules/key-vault
-    schedule:
-      interval: weekly
-  - package-ecosystem: terraform
-    directory: /infra/modules/log-analytics
-    schedule:
-      interval: weekly
-  - package-ecosystem: terraform
-    directory: /infra/modules/postgres
-    schedule:
-      interval: weekly
-  - package-ecosystem: terraform
-    directory: /infra/modules/storage
-    schedule:
-      interval: weekly
+      interval: monthly
+    groups:
+      all-updates:
+        patterns: ["*"]
+    open-pull-requests-limit: 2

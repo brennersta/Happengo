@@ -10,6 +10,25 @@ namespace Happengo.Api.Tests.Friendships;
 public sealed class FriendInviteTests(ApiFactory factory) : IntegrationTest
 {
     [Fact]
+    public async Task Friend_list_returns_display_names_without_an_email_field()
+    {
+        await factory.ResetAsync();
+        var client = factory.CreateClient();
+        var inviteResponse = await client.SendAsync(ApiJson.Post("/v1/friends/invite", new { }, "ana"));
+        var invite = (await inviteResponse.Content.Read<FriendInviteIssuedResponse>())!;
+        var accepted = await client.SendAsync(ApiJson.Post($"/v1/friends/invites/{invite.Token}/accept", new { }, "bea"));
+        Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
+
+        var listResponse = await client.SendAsync(ApiJson.Get("/v1/friends", "ana"));
+        Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
+        var list = (await listResponse.Content.Read<List<FriendResponse>>())!;
+        Assert.Equal("bea", Assert.Single(list).DisplayName);
+        var json = await listResponse.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("\"email\"", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("@example.com", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task Invite_accept_tag_and_remove_follow_the_friendship_rules()
     {
         await factory.ResetAsync();
@@ -75,6 +94,16 @@ public sealed class FriendInviteTests(ApiFactory factory) : IntegrationTest
         var adaView = await client.SendAsync(ApiJson.Get("/v1/friends", "ada"));
         var adaFriends = (await adaView.Content.Read<List<FriendResponse>>())!;
         Assert.Empty(adaFriends[0].Tags);
+        var beaId = adaFriends[0].UserId;
+        var reverseTagged = await client.SendAsync(ApiJson.Put(
+            $"/v1/friends/{beaId}/tags",
+            new ReplaceFriendTagsRequest(["Work"]),
+            "ada"));
+        Assert.Equal(HttpStatusCode.OK, reverseTagged.StatusCode);
+        Assert.Equal(2, await factory.WithDb(db => db.FriendTags.CountAsync(
+            tag => tag.OwnerId == friend.UserId && tag.FriendUserId == beaId)));
+        Assert.Equal(1, await factory.WithDb(db => db.FriendTags.CountAsync(
+            tag => tag.OwnerId == beaId && tag.FriendUserId == friend.UserId)));
 
         var tooLong = await client.SendAsync(ApiJson.Put(
             $"/v1/friends/{friend.UserId}/tags",
@@ -91,6 +120,8 @@ public sealed class FriendInviteTests(ApiFactory factory) : IntegrationTest
         var removed = await client.SendAsync(ApiJson.Delete($"/v1/friends/{friend.UserId}", "bea"));
         Assert.Equal(HttpStatusCode.NoContent, removed.StatusCode);
         Assert.Equal(0, await factory.WithDb(db => db.Friendships.CountAsync()));
-        Assert.Equal(0, await factory.WithDb(db => db.FriendTags.CountAsync(tag => tag.OwnerId != friend.UserId)));
+        Assert.Equal(0, await factory.WithDb(db => db.FriendTags.CountAsync(
+            tag => (tag.OwnerId == friend.UserId && tag.FriendUserId == beaId)
+                || (tag.OwnerId == beaId && tag.FriendUserId == friend.UserId))));
     }
 }
