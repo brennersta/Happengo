@@ -22,6 +22,6 @@ export type HappengoMapProps = {
   markers?: MapMarker[];
   focus?: MapFocus | null;
   onMarkerPress?: (id: string) => void;
-  onMapIdle?: (bounds: MapBounds) => void;
+  onMapIdle?: (bounds: MapBounds, zoom: number) => void;
   onMapPress?: (coordinate: LngLat) => void;
 };

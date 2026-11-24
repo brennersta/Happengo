@@ -51,6 +51,8 @@
     "today": "Hoje"
   },
   "discover": {
+    "locateMe": "Usar minha localização",
+    "locationDenied": "Localização indisponível. Exibindo sua última área ou Tallinn.",
     "eventCount": "{count, plural, one {# evento nesta área} other {# eventos nesta área}}",
     "eventsInView": "Eventos nesta visualização",
     "happeningNow": "Acontecendo agora",

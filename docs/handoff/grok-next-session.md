@@ -469,7 +469,7 @@ Result: 1 passed; `api/openapi.json` regenerated. Then, from `packages/api-clien
 - Event detail has owner Edit and Cancel event actions, a confirmation dialog, and a cancelled banner with attendance actions hidden. Edit opens the create form with event fields prefilled; visibility/approval controls remain locked and time-zone-local date inputs are supported.
 - Added `cancelledAt` to demo event responses, edit/cancel mock endpoints, cancelled map filtering, cancelled My Events badges, and English/pt-BR strings.
 - Added `openapi-fetch` and `@types/react-test-renderer` as direct mobile dependencies because the typecheck exposed existing direct imports without declarations in the mobile manifest.
-- Added review note `docs/features/reviews/0012-edit-cancel-event.md`.
+- Added review note `docs/features/reviews/0013-edit-cancel-event.md` after review note 0012 was assigned to the map-location work.
 
 ### Commands run and results
 

@@ -28,11 +28,12 @@ export function Map({ center, zoom = 11, styleUrl, markers = [], focus = null, o
       attribution
       attributionPosition={{ bottom: 8, right: 8 }}
       onRegionDidChange={(event) => {
-        const [west, south, east, north] = event.nativeEvent.bounds;
+        const nativeEvent = event.nativeEvent;
+        const [west, south, east, north] = nativeEvent.bounds;
         onMapIdle?.({
           southWest: { longitude: west, latitude: south },
           northEast: { longitude: east, latitude: north },
-        });
+        }, nativeEvent.zoom);
       }}
       onPress={(event) => onMapPress?.({
         longitude: event.nativeEvent.lngLat[0],
