@@ -22,6 +22,7 @@ export default function EventDetailScreen() {
   const queryClient = useQueryClient();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [signedIn, setSignedIn] = useState(false);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const isDemo = mocksEnabled();
   useEffect(() => {
     let active = true;
@@ -55,7 +56,7 @@ export default function EventDetailScreen() {
   });
   const requestsQuery = useQuery({
     queryKey: ["event-attendance-requests", id],
-    enabled: Boolean(event?.isOwner && (signedIn || isDemo)),
+    enabled: Boolean(event?.isOwner && !event.cancelledAt && (signedIn || isDemo)),
     queryFn: async () => {
       const { data, error, response } = await fetchClient.GET("/v1/events/{eventId}/attendance/requests", {
         params: { path: { eventId: id } },
@@ -102,9 +103,28 @@ export default function EventDetailScreen() {
       ]);
     },
   });
+  const cancelEventMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error, response } = await fetchClient.POST("/v1/events/{eventId}/cancel", {
+        params: { path: { eventId: id } },
+      });
+      if (error || !data) throw new Error(response.statusText);
+      return data;
+    },
+    onSuccess: async () => {
+      setCancelConfirmOpen(false);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["event", id] }),
+        queryClient.invalidateQueries({ queryKey: ["event-attendance", id] }),
+        queryClient.invalidateQueries({ queryKey: ["event-attendance-requests", id] }),
+        queryClient.invalidateQueries({ queryKey: ["discover-events"] }),
+        queryClient.invalidateQueries({ queryKey: ["my-events"] }),
+      ]);
+    },
+  });
 
   const address = displayAddress(event?.address);
-  const live = event ? isHappeningNow(event.startAt, event.endAt, new Date()) : false;
+  const live = event ? !event.cancelledAt && isHappeningNow(event.startAt, event.endAt, new Date()) : false;
 
   async function shareEvent() {
     const url = ExpoLinking.createURL(`/events/${id}`);
@@ -125,6 +145,11 @@ export default function EventDetailScreen() {
           <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.back}>
             <Text style={styles.backText}>‹ {t("eventDetail.back")}</Text>
           </Pressable>
+          {event.cancelledAt ? (
+            <View accessibilityRole="alert" style={styles.cancelledBanner}>
+              <Text style={styles.cancelledBannerText}>{t("eventDetail.cancelledBanner")}</Text>
+            </View>
+          ) : null}
           <View style={styles.banner}><CoverPlaceholder tag={event.tags[0]} /></View>
           <View style={styles.card}>
             <View style={styles.titleRow}>
@@ -139,6 +164,19 @@ export default function EventDetailScreen() {
             <View style={styles.chips}>
               {event.tags.map((tag) => <Chip key={tag} label={t(`tags.${tag}`)} />)}
             </View>
+            {event.isOwner ? (
+              <View style={styles.ownerActions}>
+                <GradientButton
+                  label={t("eventDetail.editEvent")}
+                  onPress={() => router.push({ pathname: "/events/create", params: { id: event.id } })}
+                />
+                {!event.cancelledAt ? (
+                  <Pressable accessibilityRole="button" disabled={cancelEventMutation.isPending} onPress={() => setCancelConfirmOpen(true)} style={styles.cancelEventButton}>
+                    <Text style={styles.cancelEventText}>{t("eventDetail.cancelEvent")}</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : null}
             {event.description ? <Text style={styles.description}>{event.description}</Text> : null}
             <View style={styles.facts}>
               {detailFacts(event).map((fact) => {
@@ -170,7 +208,7 @@ export default function EventDetailScreen() {
                 );
               })}
             </View>
-            {event.isOwner ? (
+            {event.isOwner && !event.cancelledAt ? (
               <View style={styles.requests}>
                 <Text style={styles.sectionTitle}>{t("eventDetail.requestsTitle")}</Text>
                 {requestsQuery.isLoading ? <ActivityIndicator /> : null}
@@ -185,7 +223,7 @@ export default function EventDetailScreen() {
                   </View>
                 )) : <Text style={styles.meta}>{t("eventDetail.noRequests")}</Text>}
               </View>
-            ) : (signedIn || isDemo) ? (
+            ) : event.cancelledAt ? null : (signedIn || isDemo) ? (
               <View style={styles.attendance}>
                 {attendanceQuery.isLoading ? <ActivityIndicator /> : null}
                 {attendanceQuery.isError || attendanceMutation.isError ? <Text accessibilityRole="alert" style={styles.error}>{t("eventDetail.actionError")}</Text> : null}
@@ -210,6 +248,23 @@ export default function EventDetailScreen() {
           </View>
         </ScrollView>
       )}
+      {cancelConfirmOpen ? (
+        <View accessibilityViewIsModal style={styles.modalScrim}>
+          <View style={styles.confirmModal}>
+            <Text style={styles.confirmTitle}>{t("eventDetail.cancelEventTitle")}</Text>
+            <Text style={styles.meta}>{t("eventDetail.cancelEventMessage")}</Text>
+            {cancelEventMutation.isError ? <Text accessibilityRole="alert" style={styles.error}>{t("eventDetail.actionError")}</Text> : null}
+            <View style={styles.confirmActions}>
+              <Pressable accessibilityRole="button" disabled={cancelEventMutation.isPending} onPress={() => setCancelConfirmOpen(false)}>
+                <Text style={styles.link}>{t("eventDetail.keepEvent")}</Text>
+              </Pressable>
+              <Pressable accessibilityRole="button" disabled={cancelEventMutation.isPending} onPress={() => cancelEventMutation.mutate()} style={styles.confirmCancelButton}>
+                <Text style={styles.confirmCancelText}>{t("eventDetail.confirmCancelEvent")}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -248,6 +303,11 @@ const styles = StyleSheet.create({
   title: { flex: 1, color: theme.ink, fontSize: 26, fontWeight: "800" },
   titleActions: { flexDirection: "row", alignItems: "center", gap: 8 },
   live: { color: theme.live, backgroundColor: theme.liveBg, overflow: "hidden", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4, fontSize: 12, fontWeight: "700" },
+  cancelledBanner: { backgroundColor: "#FDEAEA", borderRadius: 12, padding: 12 },
+  cancelledBannerText: { color: theme.danger, fontWeight: "800" },
+  ownerActions: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 12 },
+  cancelEventButton: { minHeight: 44, justifyContent: "center", paddingHorizontal: 8 },
+  cancelEventText: { color: theme.danger, fontWeight: "800" },
   iconButton: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: theme.chip },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   description: { color: theme.ink, fontSize: 15, lineHeight: 22, paddingTop: 4 },
@@ -267,4 +327,10 @@ const styles = StyleSheet.create({
   error: { color: theme.danger },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
   muted: { color: theme.muted, textAlign: "center" },
+  modalScrim: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, backgroundColor: "rgba(31,27,46,0.45)", alignItems: "center", justifyContent: "center", padding: 20 },
+  confirmModal: { width: "100%", maxWidth: 440, borderRadius: 18, backgroundColor: "white", padding: 20, gap: 14, ...theme.shadow },
+  confirmTitle: { color: theme.ink, fontSize: 20, fontWeight: "800" },
+  confirmActions: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 14, marginTop: 8 },
+  confirmCancelButton: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: "#FDEAEA" },
+  confirmCancelText: { color: theme.danger, fontWeight: "800" },
 });

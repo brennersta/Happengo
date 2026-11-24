@@ -1,19 +1,13 @@
-import { defaultLocalSlot, localDateTimeToIso, validateCreateEventForm, type CreateEventFormValues } from "./createEventForm";
+import { defaultLocalSlot, eventDateTimeFields, localDateTimeToIso, validateCreateEventForm, type CreateEventFormValues } from "./createEventForm";
 
 const now = new Date("2026-11-17T10:00:00.000Z");
 const start = new Date(now.getTime() + 60 * 60_000);
 const end = new Date(now.getTime() + 3 * 60 * 60_000);
 
-function localParts(value: Date) {
-  return {
-    date: `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`,
-    time: `${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`,
-  };
-}
-
 function formValues(): CreateEventFormValues {
-  const startParts = localParts(start);
-  const endParts = localParts(end);
+  const timeZoneId = "Europe/Tallinn";
+  const startParts = eventDateTimeFields(start.toISOString(), timeZoneId)!;
+  const endParts = eventDateTimeFields(end.toISOString(), timeZoneId)!;
   return {
     title: "Dinner",
     description: "With family",
@@ -21,7 +15,7 @@ function formValues(): CreateEventFormValues {
     startTime: startParts.time,
     endDate: endParts.date,
     endTime: endParts.time,
-    timeZoneId: "Europe/Tallinn",
+    timeZoneId,
     address: "Tallinn",
     location: { longitude: 24.7536, latitude: 59.437 },
     visibility: "public",
@@ -64,4 +58,14 @@ test("keeps tag selection order and requires at least one tag", () => {
 test("default slots are future local times on the hour", () => {
   const slots = defaultLocalSlot(1, new Date(2026, 10, 17, 10, 42));
   expect(slots).toEqual({ date: "2026-11-17", time: "11:00" });
+});
+
+test("converts and displays local date-times in the selected event timezone", () => {
+  const instant = localDateTimeToIso("2026-11-17", "13:00", "Europe/Tallinn");
+  expect(instant).toBe("2026-11-17T11:00:00.000Z");
+  expect(eventDateTimeFields(instant!, "Europe/Tallinn")).toEqual({ date: "2026-11-17", time: "13:00" });
+});
+
+test("rejects local times in a daylight-saving gap", () => {
+  expect(localDateTimeToIso("2026-03-29", "03:30", "Europe/Tallinn")).toBeNull();
 });

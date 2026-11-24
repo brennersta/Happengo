@@ -4,7 +4,7 @@ using NodaTime;
 namespace Happengo.Api.Events;
 
 /// <summary>
-/// An event has no stored status. Happening now and ended are computed from the clock (ADR 0003).
+/// Happening now and ended are computed from the clock (ADR 0003); cancellation is an explicit stored event state.
 /// </summary>
 internal sealed class Event
 {
@@ -42,4 +42,6 @@ internal sealed class Event
     public Instant CreatedAt { get; set; }
 
     public Instant UpdatedAt { get; set; }
+
+    public Instant? CancelledAt { get; set; }
 }

@@ -10,7 +10,9 @@ import {
 } from "./friends";
 import {
   cancelDemoAttendance,
+  cancelDemoEvent,
   createDemoEvent,
+  editDemoEvent,
   decideDemoAttendance,
   getDemoAttendance,
   getDemoPendingRequests,
@@ -92,6 +94,11 @@ export async function enableFetchMocks(): Promise<void> {
       const response = cancelDemoAttendance(cancel[1]);
       return response ? Response.json(response) : new Response(null, { status: 409 });
     }
+    const cancelEvent = path.match(/\/v1\/events\/([^/]+)\/cancel$/);
+    if (request.method === "POST" && cancelEvent?.[1]) {
+      const event = cancelDemoEvent(cancelEvent[1]);
+      return event ? Response.json(event) : problem(404);
+    }
     const decision = path.match(/\/v1\/events\/([^/]+)\/attendance\/requests\/([^/]+)\/(approve|reject)$/);
     if (request.method === "POST" && decision?.[1] && decision[2] && decision[3]) {
       const next = decision[3] === "approve" ? "attending" : "rejected";
@@ -100,6 +107,12 @@ export async function enableFetchMocks(): Promise<void> {
     }
     if (request.method === "GET" && path.endsWith("/v1/events/mine")) {
       return Response.json(listMyEvents());
+    }
+    const eventEdit = path.match(/\/v1\/events\/([^/]+)$/);
+    if (request.method === "PATCH" && eventEdit?.[1]) {
+      const body = await request.json() as import("./contract").EditEventRequest;
+      const event = editDemoEvent(eventEdit[1], body);
+      return event ? Response.json(event) : problem(409);
     }
     if (request.method === "GET" && path.endsWith("/v1/events")) {
       const bbox = url.searchParams.get("bbox");

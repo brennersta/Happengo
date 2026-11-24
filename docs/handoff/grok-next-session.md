@@ -458,3 +458,69 @@ Result: 1 passed; `api/openapi.json` regenerated. Then, from `packages/api-clien
 - OpenAPI drift check command: `$env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'; Remove-Item Env:UPDATE_OPENAPI -ErrorAction SilentlyContinue; dotnet test backend/tests/Happengo.Api.Tests/Happengo.Api.Tests.csproj --configuration Release --filter FullyQualifiedName~OpenApi_document_matches_committed_contract`. Result: **1 passed, 0 failed, 0 skipped**.
 - Full backend command: `$env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'; dotnet test backend/Happengo.sln --configuration Release`. Result: **229 passed, 0 failed, 0 skipped**.
 - No mobile, migration, infrastructure, or deployment changes were made in this maintenance branch.
+
+## Edit and cancel events — 2026-11-23
+
+### Implemented
+
+- Added `PATCH /v1/events/{eventId}` for owners. Anonymous requests receive 401 ProblemDetails; non-owners receive 404 ProblemDetails. The endpoint reuses `CreateEventValidator`, preserving visibility and approval mode from the stored event, retaining selected tag order, replacing invited friend tags, and rejecting ended events with 409 ProblemDetails.
+- Added owner-only `POST /v1/events/{eventId}/cancel`. The new nullable `cancelled_at` column is in migration `20261123150041_CancelEvents`; the migration and its designer were saved as UTF-8 without BOM. No merged migration was edited.
+- `VisibleTo` map scope filters cancelled events before filters and pagination. Direct event reads retain normal visibility rules and include `cancelledAt`; My Events retains cancelled owned/attended events. A join to a cancelled event returns 409 ProblemDetails. Cancelled unlisted tokens no longer serve shared reads.
+- Event detail has owner Edit and Cancel event actions, a confirmation dialog, and a cancelled banner with attendance actions hidden. Edit opens the create form with event fields prefilled; visibility/approval controls remain locked and time-zone-local date inputs are supported.
+- Added `cancelledAt` to demo event responses, edit/cancel mock endpoints, cancelled map filtering, cancelled My Events badges, and English/pt-BR strings.
+- Added `openapi-fetch` and `@types/react-test-renderer` as direct mobile dependencies because the typecheck exposed existing direct imports without declarations in the mobile manifest.
+- Added review note `docs/features/reviews/0013-edit-cancel-event.md` after review note 0012 was assigned to the map-location work.
+
+### Commands run and results
+
+Backend-generated OpenAPI update mode:
+
+~~~powershell
+$env:DOTNET_CLI_TELEMETRY_OPTOUT='1'
+$env:UPDATE_OPENAPI='1'
+dotnet test backend/tests/Happengo.Api.Tests/Happengo.Api.Tests.csproj --configuration Release --no-restore --filter FullyQualifiedName~OpenApi_document_matches_committed_contract
+~~~
+
+Result: 1 passed and `api/openapi.json` regenerated. Then, from `packages/api-client`, ran `node ./scripts/generate.mjs` with openapi-typescript 7.13.0 to regenerate `src/generated/schema.ts`.
+
+Explicit OpenAPI drift check (update mode unset):
+
+~~~powershell
+$env:DOTNET_CLI_TELEMETRY_OPTOUT='1'
+Remove-Item Env:UPDATE_OPENAPI -ErrorAction SilentlyContinue
+dotnet test backend/tests/Happengo.Api.Tests/Happengo.Api.Tests.csproj --configuration Release --filter FullyQualifiedName~OpenApi_document_matches_committed_contract
+~~~
+
+Result: 1 passed, 0 failed, 0 skipped.
+
+Focused edit/cancel integration tests:
+
+~~~powershell
+$env:DOTNET_CLI_TELEMETRY_OPTOUT='1'
+$filter='FullyQualifiedName~EditEventTests|FullyQualifiedName~CancelEventTests'
+dotnet test backend/tests/Happengo.Api.Tests/Happengo.Api.Tests.csproj --configuration Release --no-restore --filter $filter
+~~~
+
+Result: 6 passed, 0 failed, 0 skipped.
+
+Full backend suite:
+
+~~~powershell
+$env:DOTNET_CLI_TELEMETRY_OPTOUT='1'
+dotnet test backend/Happengo.sln --configuration Release
+~~~
+
+Result: 235 passed, 0 failed, 0 skipped.
+
+Mobile checks, from repo root:
+
+~~~text
+pnpm --filter @happengo/mobile test --runInBand
+pnpm --filter @happengo/mobile typecheck
+~~~
+
+Result: Jest 22 suites / 69 tests passed; typecheck passed. The existing ignored `@parcel/watcher` build script was not approved or run; the frozen dependencies were installed with scripts ignored.
+
+### Scope
+
+- No infrastructure, deployment, Azure, or Terraform changes. No existing migration was modified.

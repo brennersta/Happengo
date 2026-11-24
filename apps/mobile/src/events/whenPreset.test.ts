@@ -1,8 +1,9 @@
 import { addMinutes, startNowSlot } from "./whenPreset";
-import { validateCreateEventForm } from "./createEventForm";
+import { localTimeZone, validateCreateEventForm } from "./createEventForm";
 
 test("start now plus a preset duration stays inside the existing seven-day rule", () => {
   const now = new Date("2026-11-23T10:00:00");
+  const timeZoneId = localTimeZone();
   const start = startNowSlot(now);
   const end = addMinutes(start, 60);
   expect(end).not.toBeNull();
@@ -13,7 +14,7 @@ test("start now plus a preset duration stays inside the existing seven-day rule"
     startTime: start.time,
     endDate: end!.date,
     endTime: end!.time,
-    timeZoneId: "Europe/Tallinn",
+    timeZoneId,
     address: "Tallinn, Estonia",
     location: { longitude: 24.75, latitude: 59.43 },
     visibility: "public",

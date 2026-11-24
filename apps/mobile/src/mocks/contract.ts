@@ -36,6 +36,7 @@ function createFixtures(now: Date): EventResponse[] {
     isOwner: false,
     attendingCount: 0,
     invitedFriendTags: null,
+    cancelledAt: null,
     longitude: tallinn.longitude,
     latitude: tallinn.latitude,
   };
@@ -174,6 +175,7 @@ export function createDemoEvent(request: CreateEventRequest, now = new Date()): 
     isOwner: true,
     attendingCount: 1,
     invitedFriendTags: request.visibility === "friends_only" ? [...(request.invitedFriendTags ?? [])] : [],
+    cancelledAt: null,
     longitude: request.longitude,
     latitude: request.latitude,
   };
@@ -219,7 +221,7 @@ export function getDemoPendingRequests(eventId: string): PendingAttendanceRespon
 
 export function requestDemoAttendance(eventId: string, shareToken: string | null): AttendanceResponse | null {
   const event = getEvent(eventId);
-  if (!event || event.isOwner || hasEnded(event.endAt, new Date())) return null;
+  if (!event || event.isOwner || event.cancelledAt || hasEnded(event.endAt, new Date())) return null;
   if (event.visibility === "unlisted" && shareTokens.get(eventId) !== shareToken) return null;
   if (event.visibility === "friends_only") return null;
 
@@ -235,6 +237,39 @@ export function requestDemoAttendance(eventId: string, shareToken: string | null
   const attendingCount = event.attendingCount + (status === "attending" ? 1 : 0);
   updateDemoAttendingCount(eventId, attendingCount);
   return { eventId, status, attendingCount };
+}
+
+export type EditEventRequest = components["schemas"]["EditEventRequest"];
+
+export function editDemoEvent(eventId: string, request: EditEventRequest, now = new Date()): EventResponse | null {
+  const event = [...demoEvents, ...fixtures].find((item) => item.id === eventId && item.isOwner);
+  if (
+    !event || hasEnded(event.endAt, now) || !request.title || !request.startAt || !request.endAt
+    || !request.timeZoneId || !request.address || request.longitude == null || request.latitude == null
+    || !request.tags?.length
+  ) return null;
+  Object.assign(event, {
+    title: request.title,
+    description: request.description ?? null,
+    startAt: request.startAt,
+    endAt: request.endAt,
+    timeZoneId: request.timeZoneId,
+    address: request.address,
+    longitude: request.longitude,
+    latitude: request.latitude,
+    tags: [...request.tags],
+    invitedFriendTags: event.visibility === "friends_only" ? [...(request.invitedFriendTags ?? [])] : event.invitedFriendTags,
+    happeningNow: !event.cancelledAt && isHappeningNow(request.startAt, request.endAt, now),
+  });
+  return publish(event, now);
+}
+
+export function cancelDemoEvent(eventId: string, now = new Date()): EventResponse | null {
+  const event = [...demoEvents, ...fixtures].find((item) => item.id === eventId && item.isOwner);
+  if (!event) return null;
+  event.cancelledAt ??= now.toISOString();
+  event.happeningNow = false;
+  return publish(event, now);
 }
 
 export function decideDemoAttendance(
@@ -309,6 +344,7 @@ export function listEvents(bbox: string | null, now = new Date(), filters: DemoL
   const items = [...fixtures, ...demoEvents]
     .filter((event) => event.visibility !== "unlisted")
     .filter((event) => event.visibility !== "friends_only" || event.isOwner)
+    .filter((event) => !event.cancelledAt)
     .filter((event) => !hasEnded(event.endAt, now))
     .filter((event) => !filters.tags?.length || event.tags.some((tag) => filters.tags?.includes(tag)))
     .filter((event) => !filters.happeningNow || isHappeningNow(event.startAt, event.endAt, now))

@@ -92,6 +92,11 @@ internal static class AttendanceRoutes
             return Problems.NotFoundEvent();
         }
 
+        if (context.CancelledAt is not null)
+        {
+            return Problems.EventConflict("Attendance cannot be requested for a cancelled event.");
+        }
+
         if (context.EndAt <= now)
         {
             return Problems.InvalidAttendance("Attendance cannot be requested after an event has ended.");

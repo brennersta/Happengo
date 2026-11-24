@@ -11,7 +11,9 @@ import {
 } from "./friends";
 import {
   cancelDemoAttendance,
+  cancelDemoEvent,
   createDemoEvent,
+  editDemoEvent,
   decideDemoAttendance,
   getDemoAttendance,
   getDemoPendingRequests,
@@ -76,6 +78,15 @@ export const handlers = [
     return response ? HttpResponse.json(response) : new HttpResponse(null, { status: 409 });
   }),
   http.get("/v1/events/mine", () => HttpResponse.json(listMyEvents())),
+  http.patch("/v1/events/:id", async ({ params, request }) => {
+    const body = await request.json() as import("./contract").EditEventRequest;
+    const event = editDemoEvent(String(params.id), body);
+    return event ? HttpResponse.json(event) : new HttpResponse(null, { status: 409 });
+  }),
+  http.post("/v1/events/:id/cancel", ({ params }) => {
+    const event = cancelDemoEvent(String(params.id));
+    return event ? HttpResponse.json(event) : new HttpResponse(null, { status: 404 });
+  }),
   http.get("/v1/events/:id", ({ params }) => {
     const event = getEvent(String(params.id));
     return event ? HttpResponse.json(event) : new HttpResponse(null, { status: 404 });

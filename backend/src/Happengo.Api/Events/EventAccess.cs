@@ -10,6 +10,7 @@ public sealed record EventAttendanceContext(
     EventVisibility Visibility,
     ApprovalMode ApprovalMode,
     Instant EndAt,
+    Instant? CancelledAt,
     bool IsInvited,
     bool ShareTokenMatches);
 
@@ -61,6 +62,7 @@ public static class EventAccess
                 e.Visibility,
                 e.ApprovalMode,
                 e.EndAt,
+                e.CancelledAt,
                 db.EventInvites.Any(invite => invite.EventId == e.Id && invite.InviteeUserId == userId),
                 compareHash && e.ShareTokenHash == hash))
             .FirstOrDefaultAsync(cancellationToken);

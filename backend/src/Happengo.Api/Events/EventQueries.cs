@@ -19,9 +19,9 @@ internal static class EventQueries
 
     /// <summary>
     /// One visibility filter (ADR 0007).
-    /// Map scope drops unlisted events for every caller, including the owner,
+    /// Map scope drops unlisted and cancelled events for every caller, including the owner,
     /// and drops every ended event (<c>end_at &lt;= now</c>), including the owner's
-    /// and attendees' (ADR 0006). Direct reads still return ended events to those people.
+    /// and attendees' (ADR 0006). Direct reads still return ended and cancelled events under the same allow-list.
     /// The owner clause is the positive <see cref="OwnerVisibility"/> allow-list.
     /// </summary>
     public static IQueryable<Event> VisibleTo(
@@ -40,7 +40,7 @@ internal static class EventQueries
         var ownedTags = FriendAccess.Tags(db);
 
         return events.Where(e =>
-            !map || e.EndAt > now).Where(e =>
+            !map || (e.EndAt > now && e.CancelledAt == null)).Where(e =>
             (known
                 && e.OwnerId == userId
                 && ownerMaySee.Contains(e.Visibility))
@@ -75,6 +75,7 @@ internal static class EventQueries
         var hash = ShareToken.Hash(token);
         return events.Where(e =>
             e.Visibility == EventVisibility.Unlisted
+            && e.CancelledAt == null
             && e.ShareTokenHash == hash
             && e.EndAt > now);
     }

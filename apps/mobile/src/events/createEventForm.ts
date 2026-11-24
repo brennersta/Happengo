@@ -39,8 +39,8 @@ export function validateCreateEventForm(
     return { ok: false, error: "location" };
   }
 
-  const startAt = localDateTimeToIso(values.startDate, values.startTime);
-  const endAt = localDateTimeToIso(values.endDate, values.endTime);
+  const startAt = localDateTimeToIso(values.startDate, values.startTime, values.timeZoneId);
+  const endAt = localDateTimeToIso(values.endDate, values.endTime, values.timeZoneId);
   if (!startAt || Date.parse(startAt) < now.getTime()) return { ok: false, error: "start" };
   if (!endAt || Date.parse(endAt) <= now.getTime() || Date.parse(endAt) <= Date.parse(startAt)) {
     return { ok: false, error: "end" };
@@ -70,16 +70,41 @@ export function validateCreateEventForm(
   };
 }
 
-export function localDateTimeToIso(date: string, time: string): string | null {
+export function localDateTimeToIso(date: string, time: string, timeZoneId = localTimeZone()): string | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return null;
   const [year, month, day] = date.split("-").map(Number);
   const [hour, minute] = time.split(":").map(Number);
-  const value = new Date(year!, month! - 1, day!, hour!, minute!, 0, 0);
-  if (
-    value.getFullYear() !== year || value.getMonth() !== month! - 1 || value.getDate() !== day
-    || value.getHours() !== hour || value.getMinutes() !== minute
-  ) return null;
-  return value.toISOString();
+  const desired = Date.UTC(year!, month! - 1, day!, hour!, minute!);
+  const calendarCheck = new Date(desired);
+  if (calendarCheck.getUTCFullYear() !== year || calendarCheck.getUTCMonth() !== month! - 1 || calendarCheck.getUTCDate() !== day) return null;
+
+  let guess = desired;
+  try {
+    for (let iteration = 0; iteration < 4; iteration += 1) {
+      const parts = zonedParts(new Date(guess), timeZoneId);
+      const represented = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute);
+      const difference = desired - represented;
+      guess += difference;
+      if (difference === 0) return new Date(guess).toISOString();
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+export function eventDateTimeFields(instant: string, timeZoneId: string): { date: string; time: string } | null {
+  const value = new Date(instant);
+  if (!Number.isFinite(value.getTime())) return null;
+  try {
+    const parts = zonedParts(value, timeZoneId);
+    return {
+      date: `${parts.year}-${pad(parts.month)}-${pad(parts.day)}`,
+      time: `${pad(parts.hour)}:${pad(parts.minute)}`,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function defaultLocalSlot(offsetHours: number, now = new Date()): { date: string; time: string } {
@@ -107,6 +132,20 @@ function isValidTimeZone(value: string): boolean {
   } catch {
     return false;
   }
+}
+
+function zonedParts(value: Date, timeZoneId: string) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: timeZoneId,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(value);
+  const part = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((item) => item.type === type)?.value);
+  return { year: part("year"), month: part("month"), day: part("day"), hour: part("hour"), minute: part("minute") };
 }
 
 function pad(value: number): string {

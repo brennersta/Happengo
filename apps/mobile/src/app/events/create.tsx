@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { auth } from "@/auth";
 import { fetchClient } from "@/api/client";
@@ -10,7 +10,7 @@ import { AddressSearch } from "@/geocoding/AddressSearch";
 import { Map } from "@/map/Map";
 import { mapStyleUrl, TALLINN } from "@/map/config";
 import type { LngLat, MapFocus } from "@/map/types";
-import { defaultLocalSlot, localTimeZone, validateCreateEventForm, type CreateEventFormValues } from "@/events/createEventForm";
+import { defaultLocalSlot, eventDateTimeFields, localTimeZone, validateCreateEventForm, type CreateEventFormValues } from "@/events/createEventForm";
 import { uniqueFriendTags } from "@/friends/friendTags";
 import { addMinutes, DURATION_PRESETS, startNowSlot } from "@/events/whenPreset";
 import type { components } from "@happengo/api-client";
@@ -23,26 +23,65 @@ type ApprovalMode = components["schemas"]["ApprovalMode"];
 
 export default function CreateEventScreen() {
   const { t } = useTranslation();
+  const { id: eventId } = useLocalSearchParams<{ id?: string }>();
+  const editEventQuery = useQuery({
+    queryKey: ["event", eventId],
+    enabled: Boolean(eventId),
+    queryFn: async () => {
+      const { data, error, response } = await fetchClient.GET("/v1/events/{id}", { params: { path: { id: eventId! } } });
+      if (error || !data) throw new Error(response.statusText || t("eventDetail.notFound"));
+      return data;
+    },
+  });
+
+  if (eventId && editEventQuery.isLoading) return <EditEventStatus message={t("createEvent.loadingEvent")} />;
+  if (eventId && (editEventQuery.isError || !editEventQuery.data)) return <EditEventStatus message={t("eventDetail.notFound")} />;
+  const event = eventId ? editEventQuery.data : null;
+  if (event && (!eventDateTimeFields(event.startAt, event.timeZoneId) || !eventDateTimeFields(event.endAt, event.timeZoneId))) {
+    return <EditEventStatus message={t("createEvent.createError")} />;
+  }
+  return <CreateEventForm key={event?.id ?? "new-event"} event={event ?? null} />;
+}
+
+function EditEventStatus({ message }: { message: string }) {
+  const { t } = useTranslation();
   const router = useRouter();
+  return (
+    <View style={styles.fill}>
+      <View style={styles.statusContent}>
+        <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.back}>
+          <Text style={styles.backText}>‹ {t("eventDetail.back")}</Text>
+        </Pressable>
+        <Text accessibilityRole="alert" style={styles.helper}>{message}</Text>
+      </View>
+    </View>
+  );
+}
+
+function CreateEventForm({ event }: { event: components["schemas"]["EventResponse"] | null }) {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const editing = event !== null;
+  const eventId = event?.id;
   const queryClient = useQueryClient();
   const { width } = useWindowDimensions();
   const wide = width >= wideLayoutWidth;
-  const start = defaultLocalSlot(1);
-  const end = defaultLocalSlot(3);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const start = event ? eventDateTimeFields(event.startAt, event.timeZoneId) ?? defaultLocalSlot(1) : defaultLocalSlot(1);
+  const end = event ? eventDateTimeFields(event.endAt, event.timeZoneId) ?? defaultLocalSlot(3) : defaultLocalSlot(3);
+  const [title, setTitle] = useState(event?.title ?? "");
+  const [description, setDescription] = useState(event?.description ?? "");
   const [startDate, setStartDate] = useState(start.date);
   const [startTime, setStartTime] = useState(start.time);
   const [endDate, setEndDate] = useState(end.date);
   const [endTime, setEndTime] = useState(end.time);
-  const [timeZoneId] = useState(localTimeZone());
-  const [address, setAddress] = useState("");
-  const [location, setLocation] = useState<LngLat | null>(null);
-  const [focus, setFocus] = useState<MapFocus | null>(null);
-  const [visibility, setVisibility] = useState<Visibility>("public");
-  const [approvalMode, setApprovalMode] = useState<ApprovalMode>("open");
-  const [tags, setTags] = useState<EventTag[]>([]);
-  const [invitedFriendTags, setInvitedFriendTags] = useState<string[]>([]);
+  const [timeZoneId, setTimeZoneId] = useState(event?.timeZoneId ?? localTimeZone());
+  const [address, setAddress] = useState(event?.address ?? "");
+  const [location, setLocation] = useState<LngLat | null>(event ? { longitude: event.longitude, latitude: event.latitude } : null);
+  const [focus, setFocus] = useState<MapFocus | null>(event ? { longitude: event.longitude, latitude: event.latitude, key: 0 } : null);
+  const [visibility, setVisibility] = useState<Visibility>(event?.visibility ?? "public");
+  const [approvalMode, setApprovalMode] = useState<ApprovalMode>(event?.approvalMode ?? "open");
+  const [tags, setTags] = useState<EventTag[]>((event?.tags ?? []) as EventTag[]);
+  const [invitedFriendTags, setInvitedFriendTags] = useState<string[]>(event?.invitedFriendTags ?? []);
   const [whenOpen, setWhenOpen] = useState(false);
   const [startNow, setStartNow] = useState(false);
   const [duration, setDuration] = useState<number>(60);
@@ -61,7 +100,9 @@ export default function CreateEventScreen() {
   const friendTags = uniqueFriendTags(friendsQuery.data ?? []);
 
   function applyWhen(nextStartNow: boolean, minutes: number) {
-    const slot = nextStartNow ? startNowSlot() : { date: startDate, time: startTime };
+    const slot = nextStartNow
+      ? eventDateTimeFields(new Date(Date.now() + 60 * 60_000).toISOString(), timeZoneId) ?? startNowSlot()
+      : { date: startDate, time: startTime };
     const nextEnd = addMinutes(slot, minutes);
     if (!nextEnd) return;
     setStartNow(nextStartNow);
@@ -96,7 +137,23 @@ export default function CreateEventScreen() {
     }
     setSubmitting(true);
     try {
-      const { data, error } = await fetchClient.POST("/v1/events", { body: result.request });
+      const { data, error } = editing
+        ? await fetchClient.PATCH("/v1/events/{eventId}", {
+          params: { path: { eventId: eventId! } },
+          body: {
+            title: result.request.title,
+            description: result.request.description,
+            startAt: result.request.startAt,
+            endAt: result.request.endAt,
+            timeZoneId: result.request.timeZoneId,
+            address: result.request.address,
+            longitude: result.request.longitude,
+            latitude: result.request.latitude,
+            tags: result.request.tags,
+            ...(result.request.invitedFriendTags !== undefined ? { invitedFriendTags: result.request.invitedFriendTags } : {}),
+          },
+        })
+        : await fetchClient.POST("/v1/events", { body: result.request });
       if (error || !data) {
         setSubmitError("createError");
         return;
@@ -121,7 +178,7 @@ export default function CreateEventScreen() {
         <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.back}>
           <Text style={styles.backText}>‹ {t("eventDetail.back")}</Text>
         </Pressable>
-        <Text style={styles.heading}>{t("createEvent.heading")}</Text>
+        <Text style={styles.heading}>{t(editing ? "createEvent.editHeading" : "createEvent.heading")}</Text>
         {isDemo ? <Text style={styles.demoNotice}>{t("createEvent.demoNotice")}</Text> : null}
         <View style={[styles.columns, wide && styles.columnsWide]}>
           <View style={styles.card}>
@@ -132,6 +189,7 @@ export default function CreateEventScreen() {
               <Text style={styles.inputText}>{whenLabel}</Text>
             </Pressable>
             <Text style={styles.helper}>{t("createEvent.whenHelp")}</Text>
+            <Field label={t("createEvent.timeZoneId")} value={timeZoneId} onChangeText={setTimeZoneId} maxLength={64} />
             <Text style={styles.label}>{t("createEvent.tags")}</Text>
             <Text style={styles.helper}>{t("createEvent.tagsHelp")}</Text>
             <View style={styles.chips}>
@@ -149,7 +207,7 @@ export default function CreateEventScreen() {
               })}
             </View>
             {validationError === "tags" ? <Text accessibilityRole="alert" style={styles.error}>{t("createEvent.errors.tags")}</Text> : null}
-            <View style={[styles.columns, wide && styles.selects]}>
+            {!editing ? <View style={[styles.columns, wide && styles.selects]}>
               <SelectField
                 label={t("createEvent.visibility")}
                 value={t(`createEvent.${visibility === "friends_only" ? "friendsOnly" : visibility}`)}
@@ -171,7 +229,7 @@ export default function CreateEventScreen() {
                 ]}
                 onChange={(value) => setApprovalMode(value as ApprovalMode)}
               />
-            </View>
+            </View> : <Text style={styles.helper}>{t("createEvent.visibilityApprovalLocked")}</Text>}
             {visibility === "friends_only" ? (
               <View style={styles.inviteTags}>
                 <Text style={styles.label}>{t("createEvent.inviteByTag")}</Text>
@@ -195,7 +253,12 @@ export default function CreateEventScreen() {
             ) : null}
             {validationError && validationError !== "tags" ? <Text accessibilityRole="alert" style={styles.error}>{t(`createEvent.errors.${validationError}`)}</Text> : null}
             {submitError ? <Text accessibilityRole="alert" style={styles.error}>{t(`createEvent.${submitError}`)}</Text> : null}
-            <GradientButton label={t("createEvent.submit")} onPress={() => void submit()} busy={submitting} />
+            <GradientButton
+              label={t(editing ? "createEvent.saveChanges" : "createEvent.submit")}
+              onPress={() => void submit()}
+              busy={submitting}
+              disabled={submitting}
+            />
           </View>
           <View style={styles.card}>
             <GradientHeader>
@@ -315,6 +378,7 @@ const styles = StyleSheet.create({
   inviteTags: { gap: 8 },
   fill: { flex: 1, backgroundColor: theme.page },
   content: { padding: 20, paddingBottom: 48, gap: 14, width: "100%", maxWidth: 1100, alignSelf: "center" },
+  statusContent: { padding: 20, gap: 16 },
   back: { alignSelf: "flex-start" },
   backText: { color: theme.brand, fontSize: 15, fontWeight: "700" },
   heading: { color: theme.brand, fontSize: 32, fontWeight: "800" },
