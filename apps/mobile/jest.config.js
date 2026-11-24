@@ -1,3 +1,6 @@
+// Default local Jest runs to CI's timezone, while allowing explicit TZ overrides for portability checks.
+process.env.TZ ||= "UTC";
+
 const preset = require("jest-expo/jest-preset");
 
 module.exports = {

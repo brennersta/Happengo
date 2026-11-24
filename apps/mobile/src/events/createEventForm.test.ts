@@ -4,16 +4,10 @@ const now = new Date("2026-11-17T10:00:00.000Z");
 const start = new Date(now.getTime() + 60 * 60_000);
 const end = new Date(now.getTime() + 3 * 60 * 60_000);
 
-function localParts(value: Date) {
-  return {
-    date: `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`,
-    time: `${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`,
-  };
-}
-
 function formValues(): CreateEventFormValues {
-  const startParts = localParts(start);
-  const endParts = localParts(end);
+  const timeZoneId = "Europe/Tallinn";
+  const startParts = eventDateTimeFields(start.toISOString(), timeZoneId)!;
+  const endParts = eventDateTimeFields(end.toISOString(), timeZoneId)!;
   return {
     title: "Dinner",
     description: "With family",
@@ -21,7 +15,7 @@ function formValues(): CreateEventFormValues {
     startTime: startParts.time,
     endDate: endParts.date,
     endTime: endParts.time,
-    timeZoneId: "Europe/Tallinn",
+    timeZoneId,
     address: "Tallinn",
     location: { longitude: 24.7536, latitude: 59.437 },
     visibility: "public",
