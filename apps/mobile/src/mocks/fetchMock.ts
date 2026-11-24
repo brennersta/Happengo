@@ -17,6 +17,7 @@ import {
   getDemoAttendance,
   getDemoPendingRequests,
   getEvent,
+  isValidListDateFilter,
   listEvents,
   listMyEvents,
   requestDemoAttendance,
@@ -131,9 +132,21 @@ export async function enableFetchMocks(): Promise<void> {
     if (request.method === "GET" && path.endsWith("/v1/events")) {
       const bbox = url.searchParams.get("bbox");
       if (!bbox) return new Response(null, { status: 400 });
+      const when = url.searchParams.get("when") ?? "now";
+      const timeZoneId = url.searchParams.get("timeZoneId") ?? "Europe/Tallinn";
+      if (!isValidListDateFilter(when, timeZoneId)) {
+        return Response.json({
+          type: "https://happengo.app/problems/invalid-date-range",
+          title: "Invalid date range",
+          status: 400,
+          detail: "when must be now, today, weekend, or next7days, and timeZoneId must be a valid IANA time zone.",
+        }, { status: 400, headers: { "Content-Type": "application/problem+json" } });
+      }
       return Response.json(listEvents(bbox, new Date(), {
         tags: url.searchParams.getAll("tags"),
         happeningNow: url.searchParams.get("happeningNow") === "true",
+        when: when as "now" | "today" | "weekend" | "next7days",
+        timeZoneId,
       }));
     }
     const eventMatch = path.match(/\/v1\/events\/([^/]+)$/);

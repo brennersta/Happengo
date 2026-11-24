@@ -8,6 +8,7 @@ public static class ProblemTypes
 {
     public const string InvalidBbox = "https://happengo.app/problems/invalid-bbox";
     public const string InvalidTags = "https://happengo.app/problems/invalid-tags";
+    public const string InvalidDateRange = "https://happengo.app/problems/invalid-date-range";
     public const string InvalidEvent = "https://happengo.app/problems/invalid-event";
     public const string NotFound = "https://happengo.app/problems/not-found";
     public const string Unauthorized = "https://happengo.app/problems/unauthorized";

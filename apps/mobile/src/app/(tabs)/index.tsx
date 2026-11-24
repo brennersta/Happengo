@@ -8,6 +8,7 @@ import { fetchClient } from "@/api/client";
 import { AddressSearch } from "@/geocoding/AddressSearch";
 import type { GeocodePlace } from "@/geocoding/photon";
 import { discoverQuery, emptyDiscoverFilters, type DiscoverFilters } from "@/events/discoverFilters";
+import { localTimeZone } from "@/events/createEventForm";
 import { displayAddress } from "@/events/displayAddress";
 import { isHappeningNow } from "@/events/liveState";
 import { bboxForBounds, formatEventTime, type MapEvent } from "@/events/mapEvents";
@@ -42,6 +43,7 @@ export default function DiscoverScreen() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [draft, setDraft] = useState<DiscoverFilters>(emptyDiscoverFilters);
   const [applied, setApplied] = useState<DiscoverFilters>(emptyDiscoverFilters);
+  const timeZoneId = useMemo(() => localTimeZone(), []);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(timer);
@@ -77,21 +79,21 @@ export default function DiscoverScreen() {
     longitude: (bounds.southWest.longitude + bounds.northEast.longitude) / 2,
     latitude: (bounds.southWest.latitude + bounds.northEast.latitude) / 2,
   }), [bounds]);
-  const filtered = applied.tags.length > 0 || applied.happeningNow;
+  const filtered = applied.tags.length > 0 || applied.happeningNow || applied.when !== "now";
   const loadEvents = useCallback(async (filters: DiscoverFilters) => {
     const { data, error, response } = await fetchClient.GET("/v1/events", {
-      params: { query: discoverQuery(bbox, filters) },
+      params: { query: discoverQuery(bbox, filters, timeZoneId) },
     });
     if (error || !data) throw new Error(response.statusText || t("discover.loadError"));
     return data;
-  }, [bbox, t]);
+  }, [bbox, t, timeZoneId]);
   const viewportQuery = useQuery({
-    queryKey: ["discover-events", bbox, "", false],
+    queryKey: ["discover-events", bbox, timeZoneId, "", false, "now"],
     queryFn: () => loadEvents(emptyDiscoverFilters),
     staleTime: 15_000,
   });
   const filteredQuery = useQuery({
-    queryKey: ["discover-events", bbox, applied.tags.join(","), applied.happeningNow],
+    queryKey: ["discover-events", bbox, timeZoneId, applied.tags.join(","), applied.happeningNow, applied.when],
     enabled: filtered,
     queryFn: () => loadEvents(applied),
     staleTime: 15_000,
@@ -107,7 +109,7 @@ export default function DiscoverScreen() {
     tagLabel: event.tags[0] ? t(`tags.${event.tags[0]}`) : null,
     happeningNow: isHappeningNow(event.startAt, event.endAt, new Date(now)),
   }));
-  const activeCount = applied.tags.length + (applied.happeningNow ? 1 : 0);
+  const activeCount = applied.tags.length + (applied.happeningNow ? 1 : 0) + (applied.when !== "now" ? 1 : 0);
   const showMap = mode === "map" || wide;
   const showList = mode === "list";
 
@@ -269,6 +271,17 @@ function FilterDrawer({
           </View>
         </GradientHeader>
         <ScrollView contentContainerStyle={styles.drawerBody}>
+          <Text style={styles.section}>{t("discover.when")}</Text>
+          <View style={styles.chips}>
+            {(["now", "today", "weekend", "next7days"] as const).map((when) => (
+              <Chip
+                key={when}
+                label={t(`discover.when${when[0]!.toUpperCase()}${when.slice(1)}`)}
+                selected={draft.when === when}
+                onPress={() => onChange({ ...draft, when })}
+              />
+            ))}
+          </View>
           <Text style={styles.section}>{t("discover.filterByTags")}</Text>
           <View style={styles.chips}>
             {EVENT_TAGS.map((tag) => {

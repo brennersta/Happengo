@@ -18,6 +18,13 @@ internal static class Problems
             detail: detail,
             type: ProblemTypes.InvalidTags);
 
+    public static ProblemHttpResult InvalidDateRange(string detail) =>
+        TypedResults.Problem(
+            statusCode: StatusCodes.Status400BadRequest,
+            title: "Invalid date range",
+            detail: detail,
+            type: ProblemTypes.InvalidDateRange);
+
     public static ProblemHttpResult InvalidEvent(string detail) =>
         TypedResults.Problem(
             statusCode: StatusCodes.Status400BadRequest,

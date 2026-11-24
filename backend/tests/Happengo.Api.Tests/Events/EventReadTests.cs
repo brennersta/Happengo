@@ -79,6 +79,16 @@ public sealed class EventReadTests(ApiFactory factory) : IntegrationTest
     }
 
     [Fact]
+    public async Task Map_query_without_date_filter_parameters_uses_default_time_zone()
+    {
+        await factory.ResetAsync();
+        var response = await factory.CreateClient().SendAsync(ApiJson.Get($"/v1/events?bbox={TestData.Bbox}"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(await response.Content.Read<EventMapResponse>());
+    }
+
+    [Fact]
     public async Task Tag_filter_matches_any_named_tag_and_rejects_unknown_tags()
     {
         await factory.ResetAsync();
@@ -145,6 +155,103 @@ public sealed class EventReadTests(ApiFactory factory) : IntegrationTest
         });
         var stillHidden = await GetMapAsync(null, happeningNow: true);
         Assert.DoesNotContain(stillHidden.Items, item => item.Id == unlisted);
+    }
+
+    [Fact]
+    public async Task Today_window_uses_local_midnight_and_overlapping_events()
+    {
+        await factory.ResetAsync();
+        var zone = DateTimeZoneProviders.Tzdb["Europe/Tallinn"];
+        var start = new LocalDate(2026, 11, 16).AtStartOfDayInZone(zone).ToInstant();
+        var end = new LocalDate(2026, 11, 17).AtStartOfDayInZone(zone).ToInstant();
+        var overlap = await SeedAsync("overlap-today", start: start - Duration.FromHours(1), end: TestData.Now + Duration.FromHours(1));
+        var atStart = await SeedAsync("start-of-today", start: start, end: TestData.Now + Duration.FromMinutes(1));
+        var endingAtStart = await SeedAsync("ending-at-start-of-today", start: start - Duration.FromHours(1), end: start);
+        var atEnd = await SeedAsync("start-of-tomorrow", start: end, end: end + Duration.FromMinutes(1));
+
+        var page = await GetMapForWhenAsync("today");
+
+        Assert.Contains(overlap, page.Items.Select(item => item.Id));
+        Assert.Contains(atStart, page.Items.Select(item => item.Id));
+        Assert.DoesNotContain(endingAtStart, page.Items.Select(item => item.Id));
+        Assert.DoesNotContain(atEnd, page.Items.Select(item => item.Id));
+    }
+
+    [Fact]
+    public async Task Weekend_window_is_the_current_local_weekend_on_sunday()
+    {
+        await factory.ResetAsync();
+        var now = Instant.FromUtc(2026, 11, 22, 12, 0);
+        factory.Clock.Set(now);
+        var zone = DateTimeZoneProviders.Tzdb["Europe/Tallinn"];
+        var saturday = new LocalDate(2026, 11, 21).AtStartOfDayInZone(zone).ToInstant();
+        var monday = new LocalDate(2026, 11, 23).AtStartOfDayInZone(zone).ToInstant();
+        var overlap = await SeedAsync("overlap-weekend", start: saturday - Duration.FromHours(1), end: now + Duration.FromHours(1));
+        var atEnd = await SeedAsync("start-of-monday", start: monday, end: monday + Duration.FromMinutes(1));
+
+        var page = await GetMapForWhenAsync("weekend");
+
+        Assert.Contains(overlap, page.Items.Select(item => item.Id));
+        Assert.DoesNotContain(atEnd, page.Items.Select(item => item.Id));
+    }
+
+    [Fact]
+    public async Task Weekend_window_is_the_current_local_weekend_on_saturday()
+    {
+        await factory.ResetAsync();
+        var now = Instant.FromUtc(2026, 11, 21, 12, 0);
+        factory.Clock.Set(now);
+        var saturday = new LocalDate(2026, 11, 21).AtStartOfDayInZone(DateTimeZoneProviders.Tzdb["Europe/Tallinn"]).ToInstant();
+        var atStart = await SeedAsync("start-of-current-weekend", start: saturday, end: now + Duration.FromHours(1));
+
+        var page = await GetMapForWhenAsync("weekend");
+
+        Assert.Contains(atStart, page.Items.Select(item => item.Id));
+    }
+
+    [Fact]
+    public async Task Weekend_window_uses_the_upcoming_weekend_before_saturday()
+    {
+        await factory.ResetAsync();
+        var zone = DateTimeZoneProviders.Tzdb["Europe/Tallinn"];
+        var saturday = new LocalDate(2026, 11, 21).AtStartOfDayInZone(zone).ToInstant();
+        var overlap = await SeedAsync("upcoming-weekend", start: saturday, end: saturday + Duration.FromMinutes(1));
+
+        var page = await GetMapForWhenAsync("weekend");
+
+        Assert.Contains(overlap, page.Items.Select(item => item.Id));
+    }
+
+    [Fact]
+    public async Task Next_seven_days_is_a_rolling_local_window_with_exclusive_end()
+    {
+        await factory.ResetAsync();
+        var zone = DateTimeZoneProviders.Tzdb["Europe/Tallinn"];
+        var end = TestData.Now.InZone(zone).LocalDateTime.PlusDays(7).InZoneLeniently(zone).ToInstant();
+        var overlap = await SeedAsync("overlap-next-seven", start: TestData.Now - Duration.FromHours(1), end: TestData.Now + Duration.FromHours(1));
+        var atEnd = await SeedAsync("at-next-seven-end", start: end, end: end + Duration.FromMinutes(1));
+        var endingAtNow = await SeedAsync("ending-at-now", start: TestData.Now - Duration.FromHours(2), end: TestData.Now);
+
+        var page = await GetMapForWhenAsync("next7days");
+
+        Assert.Contains(overlap, page.Items.Select(item => item.Id));
+        Assert.DoesNotContain(atEnd, page.Items.Select(item => item.Id));
+        Assert.DoesNotContain(endingAtNow, page.Items.Select(item => item.Id));
+    }
+
+    [Theory]
+    [InlineData("tomorrow", "Europe/Tallinn")]
+    [InlineData("today", "Mars/Olympus")]
+    public async Task Invalid_date_range_is_a_problem(string when, string timeZoneId)
+    {
+        await factory.ResetAsync();
+        var url = $"/v1/events?bbox={TestData.Bbox}&when={Uri.EscapeDataString(when)}&timeZoneId={Uri.EscapeDataString(timeZoneId)}";
+        var response = await factory.CreateClient().SendAsync(ApiJson.Get(url));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("problem+json", response.Content.Headers.ContentType?.MediaType, StringComparison.Ordinal);
+        var problem = await response.Content.Read<ProblemDetails>();
+        Assert.Equal(ProblemTypes.InvalidDateRange, problem!.Type);
     }
 
     [Fact]
@@ -257,6 +364,14 @@ public sealed class EventReadTests(ApiFactory factory) : IntegrationTest
 
         var response = await factory.CreateClient().SendAsync(
             ApiJson.Get($"/v1/events?bbox={TestData.Bbox}{query}", subject));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return (await response.Content.Read<EventMapResponse>())!;
+    }
+
+    private async Task<EventMapResponse> GetMapForWhenAsync(string when, string timeZoneId = "Europe/Tallinn")
+    {
+        var url = $"/v1/events?bbox={TestData.Bbox}&when={Uri.EscapeDataString(when)}&timeZoneId={Uri.EscapeDataString(timeZoneId)}";
+        var response = await factory.CreateClient().SendAsync(ApiJson.Get(url));
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return (await response.Content.Read<EventMapResponse>())!;
     }
