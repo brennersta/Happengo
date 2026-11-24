@@ -15,6 +15,10 @@ import { Map } from "@/map/Map";
 import { TALLINN, mapStyleUrl } from "@/map/config";
 import { EVENT_TAGS } from "@/map/markerStyle";
 import type { MapBounds, MapFocus, MapMarker } from "@/map/types";
+import type { SavedMapView } from "@/map/mapView";
+import { initialMapView } from "@/map/mapView";
+import { readSavedMapView, saveMapView } from "@/map/mapViewStorage";
+import { readGrantedDeviceLocation, requestDeviceLocation } from "@/map/deviceLocation";
 import { theme, wideLayoutWidth } from "@/theme/theme";
 import { Chip, CoverPlaceholder, GradientButton, GradientHeader } from "@/theme/ui";
 
@@ -29,6 +33,9 @@ export default function DiscoverScreen() {
   const { width } = useWindowDimensions();
   const wide = width >= wideLayoutWidth;
   const [mode, setMode] = useState<"map" | "list">("map");
+  const [initialView, setInitialView] = useState<SavedMapView | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locationDenied, setLocationDenied] = useState(false);
   const [bounds, setBounds] = useState(initialBounds);
   const [focus, setFocus] = useState<MapFocus | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -39,7 +46,32 @@ export default function DiscoverScreen() {
     const timer = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(timer);
   }, []);
-  const onMapIdle = useCallback((next: MapBounds) => setBounds(next), []);
+  useEffect(() => {
+    let active = true;
+    void Promise.all([readGrantedDeviceLocation(), readSavedMapView()]).then(([location, saved]) => {
+      if (active) setInitialView(initialMapView(location, saved));
+    }).catch(() => {
+      void readSavedMapView().then((saved) => {
+        if (active) setInitialView(initialMapView(null, saved));
+      });
+    });
+    return () => { active = false; };
+  }, []);
+  useEffect(() => {
+    if (!locationDenied) return;
+    const timer = setTimeout(() => setLocationDenied(false), 3500);
+    return () => clearTimeout(timer);
+  }, [locationDenied]);
+  const onMapIdle = useCallback((next: MapBounds, zoom: number) => {
+    setBounds(next);
+    void saveMapView({
+      center: {
+        longitude: (next.southWest.longitude + next.northEast.longitude) / 2,
+        latitude: (next.southWest.latitude + next.northEast.latitude) / 2,
+      },
+      zoom,
+    });
+  }, []);
   const bbox = useMemo(() => bboxForBounds(bounds), [bounds]);
   const center = useMemo(() => ({
     longitude: (bounds.southWest.longitude + bounds.northEast.longitude) / 2,
@@ -84,13 +116,37 @@ export default function DiscoverScreen() {
     if (!wide) setMode("map");
   }
 
+  async function locateMe() {
+    setLocating(true);
+    setLocationDenied(false);
+    try {
+      const location = await requestDeviceLocation();
+      if (!location) {
+        setLocationDenied(true);
+        return;
+      }
+      setFocus({ ...location, key: Date.now() });
+    } catch {
+      setLocationDenied(true);
+    } finally {
+      setLocating(false);
+    }
+  }
+
   return (
     <View style={styles.screen}>
       <View style={styles.body}>
         {showMap ? (
           <View style={styles.mapPane}>
-            <Map center={TALLINN} zoom={11} styleUrl={mapStyleUrl()} markers={markers} focus={focus} onMapIdle={onMapIdle}
-              onMarkerPress={(id) => router.push({ pathname: "/events/[id]", params: { id } })} />
+            {initialView ? <Map center={initialView.center} zoom={initialView.zoom} styleUrl={mapStyleUrl()} markers={markers} focus={focus} onMapIdle={onMapIdle}
+              onMarkerPress={(id) => router.push({ pathname: "/events/[id]", params: { id } })} /> : <View style={styles.mapLoading}><ActivityIndicator /></View>}
+            <View style={styles.locationControl}>
+              {locationDenied ? <Text accessibilityLiveRegion="polite" style={styles.locationMessage}>{t("discover.locationDenied")}</Text> : null}
+              <Pressable accessibilityRole="button" accessibilityLabel={t("discover.locateMe")} disabled={locating} onPress={() => void locateMe()} style={styles.locateButton}>
+                {locating ? <ActivityIndicator size="small" color={theme.brand} /> : <Ionicons name="locate-outline" size={18} color={theme.brand} />}
+                <Text style={styles.locateText}>{t("discover.locateMe")}</Text>
+              </Pressable>
+            </View>
           </View>
         ) : null}
         {showList ? (
@@ -257,6 +313,11 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.page },
   body: { flex: 1, flexDirection: "row" },
   mapPane: { flex: 1 },
+  mapLoading: { flex: 1, alignItems: "center", justifyContent: "center" },
+  locationControl: { position: "absolute", right: 16, bottom: 20, alignItems: "flex-end", gap: 8 },
+  locateButton: { minHeight: 44, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, borderRadius: 22, backgroundColor: "white", ...theme.shadow },
+  locateText: { color: theme.ink, fontSize: 14, fontWeight: "700" },
+  locationMessage: { maxWidth: 240, paddingVertical: 8, paddingHorizontal: 12, overflow: "hidden", borderRadius: 10, backgroundColor: "white", color: theme.ink, fontSize: 13, ...theme.shadow },
   listPane: { width: 420, maxWidth: "46%", backgroundColor: "white", borderLeftWidth: 1, borderLeftColor: theme.line },
   listFull: { width: "100%", maxWidth: "100%" },
   listHeading: { color: theme.ink, fontSize: 20, fontWeight: "700", paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
