@@ -23,7 +23,7 @@ import {
   requestDemoAttendance,
   type CreateEventRequest,
 } from "./contract";
-import { getDemoProfile, updateDemoDisplayName } from "./profile";
+import { getDemoProfile, updateDemoAttendanceSharing, updateDemoDisplayName } from "./profile";
 
 let patched = false;
 
@@ -48,6 +48,11 @@ export async function enableFetchMocks(): Promise<void> {
         title: "Invalid profile",
         status: 400,
       }, { status: 400 });
+    }
+    if (request.method === "PUT" && path.endsWith("/v1/me/attendance-sharing")) {
+      const body = await request.json() as { shareAttendanceWithFriends?: unknown };
+      const profile = updateDemoAttendanceSharing(body.shareAttendanceWithFriends);
+      return profile ? Response.json(profile) : Response.json({ title: "Invalid request", status: 400 }, { status: 400 });
     }
 
     if (request.method === "GET" && path.endsWith("/v1/friends/invite")) {

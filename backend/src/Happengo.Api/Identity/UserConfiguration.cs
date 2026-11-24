@@ -18,6 +18,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(user => user.Email).HasMaxLength(320);
         builder.Property(user => user.ProfilePhotoUrl).HasMaxLength(2000);
         builder.Property(user => user.Language).HasMaxLength(8);
+        builder.Property(user => user.ShareAttendanceWithFriends).HasDefaultValue(true).IsRequired();
 
         builder.HasIndex(user => new { user.Issuer, user.Subject }).IsUnique();
     }

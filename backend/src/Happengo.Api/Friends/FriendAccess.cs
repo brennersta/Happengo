@@ -21,8 +21,24 @@ public sealed class OwnedFriendTag
     public string NormalizedTag { get; init; } = "";
 }
 
+public sealed record FriendGoingEntry(Guid EventId, string? DisplayName);
+
 public static class FriendAccess
 {
+    public static Task<List<FriendGoingEntry>> GoingToEventsAsync(
+        HappengoDbContext db,
+        Guid viewerId,
+        IReadOnlyCollection<Guid> eventIds,
+        CancellationToken cancellationToken)
+    {
+        if (eventIds.Count == 0)
+        {
+            return Task.FromResult(new List<FriendGoingEntry>());
+        }
+
+        return FriendsGoingQuery.FindAsync(db, viewerId, eventIds, cancellationToken);
+    }
+
     public static IQueryable<FriendLink> Links(HappengoDbContext db) =>
         db.Friendships.Select(row => new FriendLink
         {
@@ -38,6 +54,7 @@ public static class FriendAccess
             NormalizedTag = row.NormalizedTag,
         });
 
+    // Friendship rows are created only after invite acceptance; pending invites live separately.
     public static IQueryable<Guid> FriendIdsOf(HappengoDbContext db, Guid userId) =>
         db.Friendships
             .Where(row => row.UserLowId == userId || row.UserHighId == userId)

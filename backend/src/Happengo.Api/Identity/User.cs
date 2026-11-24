@@ -23,5 +23,7 @@ internal sealed class User
     /// <summary><c>en</c> or <c>pt-BR</c>. Null until the client stores a preference.</summary>
     public string? Language { get; set; }
 
+    public bool ShareAttendanceWithFriends { get; set; } = true;
+
     public Instant CreatedAt { get; set; }
 }

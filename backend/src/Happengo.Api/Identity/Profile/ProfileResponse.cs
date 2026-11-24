@@ -1,3 +1,3 @@
 namespace Happengo.Api.Identity.Profile;
 
-public sealed record ProfileResponse(Guid Id, string? DisplayName);
+public sealed record ProfileResponse(Guid Id, string? DisplayName, bool ShareAttendanceWithFriends);

@@ -167,6 +167,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/attendance-sharing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set whether the signed-in user's friends can see their event attendance. */
+        put: operations["UpdateCurrentUserAttendanceSharing"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/events": {
         parameters: {
             query?: never;
@@ -491,6 +508,7 @@ export interface components {
             invitedFriendTags: null | string[];
             /** Format: date-time */
             cancelledAt: null | string;
+            friendsGoing: null | components["schemas"]["FriendsGoingResponse"];
         };
         /** @enum {string} */
         EventTag: "Music" | "Sports" | "Food" | "Art" | "Family" | "Tech" | "Nightlife" | "Outdoor" | "Culture" | "Education";
@@ -511,6 +529,11 @@ export interface components {
             userId: string;
             displayName: null | string;
             tags: string[];
+        };
+        FriendsGoingResponse: {
+            /** Format: int32 */
+            count: number;
+            names: string[];
         };
         JoinEventRequest: {
             shareToken: null | string;
@@ -542,6 +565,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             displayName: null | string;
+            shareAttendanceWithFriends: boolean;
         };
         ReplaceFriendTagsRequest: {
             tags: null | string[];
@@ -550,6 +574,9 @@ export interface components {
             /** Format: uuid */
             eventId: string;
             shareToken: string;
+        };
+        UpdateAttendanceSharingRequest: {
+            shareAttendanceWithFriends: boolean;
         };
         UpdateDisplayNameRequest: {
             displayName: null | string;
@@ -944,6 +971,48 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateCurrentUserAttendanceSharing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAttendanceSharingRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileResponse"];
                 };
             };
             /** @description Unauthorized */

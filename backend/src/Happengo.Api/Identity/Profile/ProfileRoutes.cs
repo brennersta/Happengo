@@ -31,6 +31,16 @@ internal static class ProfileRoutes
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
+        group.MapPut("/me/attendance-sharing", UpdateAttendanceSharing)
+            .AllowAnonymous()
+            .RequireRateLimiting(RateLimitPolicies.Writes)
+            .WithName("UpdateCurrentUserAttendanceSharing")
+            .WithTags("Profile")
+            .WithSummary("Set whether the signed-in user's friends can see their event attendance.")
+            .Produces<ProfileResponse>()
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
         return group;
     }
 
@@ -46,7 +56,7 @@ internal static class ProfileRoutes
 
         var profile = await db.Users.AsNoTracking()
             .Where(user => user.Id == userId)
-            .Select(user => new ProfileResponse(user.Id, user.DisplayName))
+            .Select(user => new ProfileResponse(user.Id, user.DisplayName, user.ShareAttendanceWithFriends))
             .FirstOrDefaultAsync(cancellationToken);
         return profile is null ? Problems.NotFoundProfile() : TypedResults.Ok(profile);
     }
@@ -76,6 +86,28 @@ internal static class ProfileRoutes
 
         user.DisplayName = displayName;
         await db.SaveChangesAsync(cancellationToken);
-        return TypedResults.Ok(new ProfileResponse(user.Id, user.DisplayName));
+        return TypedResults.Ok(new ProfileResponse(user.Id, user.DisplayName, user.ShareAttendanceWithFriends));
+    }
+
+    private static async Task<Results<Ok<ProfileResponse>, ProblemHttpResult>> UpdateAttendanceSharing(
+        UpdateAttendanceSharingRequest request,
+        HappengoDbContext db,
+        ViewerContext viewerContext,
+        CancellationToken cancellationToken)
+    {
+        if (viewerContext.Viewer.UserId is not Guid userId)
+        {
+            return Problems.Unauthorized("A valid user identity is required to update attendance sharing.");
+        }
+
+        var user = await db.Users.FirstOrDefaultAsync(row => row.Id == userId, cancellationToken);
+        if (user is null)
+        {
+            return Problems.NotFoundProfile();
+        }
+
+        user.ShareAttendanceWithFriends = request.ShareAttendanceWithFriends;
+        await db.SaveChangesAsync(cancellationToken);
+        return TypedResults.Ok(new ProfileResponse(user.Id, user.DisplayName, user.ShareAttendanceWithFriends));
     }
 }

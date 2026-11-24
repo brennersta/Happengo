@@ -1,6 +1,9 @@
 using Happengo.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
@@ -66,6 +69,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("RateLimiting:Uploads:PermitLimit", "100000");
         builder.ConfigureTestServices(services =>
         {
+            services.RemoveAll<IExceptionHandler>();
+            services.AddSingleton<IExceptionHandler, TestExceptionHandler>();
             services.RemoveAll<DbContextOptions<HappengoDbContext>>();
             services.RemoveAll<HappengoDbContext>();
             services.RemoveAll<IDbContextOptionsConfiguration<HappengoDbContext>>();
@@ -89,6 +94,28 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     {
         await base.DisposeAsync();
         await Database.DisposeAsync();
+    }
+}
+
+/// <summary>Test-only handler that prints the exception and includes its details in failed responses.</summary>
+internal sealed class TestExceptionHandler : IExceptionHandler
+{
+    public async ValueTask<bool> TryHandleAsync(
+        HttpContext httpContext,
+        Exception exception,
+        CancellationToken cancellationToken)
+    {
+        Console.Error.WriteLine($"Unhandled test-server exception: {exception}");
+        var problem = new ProblemDetails
+        {
+            Status = StatusCodes.Status500InternalServerError,
+            Title = "An unexpected error occurred.",
+            Detail = exception.ToString(),
+        };
+        httpContext.Response.StatusCode = problem.Status.Value;
+        httpContext.Response.ContentType = "application/problem+json";
+        await httpContext.Response.WriteAsJsonAsync(problem, cancellationToken);
+        return true;
     }
 }
 

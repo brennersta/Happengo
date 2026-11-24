@@ -17,9 +17,41 @@ public sealed class ProfileRouteTests(ApiFactory factory) : IntegrationTest
 
         var get = await client.SendAsync(ApiJson.Get("/v1/me"));
         var put = await client.SendAsync(ApiJson.Put("/v1/me/display-name", new UpdateDisplayNameRequest("Ada")));
+        var attendanceSharing = await client.SendAsync(ApiJson.Put(
+            "/v1/me/attendance-sharing",
+            new UpdateAttendanceSharingRequest(false)));
 
         await AssertUnauthorizedProblem(get);
         await AssertUnauthorizedProblem(put);
+        await AssertUnauthorizedProblem(attendanceSharing);
+    }
+
+    [Fact]
+    public async Task Attendance_sharing_defaults_on_and_can_be_disabled_and_reenabled()
+    {
+        await factory.ResetAsync();
+        var client = factory.CreateClient();
+        var get = await client.SendAsync(ApiJson.Get("/v1/me", "attendance-sharing"));
+        var defaultProfile = (await get.Content.Read<ProfileResponse>())!;
+        Assert.Equal(HttpStatusCode.OK, get.StatusCode);
+        Assert.True(defaultProfile.ShareAttendanceWithFriends);
+
+        var disable = await client.SendAsync(ApiJson.Put(
+            "/v1/me/attendance-sharing",
+            new UpdateAttendanceSharingRequest(false),
+            "attendance-sharing"));
+        var disabledProfile = (await disable.Content.Read<ProfileResponse>())!;
+        Assert.Equal(HttpStatusCode.OK, disable.StatusCode);
+        Assert.False(disabledProfile.ShareAttendanceWithFriends);
+
+        var readDisabled = await client.SendAsync(ApiJson.Get("/v1/me", "attendance-sharing"));
+        Assert.False((await readDisabled.Content.Read<ProfileResponse>())!.ShareAttendanceWithFriends);
+
+        var enable = await client.SendAsync(ApiJson.Put(
+            "/v1/me/attendance-sharing",
+            new UpdateAttendanceSharingRequest(true),
+            "attendance-sharing"));
+        Assert.True((await enable.Content.Read<ProfileResponse>())!.ShareAttendanceWithFriends);
     }
 
     [Fact]

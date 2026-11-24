@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Happengo.Api.Friends;
 using Happengo.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,12 +24,15 @@ public sealed record EventResponse(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     string? ShareToken,
     IReadOnlyList<string>? InvitedFriendTags,
-    DateTimeOffset? CancelledAt);
+    DateTimeOffset? CancelledAt,
+    FriendsGoingResponse? FriendsGoing);
 
 public sealed record EventMapResponse(
     IReadOnlyList<EventResponse> Items,
     int Limit,
     bool Truncated);
+
+public sealed record FriendsGoingResponse(int Count, IReadOnlyList<string> Names);
 
 internal static class EventMapping
 {
@@ -37,7 +41,8 @@ internal static class EventMapping
         Guid? viewerId,
         NodaTime.Instant now,
         int attendingCount,
-        IReadOnlyList<string>? invitedFriendTags = null) =>
+        IReadOnlyList<string>? invitedFriendTags = null,
+        FriendsGoingResponse? friendsGoing = null) =>
         new(
             e.Id,
             e.Title,
@@ -59,7 +64,8 @@ internal static class EventMapping
             // Null for everyone except the owner, so the tags are not omitted from the contract
             // and are still absent as values for other readers.
             InvitedFriendTags: viewerId is not null && e.OwnerId == viewerId ? invitedFriendTags ?? [] : null,
-            CancelledAt: e.CancelledAt?.ToDateTimeOffset());
+            CancelledAt: e.CancelledAt?.ToDateTimeOffset(),
+            FriendsGoing: friendsGoing);
 
     public static async Task<EventResponse[]> ToResponsesAsync(
         this IReadOnlyList<Event> events,
@@ -85,6 +91,27 @@ internal static class EventMapping
                 .ToDictionary(group => group.Key, group => group.Select(tag => tag.Label).ToArray());
         }
 
+        var friendsGoing = new Dictionary<Guid, FriendsGoingResponse>();
+        if (viewerId is Guid currentViewerId && events.Count > 0)
+        {
+            var entries = await FriendAccess.GoingToEventsAsync(
+                db,
+                currentViewerId,
+                events.Select(e => e.Id).ToArray(),
+                cancellationToken);
+            friendsGoing = entries
+                .GroupBy(entry => entry.EventId)
+                .ToDictionary(
+                    group => group.Key,
+                    group => new FriendsGoingResponse(
+                        group.Count(),
+                        group.Select(entry => entry.DisplayName)
+                            .Where(name => !string.IsNullOrWhiteSpace(name))
+                            .Take(3)
+                            .Select(name => name!)
+                            .ToArray()));
+        }
+
         return events
             .Select(e => e.ToResponse(
                 viewerId,
@@ -92,7 +119,10 @@ internal static class EventMapping
                 counts.GetValueOrDefault(e.Id),
                 viewerId is not null && e.OwnerId == viewerId
                     ? labels.GetValueOrDefault(e.Id) ?? []
-                    : null))
+                    : null,
+                viewerId is null
+                    ? null
+                    : friendsGoing.GetValueOrDefault(e.Id) ?? new FriendsGoingResponse(0, [])))
             .ToArray();
     }
 }
