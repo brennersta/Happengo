@@ -1,7 +1,4 @@
-using Happengo.Api.Attendance;
-using Happengo.Api.Identity;
 using Happengo.Api.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace Happengo.Api.Friends;
 
@@ -39,18 +36,7 @@ public static class FriendAccess
             return Task.FromResult(new List<FriendGoingEntry>());
         }
 
-        var attendees = AttendanceAccess.AttendingUsers(db, eventIds);
-        var friendIds = FriendIdsOf(db, viewerId);
-        var profiles = UserDirectory.AttendanceProfiles(db);
-
-        return (
-            from attendee in attendees
-            join friendId in friendIds on attendee.UserId equals friendId
-            join profile in profiles on attendee.UserId equals profile.UserId
-            where attendee.UserId != viewerId && profile.ShareAttendanceWithFriends
-            orderby profile.DisplayName, profile.UserId
-            select new FriendGoingEntry(attendee.EventId, profile.DisplayName))
-            .ToListAsync(cancellationToken);
+        return FriendsGoingQuery.FindAsync(db, viewerId, eventIds, cancellationToken);
     }
 
     public static IQueryable<FriendLink> Links(HappengoDbContext db) =>
@@ -68,6 +54,7 @@ public static class FriendAccess
             NormalizedTag = row.NormalizedTag,
         });
 
+    // Friendship rows are created only after invite acceptance; pending invites live separately.
     public static IQueryable<Guid> FriendIdsOf(HappengoDbContext db, Guid userId) =>
         db.Friendships
             .Where(row => row.UserLowId == userId || row.UserHighId == userId)
