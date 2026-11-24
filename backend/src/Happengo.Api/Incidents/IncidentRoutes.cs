@@ -80,25 +80,42 @@ internal static class IncidentRoutes
         CreateIncidentRequest request, HappengoDbContext db, ViewerContext viewer, IClock clock, CancellationToken ct)
     {
         if (viewer.Viewer.UserId is not Guid userId) return Problems.Unauthorized("A signed-in user is required to report an incident.");
+        var description = request.Description?.Trim() ?? "";
+        var address = request.Address?.Trim() ?? "";
+        if (!Enum.IsDefined(request.Category)
+            || description.Length > 500
+            || address.Length is < 1 or > 500
+            || !double.IsFinite(request.Longitude)
+            || request.Longitude is < -180 or > 180
+            || !double.IsFinite(request.Latitude)
+            || request.Latitude is < -90 or > 90)
+        {
+            return Problems.InvalidIncident("Category, description, address, and coordinates are invalid.");
+        }
+
         var now = clock.GetCurrentInstant();
         var utcStart = now.InUtc().Date.AtStartOfDayInZone(DateTimeZone.Utc).ToInstant();
         var utcEnd = utcStart + Duration.FromDays(1);
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         await db.Database.ExecuteSqlInterpolatedAsync(
             $"SELECT pg_advisory_xact_lock(hashtextextended({userId.ToString()}, 0))", ct);
-        if (await db.Incidents.CountAsync(row => row.ReporterId == userId && row.CreatedAt >= utcStart && row.CreatedAt < utcEnd, ct) >= 5)
+        if (await db.Incidents.CountAsync(
+            row => row.ReporterId == userId && row.CreatedAt >= utcStart && row.CreatedAt < utcEnd,
+            ct) >= 5)
+        {
             return Problems.IncidentRateLimited("You can report up to 5 incidents per day.");
-        var description = request.Description?.Trim() ?? "";
-        var address = request.Address?.Trim() ?? "";
-        if (!Enum.IsDefined(request.Category) || description.Length > 500 || address.Length is < 1 or > 500
-            || !double.IsFinite(request.Longitude) || request.Longitude is < -180 or > 180
-            || !double.IsFinite(request.Latitude) || request.Latitude is < -90 or > 90)
-            return Problems.InvalidIncident("Category, description, address, and coordinates are invalid.");
+        }
+
         var row = new Incident
         {
-            Id = Guid.NewGuid(), ReporterId = userId, Category = request.Category, Description = description,
-            Location = GeoPoint.FromLngLat(request.Longitude, request.Latitude), Address = address,
-            CreatedAt = now, LastConfirmedAt = now,
+            Id = Guid.NewGuid(),
+            ReporterId = userId,
+            Category = request.Category,
+            Description = description,
+            Location = GeoPoint.FromLngLat(request.Longitude, request.Latitude),
+            Address = address,
+            CreatedAt = now,
+            LastConfirmedAt = now,
         };
         db.Incidents.Add(row);
         await db.SaveChangesAsync(ct);

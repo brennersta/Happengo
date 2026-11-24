@@ -9,6 +9,12 @@ Added ADR 0012 and the first backend slice for public incidents, including persi
 - Active status is computed from the two-hour confirmation window and the twelve-hour hard cap.
 - The requested review number 0019 was already assigned to housekeeping on main, so this note uses the next free number, 0020.
 
+## Follow-up
+
+- Match the API's timestamp contract by returning `DateTimeOffset` values, serialized as RFC 3339 date-time strings.
+- Validate incident fields before checking the daily quota; the per-user advisory lock and transaction still cover the quota count and insert.
+- Reflow the quota condition to satisfy formatting on the changed incident files.
+
 ## Validation
 
 - `dotnet build backend/Happengo.sln --disable-build-servers -m:1` — passed, 0 warnings and 0 errors.

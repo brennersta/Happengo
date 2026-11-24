@@ -2181,20 +2181,19 @@
             "type": "string"
           },
           "createdAt": {
-            "$ref": "#/components/schemas/Instant"
+            "type": "string",
+            "format": "date-time"
           },
           "lastConfirmedAt": {
-            "$ref": "#/components/schemas/Instant"
+            "type": "string",
+            "format": "date-time"
           },
           "closedAt": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/Instant"
-              }
-            ]
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "closeReason": {
             "type": [
@@ -2249,9 +2248,6 @@
           null
         ],
         "type": "string"
-      },
-      "Instant": {
-        "type": "object"
       },
       "JoinEventRequest": {
         "required": [

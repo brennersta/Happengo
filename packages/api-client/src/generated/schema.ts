@@ -621,9 +621,12 @@ export interface components {
             /** Format: double */
             latitude: number;
             address: string;
-            createdAt: components["schemas"]["Instant"];
-            lastConfirmedAt: components["schemas"]["Instant"];
-            closedAt: null | components["schemas"]["Instant"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            lastConfirmedAt: string;
+            /** Format: date-time */
+            closedAt: null | string;
             closeReason: null | string;
             isActive: boolean;
             /** Format: int32 */
@@ -638,7 +641,6 @@ export interface components {
         };
         /** @enum {string} */
         IncidentVoteValue: "still_there" | "gone" | null;
-        Instant: Record<string, never>;
         JoinEventRequest: {
             shareToken: null | string;
         };
