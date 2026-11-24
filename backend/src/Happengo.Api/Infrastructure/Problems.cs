@@ -32,6 +32,20 @@ internal static class Problems
             detail: "No visible event exists for this request.",
             type: ProblemTypes.NotFound);
 
+    public static ProblemHttpResult NotFoundProfile() =>
+        TypedResults.Problem(
+            statusCode: StatusCodes.Status404NotFound,
+            title: "Not found",
+            detail: "The user profile does not exist.",
+            type: ProblemTypes.NotFound);
+
+    public static ProblemHttpResult InvalidProfile(string detail) =>
+        TypedResults.Problem(
+            statusCode: StatusCodes.Status400BadRequest,
+            title: "Invalid profile",
+            detail: detail,
+            type: ProblemTypes.InvalidProfile);
+
     public static ProblemHttpResult Unauthorized(string detail) =>
         TypedResults.Problem(
             statusCode: StatusCodes.Status401Unauthorized,

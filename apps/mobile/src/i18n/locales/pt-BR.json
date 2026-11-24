@@ -45,7 +45,20 @@
     "acceptError": "Não foi possível aceitar o convite. Tente novamente."
   },
   "profile": {
-    "empty": "Seu nome, foto e idioma aparecerão aqui."
+    "empty": "Seu nome, foto e idioma aparecerão aqui.",
+    "displayName": "Nome de exibição",
+    "namePlaceholder": "Seu nome",
+    "save": "Salvar nome",
+    "saving": "Salvando…",
+    "saveError": "Não foi possível salvar seu nome. Tente novamente.",
+    "loadError": "Não foi possível carregar seu perfil. Verifique sua conexão e tente novamente.",
+    "loading": "Carregando seu perfil…",
+    "language": "Idioma",
+    "languageError": "Não foi possível salvar sua preferência de idioma.",
+    "languages": {
+      "en": "English",
+      "pt-BR": "Português (Brasil)"
+    }
   },
   "dates": {
     "today": "Hoje"

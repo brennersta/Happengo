@@ -1,4 +1,5 @@
 import { http, HttpResponse } from "msw";
+import { getDemoProfile, updateDemoDisplayName } from "./profile";
 import {
   acceptDemoInvite,
   createDemoInvite,
@@ -25,6 +26,12 @@ import {
 } from "./contract";
 
 export const handlers = [
+  http.get("/v1/me", () => HttpResponse.json(getDemoProfile())),
+  http.put("/v1/me/display-name", async ({ request }) => {
+    const body = await request.json() as { displayName?: unknown };
+    const profile = updateDemoDisplayName(body.displayName);
+    return profile ? HttpResponse.json(profile) : HttpResponse.json({ title: "Invalid display name", status: 400 }, { status: 400 });
+  }),
   http.get("/v1/friends/invite", () => HttpResponse.json(demoInviteStatus())),
   http.post("/v1/friends/invite/rotate", () => HttpResponse.json(rotateDemoInvite())),
   http.post("/v1/friends/invite", () => {

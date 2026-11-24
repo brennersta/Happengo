@@ -1,5 +1,5 @@
 import "@/api/client";
-import "@/i18n";
+import i18n, { i18nReady, readSavedLocale } from "@/i18n";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -16,7 +16,19 @@ export default function RootLayout() {
   const { t } = useTranslation();
   const [queryClient] = useState(() => new QueryClient());
   const [ready, setReady] = useState(!mocksEnabled());
+  const [languageReady, setLanguageReady] = useState(false);
   const demo = mocksEnabled();
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      await i18nReady;
+      const locale = await readSavedLocale();
+      if (locale) await i18n.changeLanguage(locale);
+      if (active) setLanguageReady(true);
+    })();
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     if (!mocksEnabled()) return;
@@ -46,11 +58,11 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !languageReady) return;
     SplashScreen.hideAsync().catch(() => {});
-  }, [ready]);
+  }, [ready, languageReady]);
 
-  if (!ready) return null;
+  if (!ready || !languageReady) return null;
 
   return (
     <QueryClientProvider client={queryClient}>
