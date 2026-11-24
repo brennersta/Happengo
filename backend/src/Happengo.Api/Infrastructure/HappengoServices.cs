@@ -10,6 +10,7 @@ using Happengo.Api.Events.CancelEvent;
 using Happengo.Api.Attendance;
 using Happengo.Api.Friends;
 using Happengo.Api.Identity.Profile;
+using Happengo.Api.Incidents;
 using Happengo.Api.Infrastructure.Auth;
 using Happengo.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -243,6 +244,7 @@ public static class HappengoServices
         AttendanceRoutes.Map(v1);
         GetSharedEvent.Map(v1);
         GetEvent.Map(v1);
+        IncidentRoutes.Map(v1);
 
         // Map reads and the share-link read carry their own per-IP policies.
         // Create and attendance attach the writes policy on the route. Auth and upload groups wait for those slices.

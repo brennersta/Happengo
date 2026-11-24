@@ -69,5 +69,23 @@ internal static class HappengoRelationships
             .WithMany()
             .HasForeignKey(row => row.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Incidents.Incident>()
+            .HasOne<Identity.User>()
+            .WithMany()
+            .HasForeignKey(row => row.ReporterId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Incidents.Incident>()
+            .HasOne<Identity.User>()
+            .WithMany()
+            .HasForeignKey(row => row.ClosedBy)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Incidents.IncidentVote>()
+            .HasOne<Identity.User>()
+            .WithMany()
+            .HasForeignKey(row => row.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

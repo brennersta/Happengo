@@ -65,4 +65,4 @@ erDiagram
 
 - Create-time strictness. `end_at` in the past is rejected. "Start now" sets `start_at` to save time. Whether any other past `start_at` is rejected is open.
 - After `cancelled`, may the user attend again before `end_at`? After `rejected`, may they request again? May anyone attend once the event has ended? If the owner retags friends later, do existing events gain new invites?
-- Report workflow. Rows are stored. Who reviews them, and who can still see an event after the soft-hide threshold of three unique reports, is open. `VisibleTo` does not apply soft-hide until that is decided ([ADR 0007](0007-privacy-enforcement.md)).
+- Report workflow for incidents is defined in [ADR 0012](0012-incidents.md): three unique reporters enter priority review and never auto-hide a report. Event and photo report visibility remains open; `VisibleTo` does not apply soft-hide ([ADR 0007](0007-privacy-enforcement.md)).
