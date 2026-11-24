@@ -335,7 +335,8 @@ internal static class FriendRoutes
         }
 
         var tags = await db.FriendTags
-            .Where(tag => tag.OwnerId == ownerId && tag.FriendUserId == userId)
+            .Where(tag => (tag.OwnerId == ownerId && tag.FriendUserId == userId)
+                || (tag.OwnerId == userId && tag.FriendUserId == ownerId))
             .ToListAsync(cancellationToken);
         db.FriendTags.RemoveRange(tags);
         db.Friendships.Remove(friendship);
