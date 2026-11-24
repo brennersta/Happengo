@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 using Happengo.Api.Attendance;
 using Happengo.Api.Events;
 using Happengo.Api.Friends;
@@ -31,7 +32,19 @@ public sealed class AttendanceRouteTests(ApiFactory factory) : IntegrationTest
             $"/v1/events/{created.Id}/attendance/requests", "owner"));
         var pending = await pendingResponse.Content.Read<PendingAttendanceResponse>();
         Assert.Equal(HttpStatusCode.OK, pendingResponse.StatusCode);
-        Assert.Equal([guestId], pending!.UserIds);
+        Assert.Single(pending!.Requests);
+        var guestRequest = pending.Requests[0];
+        Assert.Equal(guestId, guestRequest.UserId);
+        Assert.Equal("guest", guestRequest.DisplayName);
+        Assert.Equal(TestData.Now.ToDateTimeOffset(), guestRequest.RequestedAt);
+        using (var document = JsonDocument.Parse(await pendingResponse.Content.ReadAsStringAsync()))
+        {
+            var requestJson = document.RootElement.GetProperty("requests")[0];
+            Assert.Equal(
+                ["displayName", "requestedAt", "userId"],
+                requestJson.EnumerateObject().Select(property => property.Name).Order(StringComparer.Ordinal).ToArray());
+            Assert.DoesNotContain("email", requestJson.GetRawText(), StringComparison.OrdinalIgnoreCase);
+        }
 
         var approved = await owner.SendAsync(ApiJson.Post(
             $"/v1/events/{created.Id}/attendance/requests/{guestId}/approve", new { }, "owner"));
@@ -166,6 +179,10 @@ public sealed class AttendanceRouteTests(ApiFactory factory) : IntegrationTest
         var ownerRoute = await client.SendAsync(ApiJson.Get(
             $"/v1/events/{created.Id}/attendance/requests", "stranger"));
         Assert.Equal(HttpStatusCode.NotFound, ownerRoute.StatusCode);
+        var anonymous = await client.SendAsync(ApiJson.Get(
+            $"/v1/events/{created.Id}/attendance/requests"));
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
+        Assert.Contains("problem+json", anonymous.Content.Headers.ContentType?.MediaType, StringComparison.Ordinal);
 
         factory.Clock.Set(TestData.Now + Duration.FromHours(4));
         var ended = await client.SendAsync(ApiJson.Post(

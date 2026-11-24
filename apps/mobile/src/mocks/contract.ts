@@ -9,6 +9,7 @@ export type CreateEventRequest = components["schemas"]["CreateEventRequest"];
 export type AttendanceStatus = components["schemas"]["AttendanceStatus"];
 export type AttendanceResponse = components["schemas"]["AttendanceResponse"];
 export type MyAttendanceResponse = components["schemas"]["MyAttendanceResponse"];
+export type PendingAttendanceRequest = components["schemas"]["PendingAttendanceRequest"];
 export type PendingAttendanceResponse = components["schemas"]["PendingAttendanceResponse"];
 
 export const mapResultLimit = 500;
@@ -132,7 +133,7 @@ function createFixtures(now: Date): EventResponse[] {
 const fixtures = createFixtures(new Date());
 const demoEvents: EventResponse[] = [];
 const attendance = new Map<string, AttendanceStatus>();
-const pendingUsers = new Map<string, string[]>();
+const pendingUsers = new Map<string, PendingAttendanceRequest[]>();
 const shareTokens = new Map<string, string>();
 const demoUserId = "demo-current-user";
 /** Synthetic requester so the single-user demo can exercise owner approve and decline. */
@@ -142,7 +143,11 @@ let nextDemoId = 101;
 function seedFixtureRelations(): void {
   attendance.set(attendanceKey(studioEventId), "attending");
   attendance.set(attendanceKey(studioEventId, demoPendingRequesterId), "requested");
-  pendingUsers.set(studioEventId, [demoPendingRequesterId]);
+  pendingUsers.set(studioEventId, [{
+    userId: demoPendingRequesterId,
+    displayName: "Demo Guest",
+    requestedAt: new Date(Date.now() - 12 * 60_000).toISOString(),
+  }]);
   attendance.set(attendanceKey(picnicEventId), "attending");
   shareTokens.set(unlistedEventId, "demo-unlisted-token");
 }
@@ -185,7 +190,11 @@ export function createDemoEvent(request: CreateEventRequest, now = new Date()): 
   demoEvents.unshift(event);
   attendance.set(attendanceKey(event.id), "attending");
   if (request.approvalMode === "approval") {
-    pendingUsers.set(id, [demoPendingRequesterId]);
+    pendingUsers.set(id, [{
+      userId: demoPendingRequesterId,
+      displayName: "Demo Guest",
+      requestedAt: now.toISOString(),
+    }]);
     attendance.set(attendanceKey(id, demoPendingRequesterId), "requested");
   }
   return event;
@@ -216,7 +225,7 @@ export function getDemoAttendance(eventId: string): MyAttendanceResponse | null 
 
 export function getDemoPendingRequests(eventId: string): PendingAttendanceResponse | null {
   const event = [...demoEvents, ...fixtures].find((item) => item.id === eventId && item.isOwner);
-  return event ? { userIds: [...(pendingUsers.get(eventId) ?? [])] } : null;
+  return event ? { requests: (pendingUsers.get(eventId) ?? []).map((request) => ({ ...request })) } : null;
 }
 
 export function requestDemoAttendance(eventId: string, shareToken: string | null): AttendanceResponse | null {
@@ -278,9 +287,9 @@ export function decideDemoAttendance(
   decision: "attending" | "rejected",
 ): AttendanceResponse | null {
   const event = [...demoEvents, ...fixtures].find((item) => item.id === eventId && item.isOwner);
-  const userIds = pendingUsers.get(eventId) ?? [];
-  if (!event || !userIds.includes(userId)) return null;
-  pendingUsers.set(eventId, userIds.filter((id) => id !== userId));
+  const requests = pendingUsers.get(eventId) ?? [];
+  if (!event || !requests.some((request) => request.userId === userId)) return null;
+  pendingUsers.set(eventId, requests.filter((request) => request.userId !== userId));
   attendance.set(attendanceKey(eventId, userId), decision);
   const attendingCount = event.attendingCount + (decision === "attending" ? 1 : 0);
   updateDemoAttendingCount(eventId, attendingCount);

@@ -332,7 +332,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List pending attendance request user IDs for an event owner. */
+        /** List pending attendance requests for an event owner. */
         get: operations["GetEventAttendanceRequests"];
         put?: never;
         post?: never;
@@ -520,8 +520,15 @@ export interface components {
             eventId: string;
             status: null | components["schemas"]["AttendanceStatus"];
         };
+        PendingAttendanceRequest: {
+            /** Format: uuid */
+            userId: string;
+            displayName: null | string;
+            /** Format: date-time */
+            requestedAt: string;
+        };
         PendingAttendanceResponse: {
-            userIds: string[];
+            requests: components["schemas"]["PendingAttendanceRequest"][];
         };
         ProblemDetails: {
             type?: null | string;

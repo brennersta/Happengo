@@ -12,7 +12,9 @@ public sealed record AttendanceResponse(Guid EventId, AttendanceStatus Status, i
 
 public sealed record MyAttendanceResponse(Guid EventId, AttendanceStatus? Status);
 
-public sealed record PendingAttendanceResponse(IReadOnlyList<Guid> UserIds);
+public sealed record PendingAttendanceRequest(Guid UserId, string? DisplayName, DateTimeOffset RequestedAt);
+
+public sealed record PendingAttendanceResponse(IReadOnlyList<PendingAttendanceRequest> Requests);
 
 internal static class AttendanceRoutes
 {
@@ -32,7 +34,7 @@ internal static class AttendanceRoutes
 
         attendance.MapGet("requests", GetPending)
             .WithName("GetEventAttendanceRequests")
-            .WithSummary("List pending attendance request user IDs for an event owner.")
+            .WithSummary("List pending attendance requests for an event owner.")
             .Produces<PendingAttendanceResponse>()
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status404NotFound);
@@ -131,8 +133,8 @@ internal static class AttendanceRoutes
             return Problems.NotFoundEvent();
         }
 
-        var userIds = await AttendanceAccess.PendingUserIdsAsync(db, eventId, cancellationToken);
-        return Results.Ok(new PendingAttendanceResponse(userIds));
+        var requests = await AttendanceAccess.PendingRequestsAsync(db, eventId, cancellationToken);
+        return Results.Ok(new PendingAttendanceResponse(requests));
     }
 
     private static async Task<IResult> GetMine(
