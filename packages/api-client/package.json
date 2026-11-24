@@ -13,12 +13,12 @@
     "test": "node --test scripts/generate.test.mjs"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.107.1",
+    "@tanstack/react-query": "^5.108.2",
     "openapi-fetch": "^0.17.0",
     "openapi-react-query": "^0.5.4"
   },
   "devDependencies": {
     "openapi-typescript": "^7.13.0",
-    "typescript": "~6.0.3"
+    "typescript": "~7.0.2"
   }
 }
