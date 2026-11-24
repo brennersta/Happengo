@@ -19,6 +19,7 @@ import {
   getDemoAttendance,
   getDemoPendingRequests,
   getEvent,
+  isValidListDateFilter,
   listEvents,
   listMyEvents,
   requestDemoAttendance,
@@ -102,9 +103,21 @@ export const handlers = [
     const bbox = new URL(request.url).searchParams.get("bbox");
     if (!bbox) return new HttpResponse(null, { status: 400 });
     const params = new URL(request.url).searchParams;
+    const when = params.get("when") ?? "now";
+    const timeZoneId = params.get("timeZoneId") ?? "Europe/Tallinn";
+    if (!isValidListDateFilter(when, timeZoneId)) {
+      return HttpResponse.json({
+        type: "https://happengo.app/problems/invalid-date-range",
+        title: "Invalid date range",
+        status: 400,
+        detail: "when must be now, today, weekend, or next7days, and timeZoneId must be a valid IANA time zone.",
+      }, { status: 400, headers: { "Content-Type": "application/problem+json" } });
+    }
     return HttpResponse.json(listEvents(bbox, new Date(), {
       tags: params.getAll("tags"),
       happeningNow: params.get("happeningNow") === "true",
+      when: when as "now" | "today" | "weekend" | "next7days",
+      timeZoneId,
     }));
   }),
   http.post("/v1/events", async ({ request }) => {

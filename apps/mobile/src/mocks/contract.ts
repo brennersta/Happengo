@@ -1,5 +1,6 @@
 import type { components } from "@happengo/api-client";
 import { hasEnded, isHappeningNow } from "../events/liveState";
+import { localDateTimeToIso } from "../events/createEventForm";
 
 export { hasEnded, isHappeningNow };
 
@@ -344,17 +345,31 @@ function publish(event: EventResponse, now: Date): EventResponse {
 export type DemoListFilters = {
   tags?: readonly string[];
   happeningNow?: boolean;
+  when?: "now" | "today" | "weekend" | "next7days";
+  timeZoneId?: string;
 };
+
+export function isValidListDateFilter(when: string, timeZoneId: string): boolean {
+  if (!["now", "today", "weekend", "next7days"].includes(when)) return false;
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: timeZoneId });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export function listEvents(bbox: string | null, now = new Date(), filters: DemoListFilters = {}): EventMapResponse {
   const box = parseBbox(bbox);
   if (!box) return { items: [], limit: mapResultLimit, truncated: false };
+  const window = dateWindow(now, filters.when ?? "now", filters.timeZoneId ?? "Europe/Tallinn");
   const [minLng, minLat, maxLng, maxLat] = box;
   const items = [...fixtures, ...demoEvents]
     .filter((event) => event.visibility !== "unlisted")
     .filter((event) => event.visibility !== "friends_only" || event.isOwner)
     .filter((event) => !event.cancelledAt)
     .filter((event) => !hasEnded(event.endAt, now))
+    .filter((event) => !window || (Date.parse(event.startAt) < window.end && Date.parse(event.endAt) > window.start))
     .filter((event) => !filters.tags?.length || event.tags.some((tag) => filters.tags?.includes(tag)))
     .filter((event) => !filters.happeningNow || isHappeningNow(event.startAt, event.endAt, now))
     .filter(
@@ -366,6 +381,48 @@ export function listEvents(bbox: string | null, now = new Date(), filters: DemoL
     )
     .map((event) => publish(event, now));
   return { items, limit: mapResultLimit, truncated: false };
+}
+
+function dateWindow(now: Date, when: NonNullable<DemoListFilters["when"]>, timeZoneId: string): { start: number; end: number } | null {
+  if (when === "now") return null;
+  let parts: Record<string, string>;
+  try {
+    parts = Object.fromEntries(new Intl.DateTimeFormat("en", {
+      timeZone: timeZoneId,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(now).map((part) => [part.type, part.value]));
+  } catch {
+    return null;
+  }
+
+  const date = `${parts.year}-${parts.month}-${parts.day}`;
+  const time = `${parts.hour}:${parts.minute}`;
+  const weekday = new Date(`${date}T00:00:00Z`).getUTCDay();
+  const plusDays = (value: string, days: number) => {
+    const target = new Date(`${value}T00:00:00Z`);
+    target.setUTCDate(target.getUTCDate() + days);
+    return `${target.getUTCFullYear()}-${String(target.getUTCMonth() + 1).padStart(2, "0")}-${String(target.getUTCDate()).padStart(2, "0")}`;
+  };
+  const toInstant = (day: string, localTime: string) => {
+    const iso = localDateTimeToIso(day, localTime, timeZoneId);
+    return iso ? Date.parse(iso) : Number.NaN;
+  };
+
+  if (when === "today") {
+    return { start: toInstant(date, "00:00"), end: toInstant(plusDays(date, 1), "00:00") };
+  }
+  if (when === "weekend") {
+    const offset = weekday === 0 ? -1 : (6 - weekday + 7) % 7;
+    const saturday = plusDays(date, offset);
+    return { start: toInstant(saturday, "00:00"), end: toInstant(plusDays(saturday, 2), "00:00") };
+  }
+  if (when === "next7days") return { start: now.getTime(), end: toInstant(plusDays(date, 7), time) };
+  return null;
 }
 
 /** Events the demo user owns or is attending, plus requests that have not ended. */

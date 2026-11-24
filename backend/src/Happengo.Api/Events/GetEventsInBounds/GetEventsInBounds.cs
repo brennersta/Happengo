@@ -19,6 +19,12 @@ internal sealed record ListEventsRequest
 
     [FromQuery(Name = "happeningNow")]
     public bool? HappeningNow { get; init; }
+
+    [FromQuery(Name = "when")]
+    public string? When { get; init; }
+
+    [FromQuery(Name = "timeZoneId")]
+    public string? TimeZoneId { get; init; } = "Europe/Tallinn";
 }
 
 internal static class GetEventsInBounds
@@ -37,7 +43,9 @@ internal static class GetEventsInBounds
                 + "At most 500 events, happening-now first, then start time. "
                 + "truncated is true when more events matched. "
                 + "tags keeps events that have any of the named tags. "
-                + "happeningNow keeps only events with start_at <= now < end_at.")
+                + "happeningNow keeps only events with start_at <= now < end_at. "
+                + "when is now (default), today, weekend, or next7days. "
+                + "timeZoneId is an IANA time zone used for local date boundaries (default Europe/Tallinn).")
             .Produces<EventMapResponse>()
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
@@ -63,6 +71,11 @@ internal static class GetEventsInBounds
         }
 
         var now = clock.GetCurrentInstant();
+        if (!TryGetWindow(request.When, request.TimeZoneId, now, out var window, out var dateRangeDetail))
+        {
+            return Problems.InvalidDateRange(dateRangeDetail);
+        }
+
         var viewer = viewerContext.Viewer;
         var query = db.Events
             .InBoundingBox(box)
@@ -77,6 +90,11 @@ internal static class GetEventsInBounds
         if (request.HappeningNow == true)
         {
             query = query.Where(e => e.StartAt <= now && e.EndAt > now);
+        }
+
+        if (window is { } range)
+        {
+            query = query.Where(e => e.StartAt < range.End && e.EndAt > range.Start);
         }
 
         var rows = await query
@@ -94,5 +112,51 @@ internal static class GetEventsInBounds
         var items = await rows.ToResponsesAsync(db, viewer.UserId, now, counts, cancellationToken);
 
         return TypedResults.Ok(new EventMapResponse(items, EventQueries.MapResultLimit, truncated));
+    }
+
+    private static bool TryGetWindow(
+        string? when,
+        string? timeZoneId,
+        Instant now,
+        out (Instant Start, Instant End)? window,
+        out string detail)
+    {
+        window = null;
+        var zone = string.IsNullOrWhiteSpace(timeZoneId)
+            ? null
+            : DateTimeZoneProviders.Tzdb.GetZoneOrNull(timeZoneId);
+        if (zone is null)
+        {
+            detail = "timeZoneId must be a valid IANA time zone.";
+            return false;
+        }
+
+        var date = now.InZone(zone).Date;
+        switch (when ?? "now")
+        {
+            case "now":
+                detail = "";
+                return true;
+            case "today":
+                window = (date.AtStartOfDayInZone(zone).ToInstant(), date.PlusDays(1).AtStartOfDayInZone(zone).ToInstant());
+                break;
+            case "weekend":
+                var daysUntilSaturday = ((int)IsoDayOfWeek.Saturday - (int)date.DayOfWeek + 7) % 7;
+                var saturday = date.DayOfWeek == IsoDayOfWeek.Sunday
+                    ? date.PlusDays(-1)
+                    : date.PlusDays(daysUntilSaturday);
+                window = (saturday.AtStartOfDayInZone(zone).ToInstant(), saturday.PlusDays(2).AtStartOfDayInZone(zone).ToInstant());
+                break;
+            case "next7days":
+                var localNow = now.InZone(zone).LocalDateTime;
+                window = (now, localNow.PlusDays(7).InZoneLeniently(zone).ToInstant());
+                break;
+            default:
+                detail = "when must be one of: now, today, weekend, next7days.";
+                return false;
+        }
+
+        detail = "";
+        return true;
     }
 }
