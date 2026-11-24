@@ -100,9 +100,9 @@ public sealed class FriendInviteTests(ApiFactory factory) : IntegrationTest
             new ReplaceFriendTagsRequest(["Work"]),
             "ada"));
         Assert.Equal(HttpStatusCode.OK, reverseTagged.StatusCode);
-        Assert.Equal(2, await factory.WithDb(db => db.FriendTags.CountAsync(
-            tag => tag.OwnerId == friend.UserId && tag.FriendUserId == beaId)));
         Assert.Equal(1, await factory.WithDb(db => db.FriendTags.CountAsync(
+            tag => tag.OwnerId == friend.UserId && tag.FriendUserId == beaId)));
+        Assert.Equal(2, await factory.WithDb(db => db.FriendTags.CountAsync(
             tag => tag.OwnerId == beaId && tag.FriendUserId == friend.UserId)));
 
         var tooLong = await client.SendAsync(ApiJson.Put(
