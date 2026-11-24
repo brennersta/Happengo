@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -23,35 +23,7 @@ type ApprovalMode = components["schemas"]["ApprovalMode"];
 
 export default function CreateEventScreen() {
   const { t } = useTranslation();
-  const router = useRouter();
   const { id: eventId } = useLocalSearchParams<{ id?: string }>();
-  const editing = Boolean(eventId);
-  const queryClient = useQueryClient();
-  const { width } = useWindowDimensions();
-  const wide = width >= wideLayoutWidth;
-  const start = defaultLocalSlot(1);
-  const end = defaultLocalSlot(3);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [startDate, setStartDate] = useState(start.date);
-  const [startTime, setStartTime] = useState(start.time);
-  const [endDate, setEndDate] = useState(end.date);
-  const [endTime, setEndTime] = useState(end.time);
-  const [timeZoneId, setTimeZoneId] = useState(localTimeZone());
-  const [address, setAddress] = useState("");
-  const [location, setLocation] = useState<LngLat | null>(null);
-  const [focus, setFocus] = useState<MapFocus | null>(null);
-  const [visibility, setVisibility] = useState<Visibility>("public");
-  const [approvalMode, setApprovalMode] = useState<ApprovalMode>("open");
-  const [tags, setTags] = useState<EventTag[]>([]);
-  const [invitedFriendTags, setInvitedFriendTags] = useState<string[]>([]);
-  const [whenOpen, setWhenOpen] = useState(false);
-  const [startNow, setStartNow] = useState(false);
-  const [duration, setDuration] = useState<number>(60);
-  const [validationError, setValidationError] = useState<string | null>(null);
-  const [submitError, setSubmitError] = useState<"signInRequired" | "createError" | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const isDemo = mocksEnabled();
   const editEventQuery = useQuery({
     queryKey: ["event", eventId],
     enabled: Boolean(eventId),
@@ -61,32 +33,62 @@ export default function CreateEventScreen() {
       return data;
     },
   });
-  const [prefilledEventId, setPrefilledEventId] = useState<string | null>(null);
-  useEffect(() => {
-    const event = editEventQuery.data;
-    if (!event || prefilledEventId === event.id) return;
-    const startSlot = eventDateTimeFields(event.startAt, event.timeZoneId);
-    const endSlot = eventDateTimeFields(event.endAt, event.timeZoneId);
-    if (!startSlot || !endSlot) {
-      setSubmitError("createError");
-      return;
-    }
-    setTitle(event.title);
-    setDescription(event.description ?? "");
-    setStartDate(startSlot.date);
-    setStartTime(startSlot.time);
-    setEndDate(endSlot.date);
-    setEndTime(endSlot.time);
-    setTimeZoneId(event.timeZoneId);
-    setAddress(event.address);
-    setLocation({ longitude: event.longitude, latitude: event.latitude });
-    setFocus({ longitude: event.longitude, latitude: event.latitude, key: Date.now() });
-    setVisibility(event.visibility);
-    setApprovalMode(event.approvalMode);
-    setTags(event.tags as EventTag[]);
-    setInvitedFriendTags(event.invitedFriendTags ?? []);
-    setPrefilledEventId(event.id);
-  }, [editEventQuery.data, prefilledEventId]);
+
+  if (eventId && editEventQuery.isLoading) return <EditEventStatus message={t("createEvent.loadingEvent")} />;
+  if (eventId && (editEventQuery.isError || !editEventQuery.data)) return <EditEventStatus message={t("eventDetail.notFound")} />;
+  const event = eventId ? editEventQuery.data : null;
+  if (event && (!eventDateTimeFields(event.startAt, event.timeZoneId) || !eventDateTimeFields(event.endAt, event.timeZoneId))) {
+    return <EditEventStatus message={t("createEvent.createError")} />;
+  }
+  return <CreateEventForm key={event?.id ?? "new-event"} event={event ?? null} />;
+}
+
+function EditEventStatus({ message }: { message: string }) {
+  const { t } = useTranslation();
+  const router = useRouter();
+  return (
+    <View style={styles.fill}>
+      <View style={styles.statusContent}>
+        <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.back}>
+          <Text style={styles.backText}>‹ {t("eventDetail.back")}</Text>
+        </Pressable>
+        <Text accessibilityRole="alert" style={styles.helper}>{message}</Text>
+      </View>
+    </View>
+  );
+}
+
+function CreateEventForm({ event }: { event: components["schemas"]["EventResponse"] | null }) {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const editing = event !== null;
+  const eventId = event?.id;
+  const queryClient = useQueryClient();
+  const { width } = useWindowDimensions();
+  const wide = width >= wideLayoutWidth;
+  const start = event ? eventDateTimeFields(event.startAt, event.timeZoneId) ?? defaultLocalSlot(1) : defaultLocalSlot(1);
+  const end = event ? eventDateTimeFields(event.endAt, event.timeZoneId) ?? defaultLocalSlot(3) : defaultLocalSlot(3);
+  const [title, setTitle] = useState(event?.title ?? "");
+  const [description, setDescription] = useState(event?.description ?? "");
+  const [startDate, setStartDate] = useState(start.date);
+  const [startTime, setStartTime] = useState(start.time);
+  const [endDate, setEndDate] = useState(end.date);
+  const [endTime, setEndTime] = useState(end.time);
+  const [timeZoneId, setTimeZoneId] = useState(event?.timeZoneId ?? localTimeZone());
+  const [address, setAddress] = useState(event?.address ?? "");
+  const [location, setLocation] = useState<LngLat | null>(event ? { longitude: event.longitude, latitude: event.latitude } : null);
+  const [focus, setFocus] = useState<MapFocus | null>(event ? { longitude: event.longitude, latitude: event.latitude, key: 0 } : null);
+  const [visibility, setVisibility] = useState<Visibility>(event?.visibility ?? "public");
+  const [approvalMode, setApprovalMode] = useState<ApprovalMode>(event?.approvalMode ?? "open");
+  const [tags, setTags] = useState<EventTag[]>((event?.tags ?? []) as EventTag[]);
+  const [invitedFriendTags, setInvitedFriendTags] = useState<string[]>(event?.invitedFriendTags ?? []);
+  const [whenOpen, setWhenOpen] = useState(false);
+  const [startNow, setStartNow] = useState(false);
+  const [duration, setDuration] = useState<number>(60);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<"signInRequired" | "createError" | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const isDemo = mocksEnabled();
   const friendsQuery = useQuery({
     queryKey: ["friends"],
     queryFn: async () => {
@@ -178,8 +180,6 @@ export default function CreateEventScreen() {
         </Pressable>
         <Text style={styles.heading}>{t(editing ? "createEvent.editHeading" : "createEvent.heading")}</Text>
         {isDemo ? <Text style={styles.demoNotice}>{t("createEvent.demoNotice")}</Text> : null}
-        {editing && editEventQuery.isLoading ? <Text style={styles.helper}>{t("createEvent.loadingEvent")}</Text> : null}
-        {editing && editEventQuery.isError ? <Text accessibilityRole="alert" style={styles.error}>{t("eventDetail.notFound")}</Text> : null}
         <View style={[styles.columns, wide && styles.columnsWide]}>
           <View style={styles.card}>
             <Field label={t("createEvent.titleLabel")} value={title} onChangeText={setTitle} maxLength={200} />
@@ -257,7 +257,7 @@ export default function CreateEventScreen() {
               label={t(editing ? "createEvent.saveChanges" : "createEvent.submit")}
               onPress={() => void submit()}
               busy={submitting}
-              disabled={submitting || (editing && (!editEventQuery.data || prefilledEventId !== eventId))}
+              disabled={submitting}
             />
           </View>
           <View style={styles.card}>
@@ -378,6 +378,7 @@ const styles = StyleSheet.create({
   inviteTags: { gap: 8 },
   fill: { flex: 1, backgroundColor: theme.page },
   content: { padding: 20, paddingBottom: 48, gap: 14, width: "100%", maxWidth: 1100, alignSelf: "center" },
+  statusContent: { padding: 20, gap: 16 },
   back: { alignSelf: "flex-start" },
   backText: { color: theme.brand, fontSize: 15, fontWeight: "700" },
   heading: { color: theme.brand, fontSize: 32, fontWeight: "800" },
