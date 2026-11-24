@@ -1,3 +1,4 @@
+using Happengo.Api.Identity;
 using Happengo.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using NodaTime;
@@ -71,15 +72,28 @@ public static class AttendanceAccess
         return new AttendanceMutationResult(true, nextStatus);
     }
 
-    public static Task<List<Guid>> PendingUserIdsAsync(
+    public static async Task<List<PendingAttendanceRequest>> PendingRequestsAsync(
         HappengoDbContext db,
         Guid eventId,
-        CancellationToken cancellationToken) =>
-        db.Attendances.AsNoTracking()
-            .Where(row => row.EventId == eventId && row.Status == AttendanceStatus.Requested)
-            .OrderBy(row => row.CreatedAt)
-            .Select(row => row.UserId)
+        CancellationToken cancellationToken)
+    {
+        var rows = await db.Attendances.AsNoTracking()
+            .Where(attendance => attendance.EventId == eventId && attendance.Status == AttendanceStatus.Requested)
+            .OrderBy(attendance => attendance.CreatedAt)
+            .Select(attendance => new { attendance.UserId, attendance.CreatedAt })
             .ToListAsync(cancellationToken);
+
+        var names = await UserDirectory.DisplayNamesAsync(
+            db,
+            rows.Select(row => row.UserId).ToArray(),
+            cancellationToken);
+        var displayNames = names.ToDictionary(user => user.Id, user => user.DisplayName);
+
+        return rows.Select(row => new PendingAttendanceRequest(
+            row.UserId,
+            displayNames.GetValueOrDefault(row.UserId),
+            row.CreatedAt.ToDateTimeOffset())).ToList();
+    }
 
     public static Task<int> AttendingCountAsync(
         HappengoDbContext db,

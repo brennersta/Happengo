@@ -996,7 +996,7 @@
         "tags": [
           "Attendance"
         ],
-        "summary": "List pending attendance request user IDs for an event owner.",
+        "summary": "List pending attendance requests for an event owner.",
         "operationId": "GetEventAttendanceRequests",
         "parameters": [
           {
@@ -1762,17 +1762,40 @@
           }
         }
       },
-      "PendingAttendanceResponse": {
+      "PendingAttendanceRequest": {
         "required": [
-          "userIds"
+          "userId",
+          "displayName",
+          "requestedAt"
         ],
         "type": "object",
         "properties": {
-          "userIds": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PendingAttendanceResponse": {
+        "required": [
+          "requests"
+        ],
+        "type": "object",
+        "properties": {
+          "requests": {
             "type": "array",
             "items": {
-              "type": "string",
-              "format": "uuid"
+              "$ref": "#/components/schemas/PendingAttendanceRequest"
             }
           }
         }

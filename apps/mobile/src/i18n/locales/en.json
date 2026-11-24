@@ -206,6 +206,8 @@
     "requested": "Your request is waiting for the event owner.",
     "cancelAttendance": "Cancel attendance",
     "requestsTitle": "Attendance requests",
+    "requestedAgo": "Requested {time}",
+    "unknownRequester": "Guest",
     "noRequests": "No pending requests.",
     "approve": "Approve",
     "reject": "Reject",

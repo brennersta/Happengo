@@ -139,9 +139,13 @@ test("my events returns only the demo user's owned, attending, or requested even
   const mine = listMyEvents().items.map((event) => event.id);
   expect(mine).toEqual(expect.arrayContaining([created!.id, "00000000-0000-4000-8000-000000000006", "00000000-0000-4000-8000-000000000007"]));
   expect(mine).not.toContain("00000000-0000-4000-8000-000000000004");
-  expect(getDemoPendingRequests(created!.id)?.userIds).toEqual([demoPendingRequesterId]);
+  expect(getDemoPendingRequests(created!.id)?.requests).toEqual([expect.objectContaining({
+    userId: demoPendingRequesterId,
+    displayName: "Demo Guest",
+    requestedAt: expect.any(String),
+  })]);
   expect(decideDemoAttendance(created!.id, demoPendingRequesterId, "rejected")?.status).toBe("rejected");
-  expect(getDemoPendingRequests(created!.id)?.userIds).toEqual([]);
+  expect(getDemoPendingRequests(created!.id)?.requests).toEqual([]);
 
   const sample = listEvents(bbox).items.find((event) => event.title === "Harbour choir")!;
   expect(listMyEvents().items.some((event) => event.id === sample.id)).toBe(false);

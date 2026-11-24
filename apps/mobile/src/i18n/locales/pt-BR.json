@@ -206,6 +206,8 @@
     "requested": "Sua solicitaÃ§Ã£o aguarda o organizador do evento.",
     "cancelAttendance": "Cancelar participaÃ§Ã£o",
     "requestsTitle": "SolicitaÃ§Ãµes de participaÃ§Ã£o",
+    "requestedAgo": "Solicitado {time}",
+    "unknownRequester": "Convidado",
     "noRequests": "NÃ£o hÃ¡ solicitaÃ§Ãµes pendentes.",
     "approve": "Aprovar",
     "reject": "Recusar",

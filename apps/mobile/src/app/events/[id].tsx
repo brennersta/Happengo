@@ -13,11 +13,12 @@ import { detailFacts } from "@/events/detailFacts";
 import { displayAddress } from "@/events/displayAddress";
 import { isHappeningNow } from "@/events/liveState";
 import { formatEventTime } from "@/events/mapEvents";
+import { formatRelativeRequestTime } from "@/events/relativeRequestTime";
 import { theme } from "@/theme/theme";
 import { Chip, CoverPlaceholder, GradientButton } from "@/theme/ui";
 
 export default function EventDetailScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -213,11 +214,16 @@ export default function EventDetailScreen() {
                 <Text style={styles.sectionTitle}>{t("eventDetail.requestsTitle")}</Text>
                 {requestsQuery.isLoading ? <ActivityIndicator /> : null}
                 {requestsQuery.isError ? <Text style={styles.error}>{t("eventDetail.actionError")}</Text> : null}
-                {requestsQuery.data?.userIds.length ? requestsQuery.data.userIds.map((userId) => (
-                  <View key={userId} style={styles.requestRow}>
-                    <Text style={styles.requestId}>{userId.slice(0, 8)}</Text>
-                    <GradientButton label={t("eventDetail.approve")} onPress={() => attendanceMutation.mutate({ type: "approve", userId })} disabled={attendanceMutation.isPending} />
-                    <Pressable accessibilityRole="button" disabled={attendanceMutation.isPending} onPress={() => attendanceMutation.mutate({ type: "reject", userId })}>
+                {requestsQuery.data?.requests.length ? requestsQuery.data.requests.map((request) => (
+                  <View key={request.userId} style={styles.requestRow}>
+                    <View style={styles.requestDetails}>
+                      <Text style={styles.requestName}>{request.displayName ?? t("eventDetail.unknownRequester")}</Text>
+                      <Text style={styles.requestMeta}>{t("eventDetail.requestedAgo", {
+                        time: formatRelativeRequestTime(request.requestedAt, i18n.resolvedLanguage ?? i18n.language),
+                      })}</Text>
+                    </View>
+                    <GradientButton label={t("eventDetail.approve")} onPress={() => attendanceMutation.mutate({ type: "approve", userId: request.userId })} disabled={attendanceMutation.isPending} />
+                    <Pressable accessibilityRole="button" disabled={attendanceMutation.isPending} onPress={() => attendanceMutation.mutate({ type: "reject", userId: request.userId })}>
                       <Text style={styles.link}>{t("eventDetail.reject")}</Text>
                     </Pressable>
                   </View>
@@ -323,7 +329,9 @@ const styles = StyleSheet.create({
   requests: { gap: 10, marginTop: 8 },
   sectionTitle: { color: theme.ink, fontSize: 16, fontWeight: "700" },
   requestRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
-  requestId: { color: theme.ink, flex: 1 },
+  requestDetails: { flex: 1, minWidth: 120, gap: 2 },
+  requestName: { color: theme.ink, fontWeight: "700" },
+  requestMeta: { color: theme.muted, fontSize: 12 },
   error: { color: theme.danger },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
   muted: { color: theme.muted, textAlign: "center" },
