@@ -25,6 +25,7 @@ internal static class AttendanceRoutes
             .WithTags("Attendance");
 
         attendance.MapPost("", Join)
+            .AllowAnonymous()
             .WithName("RequestEventAttendance")
             .WithSummary("Join an event or request to attend.")
             .Produces<AttendanceResponse>()
@@ -33,6 +34,7 @@ internal static class AttendanceRoutes
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         attendance.MapGet("requests", GetPending)
+            .AllowAnonymous()
             .WithName("GetEventAttendanceRequests")
             .WithSummary("List pending attendance requests for an event owner.")
             .Produces<PendingAttendanceResponse>()
@@ -40,6 +42,7 @@ internal static class AttendanceRoutes
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         attendance.MapGet("me", GetMine)
+            .AllowAnonymous()
             .WithName("GetMyEventAttendance")
             .WithSummary("Get the caller's attendance state for an event.")
             .Produces<MyAttendanceResponse>()
@@ -47,6 +50,7 @@ internal static class AttendanceRoutes
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         attendance.MapPost("requests/{userId:guid}/approve", Approve)
+            .AllowAnonymous()
             .WithName("ApproveEventAttendance")
             .WithSummary("Approve a pending attendance request.")
             .Produces<AttendanceResponse>()
@@ -55,6 +59,7 @@ internal static class AttendanceRoutes
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         attendance.MapPost("requests/{userId:guid}/reject", Reject)
+            .AllowAnonymous()
             .WithName("RejectEventAttendance")
             .WithSummary("Reject a pending attendance request.")
             .Produces<AttendanceResponse>()
@@ -63,6 +68,7 @@ internal static class AttendanceRoutes
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         attendance.MapPost("cancel", Cancel)
+            .AllowAnonymous()
             .WithName("CancelEventAttendance")
             .WithSummary("Cancel the caller's own attendance.")
             .Produces<AttendanceResponse>()
@@ -83,7 +89,7 @@ internal static class AttendanceRoutes
     {
         if (viewerContext.Viewer.UserId is not Guid userId)
         {
-            return Unauthorized();
+            return Problems.Unauthorized("A valid user identity is required to request attendance.");
         }
 
         var now = clock.GetCurrentInstant();
@@ -127,8 +133,12 @@ internal static class AttendanceRoutes
         ViewerContext viewerContext,
         CancellationToken cancellationToken)
     {
-        if (viewerContext.Viewer.UserId is not Guid ownerId
-            || !await EventAccess.IsOwnerAsync(db, eventId, ownerId, cancellationToken))
+        if (viewerContext.Viewer.UserId is not Guid ownerId)
+        {
+            return Problems.Unauthorized("A valid user identity is required to view attendance requests.");
+        }
+
+        if (!await EventAccess.IsOwnerAsync(db, eventId, ownerId, cancellationToken))
         {
             return Problems.NotFoundEvent();
         }
@@ -147,7 +157,7 @@ internal static class AttendanceRoutes
     {
         if (viewerContext.Viewer.UserId is not Guid userId)
         {
-            return Unauthorized();
+            return Problems.Unauthorized("A valid user identity is required to view attendance.");
         }
 
         var now = clock.GetCurrentInstant();
@@ -190,7 +200,7 @@ internal static class AttendanceRoutes
     {
         if (viewerContext.Viewer.UserId is not Guid ownerId)
         {
-            return Unauthorized();
+            return Problems.Unauthorized("A valid user identity is required to manage attendance requests.");
         }
 
         var context = await EventAccess.FindAttendanceContextAsync(db, eventId, ownerId, null, cancellationToken);
@@ -227,7 +237,7 @@ internal static class AttendanceRoutes
     {
         if (viewerContext.Viewer.UserId is not Guid userId)
         {
-            return Unauthorized();
+            return Problems.Unauthorized("A valid user identity is required to cancel attendance.");
         }
 
         var status = await AttendanceAccess.GetStatusAsync(db, eventId, userId, cancellationToken);
@@ -280,10 +290,4 @@ internal static class AttendanceRoutes
         var count = await AttendanceAccess.AttendingCountAsync(db, eventId, cancellationToken);
         return Results.Ok(new AttendanceResponse(eventId, status, count));
     }
-
-    private static IResult Unauthorized() => Results.Problem(
-        statusCode: StatusCodes.Status401Unauthorized,
-        title: "Authentication required",
-        detail: "A valid user identity is required for attendance changes.",
-        type: ProblemTypes.Unauthorized);
 }
