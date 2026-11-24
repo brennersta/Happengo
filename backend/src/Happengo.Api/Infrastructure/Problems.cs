@@ -73,4 +73,16 @@ internal static class Problems
             title: "Event conflict",
             detail: detail,
             type: ProblemTypes.EventConflict);
+
+    public static ProblemHttpResult NotFoundIncident() => TypedResults.Problem(
+        statusCode: StatusCodes.Status404NotFound, title: "Not found", detail: "No incident exists for this request.", type: ProblemTypes.NotFound);
+
+    public static ProblemHttpResult InvalidIncident(string detail) => TypedResults.Problem(
+        statusCode: StatusCodes.Status400BadRequest, title: "Invalid incident", detail: detail, type: ProblemTypes.InvalidIncident);
+
+    public static ProblemHttpResult IncidentConflict(string detail) => TypedResults.Problem(
+        statusCode: StatusCodes.Status409Conflict, title: "Incident conflict", detail: detail, type: ProblemTypes.IncidentConflict);
+
+    public static ProblemHttpResult IncidentRateLimited(string detail) => TypedResults.Problem(
+        statusCode: StatusCodes.Status429TooManyRequests, title: "Incident report limit reached", detail: detail, type: ProblemTypes.IncidentRateLimited);
 }

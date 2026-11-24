@@ -17,6 +17,9 @@ public static class ProblemTypes
     public const string EventConflict = "https://happengo.app/problems/event-conflict";
     public const string InvalidFriend = "https://happengo.app/problems/invalid-friend";
     public const string InvalidProfile = "https://happengo.app/problems/invalid-profile";
+    public const string InvalidIncident = "https://happengo.app/problems/invalid-incident";
+    public const string IncidentConflict = "https://happengo.app/problems/incident-conflict";
+    public const string IncidentRateLimited = "https://happengo.app/problems/incident-rate-limited";
     public const string RateLimited = "https://happengo.app/problems/rate-limited";
     public const string Internal = "https://happengo.app/problems/internal-error";
 
