@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import type { Map as MapLibreMap, Marker as MapLibreMarker } from "maplibre-gl";
 import { MAPLIBRE_WORKER_URL } from "./config";
 import type { HappengoMapProps } from "./types";
-import { liveAuraMode, markerColor } from "./markerStyle";
+import { createWebMarker } from "./markerFactory.web";
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./attribution.css";
@@ -100,32 +100,9 @@ export function Map({ center, zoom = 11, styleUrl, markers = [], focus = null, o
     let cancelled = false;
     void import("maplibre-gl").then((maplibre) => {
       if (cancelled || mapRef.current !== map) return;
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       markersRef.current = markers.map((item) => {
-        const element = document.createElement("button");
-        element.type = "button";
-        const tag = item.tagLabel || item.mainTag;
-        element.setAttribute("aria-label", `${item.title}${tag ? `, ${tag}` : ""}${item.happeningNow ? ", happening now" : ""}`);
-        element.title = item.title;
-        element.addEventListener("click", () => onMarkerPress?.(item.id));
-        const color = markerColor(item.mainTag);
-        element.style.cssText = "width:36px;height:46px;padding:0;border:0;background:transparent;cursor:pointer;position:relative;";
-        const aura = document.createElement("span");
-        aura.style.cssText = "position:absolute;left:2px;top:2px;width:32px;height:32px;border-radius:50%;pointer-events:none;";
-        const pin = document.createElement("span");
-        pin.style.cssText = `position:absolute;left:5px;top:4px;width:26px;height:26px;background:${color};border:2px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,.28);pointer-events:none;`;
-        element.append(aura, pin);
-        if (liveAuraMode(item.happeningNow, window.matchMedia("(prefers-reduced-motion: reduce)").matches) === "pulse") {
-          aura.animate(
-            [{ boxShadow: "0 0 0 0 rgba(24,168,121,.45)" }, { boxShadow: "0 0 0 12px rgba(24,168,121,0)" }],
-            { duration: 1600, iterations: Infinity },
-          );
-        } else if (item.happeningNow) {
-          aura.style.boxShadow = "0 0 0 4px rgba(24,168,121,.35)";
-        }
-        return new maplibre.Marker({ element, anchor: "bottom" })
-          .setLngLat([item.coordinate.longitude, item.coordinate.latitude])
-          .setPopup(new maplibre.Popup({ offset: 16 }).setText(item.title))
-          .addTo(map);
+        return createWebMarker(maplibre, map, item, onMarkerPress, reduceMotion);
       });
     });
     return () => { cancelled = true; };
