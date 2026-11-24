@@ -55,7 +55,7 @@ export function Map({ center, zoom = 11, styleUrl, markers = [], focus = null, o
             southWest: { longitude: bounds.getWest(), latitude: bounds.getSouth() },
             northEast: { longitude: bounds.getEast(), latitude: bounds.getNorth() },
           };
-          if (idle) onMapIdleRef.current?.(value);
+          if (idle) onMapIdleRef.current?.(value, map!.getZoom());
         }
       };
       map.on("load", () => {
