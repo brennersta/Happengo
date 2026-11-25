@@ -61,7 +61,7 @@ The page list follows the exported Base44 project. “Incident reporting” and 
 
 | Feature name | What it represents | Base44 source | Rebuild |
 |---|---|---|---|
-| Event information | Shows event title, description, place/address, date/time, tags, cover, and status. | `src/pages/EventDetail.jsx`. | Detail route reads and shows core event fields; map pins and Discover/My Events cards link to it. Cover media, reactions, and albums are still absent from the rebuild. |
+| Event information | Shows event title, description, place/address, date/time, tags, cover, and status. | `src/pages/EventDetail.jsx`. | Detail uses the Base44-style centered cover and event card, with tags, description, icon-led logistics, and attendance actions. Cover media, reactions, and albums are still absent from the rebuild. |
 | Audience-aware access | Shows live public details broadly, private details only to the allowed audience, and past details/albums only to owner or attendees. | Client-side `eventValidation.jsx` and page logic contain these rules. The old user reported a guessed event ID could expose private events, so client rules were not sufficient evidence of security. | Server-side event visibility is implemented for existing event types. Rules are documented in ADR 0007. |
 | Attend / request to attend | Lets a user join an open event or request entry when host approval is required. | Attendance manager and detail controls are present. | Join/request, owner approve/reject, own status, and cancel APIs/UI exist. |
 | Cancel attendance | Lets an attendee withdraw before the event ends and updates counts/access. | EventDetail removes the attendance record in its mutation. | Cancellation API exists; rejoin behavior remains conservative/open. |

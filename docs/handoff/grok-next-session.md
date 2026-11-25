@@ -648,3 +648,40 @@ Result: both locale files parsed successfully.
 
 - Read `GROK.md`, `docs/architecture/baseline.md`, this handoff, ADR 0012, the event/incident feature catalog, incident creation/detail and Discover screens, map platform adapters and marker factory, geocoding, and location-permission helpers.
 - Jest was not run. No backend tests, infrastructure, deployments, or Azure/Terraform operations were performed.
+
+## Event detail visual alignment (2026-11-25)
+
+Work is on `codex/event-detail-design`, based on `origin/main` at `8557797` (which includes the map/incident UX PR #39). This is a separate visual follow-up.
+
+- Compared the existing detail layout with the reviewed Base44 `Event_Detail` screenshots. The app already had the gradient cover placeholder, event card, tags, event facts, and attendance actions, but the desktop content was narrower and the card's spacing/title hierarchy were less faithful.
+- Expanded the centered content width to fit the screenshot's roughly 864px inner card at desktop width, increased card padding, refined title/action alignment, and spaced the icon-led facts around a clearer divider.
+- Left the event data/actions, mobile stacking, and responsive behavior intact. Did not add photo/reaction sections: no APIs/storage support exists and `GROK.md` says to defer those features.
+- Updated the feature catalog and review note 0025.
+
+### Commands actually run
+
+From the repository root:
+
+~~~text
+pnpm --filter @happengo/mobile lint
+~~~
+
+Result: passed (exit code 0).
+
+~~~text
+pnpm --filter @happengo/mobile typecheck
+~~~
+
+Result: passed (`tsc --noEmit`, exit code 0).
+
+~~~text
+pnpm --filter @happengo/mobile export:web
+~~~
+
+Result: passed; Expo exported the web app to `apps/mobile/dist` (exit code 0).
+
+Jest was not run.
+
+### Read/review only (not executed)
+
+- Read the event detail screen, theme/components, event feature catalog, review note 0009, and `GROK.md`.
