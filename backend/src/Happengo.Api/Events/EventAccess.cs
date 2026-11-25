@@ -4,7 +4,7 @@ using NodaTime;
 
 namespace Happengo.Api.Events;
 
-/// <summary>Public cross-feature contract for deciding who may request attendance.</summary>
+/// <summary>Public contracts used by other features to inspect events and attendance rules.</summary>
 public sealed record EventAttendanceContext(
     Guid OwnerId,
     EventVisibility Visibility,
@@ -14,8 +14,42 @@ public sealed record EventAttendanceContext(
     bool IsInvited,
     bool ShareTokenMatches);
 
+public sealed record EventModerationSummary(Guid Id, string Title, string? Description, string Address, bool IsHidden);
+
 public static class EventAccess
 {
+    public static Task<bool> IsReportableAsync(
+        HappengoDbContext db,
+        Guid eventId,
+        Guid viewerId,
+        Instant now,
+        CancellationToken cancellationToken) =>
+        db.Events.AsNoTracking()
+            .VisibleTo(db, new Happengo.Api.Infrastructure.Auth.Viewer(viewerId), now, EventReadScope.Direct)
+            .AnyAsync(row => row.Id == eventId && row.CancelledAt == null, cancellationToken);
+
+    public static async Task<IReadOnlyList<EventModerationSummary>> GetModerationSummariesAsync(
+        HappengoDbContext db,
+        IReadOnlyCollection<Guid> eventIds,
+        CancellationToken cancellationToken) =>
+        await db.Events.AsNoTracking().Where(row => eventIds.Contains(row.Id))
+            .Select(row => new EventModerationSummary(row.Id, row.Title, row.Description, row.Address, row.HiddenAt != null))
+            .ToListAsync(cancellationToken);
+
+    public static async Task<bool> HideAsync(
+        HappengoDbContext db,
+        Guid eventId,
+        Instant hiddenAt,
+        string reason,
+        CancellationToken cancellationToken)
+    {
+        var row = await db.Events.FirstOrDefaultAsync(item => item.Id == eventId, cancellationToken);
+        if (row is null || row.HiddenAt is not null) return false;
+        row.HiddenAt = hiddenAt;
+        row.HideReason = reason;
+        return true;
+    }
+
     public static Task<bool> ExistsAsync(
         HappengoDbContext db,
         Guid eventId,

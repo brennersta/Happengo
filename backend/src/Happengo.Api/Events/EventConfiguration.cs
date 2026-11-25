@@ -16,17 +16,20 @@ internal sealed class EventConfiguration : IEntityTypeConfiguration<Event>
             table.HasCheckConstraint("ck_events_visibility", StoredVisibility.Check);
             table.HasCheckConstraint("ck_events_approval_mode", StoredApprovalMode.Check);
             table.HasCheckConstraint("ck_events_tags", StoredTags.Check);
+            table.HasCheckConstraint("ck_events_hide_reason", "hide_reason IS NULL OR char_length(hide_reason) BETWEEN 1 AND 500");
         });
 
         builder.Property(e => e.Title).HasMaxLength(200).IsRequired();
         builder.Property(e => e.Description).HasMaxLength(4000);
         builder.Property(e => e.TimeZoneId).HasMaxLength(64).IsRequired();
         builder.Property(e => e.Address).HasMaxLength(500).IsRequired();
+        builder.Property(e => e.HideReason).HasColumnName("hide_reason").HasMaxLength(500);
         builder.Property(e => e.ShareTokenHash)
             .HasColumnType("bytea")
             .IsRequired();
         builder.Property(e => e.CoverBlobName).HasMaxLength(1024);
         builder.Property(e => e.CancelledAt).HasColumnName("cancelled_at");
+        builder.Property(e => e.HiddenAt).HasColumnName("hidden_at");
 
         builder.Property(e => e.Location)
             .HasColumnType("geometry(Point,4326)")

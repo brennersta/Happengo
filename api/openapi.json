@@ -1266,6 +1266,280 @@
         }
       }
     },
+    "/v1/reports": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Report an event or incident for moderator review.",
+        "operationId": "CreateReport",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/moderation/queue": {
+      "get": {
+        "tags": [
+          "Moderation"
+        ],
+        "summary": "Get the moderator report queue, with priority targets first.",
+        "operationId": "GetModerationQueue",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModerationQueueResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/moderation/incidents/{id}/close": {
+      "post": {
+        "tags": [
+          "Moderation"
+        ],
+        "operationId": "ModerateCloseIncident",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModerationActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModerationActionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/moderation/events/{id}/hide": {
+      "post": {
+        "tags": [
+          "Moderation"
+        ],
+        "operationId": "ModerateHideEvent",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModerationActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModerationActionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/events/{eventId}/attendance": {
       "post": {
         "tags": [
@@ -1800,6 +2074,26 @@
           }
         }
       },
+      "CreateReportRequest": {
+        "required": [
+          "targetType",
+          "targetId",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "targetType": {
+            "$ref": "#/components/schemas/ReportTargetType"
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/ReportReason"
+          }
+        }
+      },
       "EditEventRequest": {
         "required": [
           "title",
@@ -2263,6 +2557,136 @@
           }
         }
       },
+      "ModerationActionRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ModerationActionResponse": {
+        "required": [
+          "targetType",
+          "targetId",
+          "action",
+          "reason",
+          "at"
+        ],
+        "type": "object",
+        "properties": {
+          "targetType": {
+            "$ref": "#/components/schemas/ReportTargetType"
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "action": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ModerationQueueItem": {
+        "required": [
+          "targetType",
+          "targetId",
+          "title",
+          "category",
+          "description",
+          "address",
+          "reportCount",
+          "priorityReview",
+          "latestReportedAt",
+          "reasons",
+          "resolved"
+        ],
+        "type": "object",
+        "properties": {
+          "targetType": {
+            "$ref": "#/components/schemas/ReportTargetType"
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "category": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IncidentCategory"
+              }
+            ]
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "address": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reportCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "priorityReview": {
+            "type": "boolean"
+          },
+          "latestReportedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportReason"
+            }
+          },
+          "resolved": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ModerationQueueResponse": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModerationQueueItem"
+            }
+          }
+        }
+      },
       "MyAttendanceResponse": {
         "required": [
           "eventId",
@@ -2364,7 +2788,8 @@
         "required": [
           "id",
           "displayName",
-          "shareAttendanceWithFriends"
+          "shareAttendanceWithFriends",
+          "isModerator"
         ],
         "type": "object",
         "properties": {
@@ -2379,6 +2804,9 @@
             ]
           },
           "shareAttendanceWithFriends": {
+            "type": "boolean"
+          },
+          "isModerator": {
             "type": "boolean"
           }
         }
@@ -2399,6 +2827,56 @@
             }
           }
         }
+      },
+      "ReportReason": {
+        "enum": [
+          "inappropriate_content",
+          "spam_scam",
+          "fake_misleading",
+          "harassment_unsafe"
+        ],
+        "type": "string"
+      },
+      "ReportResponse": {
+        "required": [
+          "targetType",
+          "targetId",
+          "reason",
+          "createdAt",
+          "reportCount",
+          "priorityReview"
+        ],
+        "type": "object",
+        "properties": {
+          "targetType": {
+            "$ref": "#/components/schemas/ReportTargetType"
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/ReportReason"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reportCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "priorityReview": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ReportTargetType": {
+        "enum": [
+          "event",
+          "incident"
+        ],
+        "type": "string"
       },
       "RotateShareLinkResponse": {
         "required": [
@@ -2466,6 +2944,12 @@
     },
     {
       "name": "Incidents"
+    },
+    {
+      "name": "Reports"
+    },
+    {
+      "name": "Moderation"
     },
     {
       "name": "Attendance"

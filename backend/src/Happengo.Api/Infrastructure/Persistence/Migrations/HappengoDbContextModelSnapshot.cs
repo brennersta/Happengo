@@ -108,6 +108,15 @@ namespace Happengo.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("end_at");
 
+                    b.Property<Instant?>("HiddenAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("hidden_at");
+
+                    b.Property<string>("HideReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("hide_reason");
+
                     b.Property<Point>("Location")
                         .IsRequired()
                         .HasColumnType("geometry(Point,4326)")
@@ -176,6 +185,8 @@ namespace Happengo.Api.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_events_approval_mode", "approval_mode IN ('open', 'approval')");
 
                             t.HasCheckConstraint("ck_events_duration", "end_at <= start_at + interval '7 days'");
+
+                            t.HasCheckConstraint("ck_events_hide_reason", "hide_reason IS NULL OR char_length(hide_reason) BETWEEN 1 AND 500");
 
                             t.HasCheckConstraint("ck_events_tags", "tags <@ ARRAY['Music','Sports','Food','Art','Family','Tech','Nightlife','Outdoor','Culture','Education']::text[]");
 
@@ -382,6 +393,12 @@ namespace Happengo.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(320)")
                         .HasColumnName("email");
 
+                    b.Property<bool>("IsModerator")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_moderator");
+
                     b.Property<string>("Issuer")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -538,6 +555,113 @@ namespace Happengo.Api.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Happengo.Api.Moderation.ModerationAction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("action");
+
+                    b.Property<Guid>("ActorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_user_id");
+
+                    b.Property<Instant>("At")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("at");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_id");
+
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("target_type");
+
+                    b.HasKey("Id")
+                        .HasName("pk_moderation_actions");
+
+                    b.HasIndex("ActorUserId")
+                        .HasDatabaseName("ix_moderation_actions_actor_user_id");
+
+                    b.HasIndex("TargetType", "TargetId", "At")
+                        .HasDatabaseName("ix_moderation_actions_target_type_target_id_at");
+
+                    b.ToTable("moderation_actions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_moderation_actions_action", "action IN ('hide_event', 'close_incident')");
+
+                            t.HasCheckConstraint("ck_moderation_actions_reason", "char_length(reason) BETWEEN 1 AND 500");
+
+                            t.HasCheckConstraint("ck_moderation_actions_target_type", "target_type IN ('event', 'incident')");
+                        });
+                });
+
+            modelBuilder.Entity("Happengo.Api.Reports.Report", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<Instant>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid>("ReporterUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reporter_user_id");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_id");
+
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("target_type");
+
+                    b.HasKey("Id")
+                        .HasName("pk_reports");
+
+                    b.HasIndex("ReporterUserId", "TargetType", "TargetId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_reports_reporter_user_id_target_type_target_id");
+
+                    b.HasIndex("TargetType", "TargetId", "CreatedAt")
+                        .HasDatabaseName("ix_reports_target_type_target_id_created_at");
+
+                    b.ToTable("reports", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_reports_reason", "reason IN ('inappropriate_content', 'spam_scam', 'fake_misleading', 'harassment_unsafe')");
+
+                            t.HasCheckConstraint("ck_reports_target_type", "target_type IN ('event', 'incident')");
+                        });
+                });
+
             modelBuilder.Entity("Happengo.Api.Attendance.Attendance", b =>
                 {
                     b.HasOne("Happengo.Api.Events.Event", null)
@@ -667,6 +791,26 @@ namespace Happengo.Api.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_incident_votes_users_user_id");
+                });
+
+            modelBuilder.Entity("Happengo.Api.Moderation.ModerationAction", b =>
+                {
+                    b.HasOne("Happengo.Api.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_moderation_actions_users_actor_user_id");
+                });
+
+            modelBuilder.Entity("Happengo.Api.Reports.Report", b =>
+                {
+                    b.HasOne("Happengo.Api.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("ReporterUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_reports_users_reporter_user_id");
                 });
 #pragma warning restore 612, 618
         }

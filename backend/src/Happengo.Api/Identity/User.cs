@@ -25,5 +25,7 @@ internal sealed class User
 
     public bool ShareAttendanceWithFriends { get; set; } = true;
 
+    public bool IsModerator { get; set; }
+
     public Instant CreatedAt { get; set; }
 }

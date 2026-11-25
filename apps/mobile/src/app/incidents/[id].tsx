@@ -9,6 +9,7 @@ import { auth } from "@/auth";
 import { mocksEnabled } from "@/mocks/config";
 import { theme } from "@/theme/theme";
 import { GradientButton } from "@/theme/ui";
+import { ReportAction } from "@/reports/ReportAction";
 import type { components } from "@happengo/api-client";
 
 type Vote = Exclude<components["schemas"]["IncidentVoteValue"], null>;
@@ -80,6 +81,7 @@ export default function IncidentDetailScreen() {
             {(voteMutation.isError || closeMutation.isError) ? <Text accessibilityRole="alert" style={styles.error}>{t("incidents.actionError")}</Text> : null}
             {incident.isReporter ? <Pressable accessibilityRole="button" disabled={closeMutation.isPending} onPress={() => closeMutation.mutate()} style={styles.closeButton}><Text style={styles.closeText}>{t("incidents.closeIncident")}</Text></Pressable> : null}
           </> : <GradientButton label={t("incidents.signInToVote")} onPress={() => router.push("/(tabs)/profile")} />) : null}
+          {!incident.isReporter ? <ReportAction targetType="incident" targetId={incident.id} signedIn={signedIn || demo} /> : null}
         </View>
       </ScrollView>}
   </View>;

@@ -10,6 +10,7 @@ export default function TabLayout() {
       <Tabs.Screen name="my-events" options={{ title: t("tabs.myEvents") }} />
       <Tabs.Screen name="friends" options={{ title: t("tabs.friends") }} />
       <Tabs.Screen name="profile" options={{ title: t("tabs.profile") }} />
+      <Tabs.Screen name="../moderation" options={{ href: null }} />
     </Tabs>
   );
 }

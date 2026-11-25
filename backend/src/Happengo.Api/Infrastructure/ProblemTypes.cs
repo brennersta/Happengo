@@ -20,6 +20,10 @@ public static class ProblemTypes
     public const string InvalidIncident = "https://happengo.app/problems/invalid-incident";
     public const string IncidentConflict = "https://happengo.app/problems/incident-conflict";
     public const string IncidentRateLimited = "https://happengo.app/problems/incident-rate-limited";
+    public const string InvalidReport = "https://happengo.app/problems/invalid-report";
+    public const string ReportConflict = "https://happengo.app/problems/report-conflict";
+    public const string InvalidModerationAction = "https://happengo.app/problems/invalid-moderation-action";
+    public const string ModerationConflict = "https://happengo.app/problems/moderation-conflict";
     public const string RateLimited = "https://happengo.app/problems/rate-limited";
     public const string Internal = "https://happengo.app/problems/internal-error";
 

@@ -56,7 +56,7 @@ internal static class ProfileRoutes
 
         var profile = await db.Users.AsNoTracking()
             .Where(user => user.Id == userId)
-            .Select(user => new ProfileResponse(user.Id, user.DisplayName, user.ShareAttendanceWithFriends))
+            .Select(user => new ProfileResponse(user.Id, user.DisplayName, user.ShareAttendanceWithFriends, user.IsModerator))
             .FirstOrDefaultAsync(cancellationToken);
         return profile is null ? Problems.NotFoundProfile() : TypedResults.Ok(profile);
     }
@@ -86,7 +86,7 @@ internal static class ProfileRoutes
 
         user.DisplayName = displayName;
         await db.SaveChangesAsync(cancellationToken);
-        return TypedResults.Ok(new ProfileResponse(user.Id, user.DisplayName, user.ShareAttendanceWithFriends));
+        return TypedResults.Ok(new ProfileResponse(user.Id, user.DisplayName, user.ShareAttendanceWithFriends, user.IsModerator));
     }
 
     private static async Task<Results<Ok<ProfileResponse>, ProblemHttpResult>> UpdateAttendanceSharing(
@@ -108,6 +108,6 @@ internal static class ProfileRoutes
 
         user.ShareAttendanceWithFriends = request.ShareAttendanceWithFriends;
         await db.SaveChangesAsync(cancellationToken);
-        return TypedResults.Ok(new ProfileResponse(user.Id, user.DisplayName, user.ShareAttendanceWithFriends));
+        return TypedResults.Ok(new ProfileResponse(user.Id, user.DisplayName, user.ShareAttendanceWithFriends, user.IsModerator));
     }
 }

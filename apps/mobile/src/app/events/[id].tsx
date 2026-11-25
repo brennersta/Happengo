@@ -16,6 +16,7 @@ import { formatEventTime } from "@/events/mapEvents";
 import { formatRelativeRequestTime } from "@/events/relativeRequestTime";
 import { theme } from "@/theme/theme";
 import { Chip, CoverPlaceholder, GradientButton } from "@/theme/ui";
+import { ReportAction } from "@/reports/ReportAction";
 
 export default function EventDetailScreen() {
   const { t, i18n } = useTranslation();
@@ -265,6 +266,7 @@ export default function EventDetailScreen() {
             ) : (
               <GradientButton label={t("auth.goToSignIn")} onPress={() => router.push("/(tabs)/profile")} />
             )}
+            {event.isOwner ? null : <ReportAction targetType="event" targetId={event.id} signedIn={signedIn || isDemo} />}
           </View>
         </ScrollView>
       )}

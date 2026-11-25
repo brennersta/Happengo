@@ -28,6 +28,16 @@ import {
 import { closeDemoIncident, createDemoIncident, getDemoIncident, listDemoIncidents, voteDemoIncident, type CreateIncident } from "./incidents";
 
 export const handlers = [
+  http.post("/v1/reports", async ({ request }) => {
+    const body = await request.json() as { targetType: string; targetId: string; reason: string };
+    return HttpResponse.json({ ...body, createdAt: new Date().toISOString(), reportCount: 1, priorityReview: false }, { status: 201 });
+  }),
+  http.get("/v1/moderation/queue", () => HttpResponse.json({ items: [
+    { targetType: "event", targetId: "demo-event-1", title: "Harbour choir", category: null, description: "A short harbour rehearsal, open to anyone nearby.", address: "Tallinn, Estonia", reportCount: 3, priorityReview: true, latestReportedAt: new Date().toISOString(), reasons: ["spam_scam", "fake_misleading"], resolved: false },
+    { targetType: "incident", targetId: "demo-incident-1", title: null, category: "fire", description: "Smoke visible above the industrial area.", address: "Tallinn, Estonia", reportCount: 1, priorityReview: false, latestReportedAt: new Date().toISOString(), reasons: ["inappropriate_content"], resolved: false },
+  ] })),
+  http.post("/v1/moderation/incidents/:id/close", ({ params }) => HttpResponse.json({ targetType: "incident", targetId: params.id, action: "close_incident", reason: "Demo action", at: new Date().toISOString() })),
+  http.post("/v1/moderation/events/:id/hide", ({ params }) => HttpResponse.json({ targetType: "event", targetId: params.id, action: "hide_event", reason: "Demo action", at: new Date().toISOString() })),
   http.get("/v1/incidents", ({ request }) => HttpResponse.json({ items: listDemoIncidents(new URL(request.url).searchParams.get("bbox")) })),
   http.post("/v1/incidents", async ({ request }) => {
     const result = createDemoIncident(await request.json() as CreateIncident);
