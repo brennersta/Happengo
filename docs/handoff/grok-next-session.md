@@ -651,7 +651,7 @@ Result: both locale files parsed successfully.
 
 ## Event detail visual alignment (2026-11-25)
 
-Work is on `codex/event-detail-design`, based on `origin/main` at `8557797` (which includes the map/incident UX PR #39). This is a separate visual follow-up.
+Merged to main in PR #40 from `codex/event-detail-design`, based on `origin/main` at `8557797` (which includes the map/incident UX PR #39).
 
 - Compared the existing detail layout with the reviewed Base44 `Event_Detail` screenshots. The app already had the gradient cover placeholder, event card, tags, event facts, and attendance actions, but the desktop content was narrower and the card's spacing/title hierarchy were less faithful.
 - Expanded the centered content width to fit the screenshot's roughly 864px inner card at desktop width, increased card padding, refined title/action alignment, and spaced the icon-led facts around a clearer divider.
@@ -685,3 +685,38 @@ Jest was not run.
 ### Read/review only (not executed)
 
 - Read the event detail screen, theme/components, event feature catalog, review note 0009, and `GROK.md`.
+
+## Map pin selection regression and handoff cleanup (2026-11-25)
+
+Work is on `codex/fix-event-pin-click`, based on `origin/main` at `fa448c8` (includes merged PR #40).
+
+- Fixed event/incident marker taps appearing to do nothing. Discover set the selected marker id, but also cleared it from the map's general tap handler. The installed MapLibre web `Marker` click propagates to the map click handler, which immediately cleared the preview. Discover no longer dismisses the preview on a map tap. The preview's close control and selecting another pin remain available. Create-form map taps are unchanged.
+- Updated `GROK.md` to say PR #40 was merged and point at this follow-up. Review note 0026 records the regression and fix.
+
+### Commands actually run
+
+From the repository root:
+
+~~~text
+pnpm --filter @happengo/mobile lint
+~~~
+
+Result: passed (exit code 0).
+
+~~~text
+pnpm --filter @happengo/mobile typecheck
+~~~
+
+Result: passed (`tsc --noEmit`, exit code 0).
+
+~~~text
+pnpm --filter @happengo/mobile export:web
+~~~
+
+Result: passed; Expo exported the web app to `apps/mobile/dist` (exit code 0).
+
+Jest was not run.
+
+### Read/review only (not executed)
+
+- Reviewed Discover's marker selection and preview selection code, web and native map press wiring, and the installed MapLibre GL `src/ui/marker.ts` click implementation to confirm marker clicks propagate to the map handler.
