@@ -691,6 +691,7 @@ Jest was not run.
 Work is on `codex/fix-event-pin-click`, based on `origin/main` at `fa448c8` (includes merged PR #40).
 
 - Fixed event/incident marker taps appearing to do nothing. Discover set the selected marker id, but also cleared it from the map's general tap handler. The installed MapLibre web `Marker` click propagates to the map click handler, which immediately cleared the preview. Discover no longer dismisses the preview on a map tap. The preview's close control and selecting another pin remain available. Create-form map taps are unchanged.
+- Anchored the preview to the selected pin's projected screen coordinate on both web and native. It opens above the pin when there is room, falls below when needed, clamps within the map bounds, and updates its point after map movement/zoom.
 - Updated `GROK.md` to say PR #40 was merged and point at this follow-up. Review note 0026 records the regression and fix.
 
 ### Commands actually run

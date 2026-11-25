@@ -16,7 +16,7 @@ import { Map } from "@/map/Map";
 import { MapMarkerPreview } from "@/map/MapMarkerPreview";
 import { TALLINN, mapStyleUrl } from "@/map/config";
 import { EVENT_TAGS } from "@/map/markerStyle";
-import type { MapBounds, MapFocus, MapMarker } from "@/map/types";
+import type { MapBounds, MapFocus, MapMarker, MapPoint } from "@/map/types";
 import type { SavedMapView } from "@/map/mapView";
 import { mergeDiscoverItems, type DiscoverKind, type Incident } from "@/incidents/discoverItems";
 import { initialMapView } from "@/map/mapView";
@@ -42,6 +42,8 @@ export default function DiscoverScreen() {
   const [bounds, setBounds] = useState(initialBounds);
   const [focus, setFocus] = useState<MapFocus | null>(null);
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
+  const [selectedMarkerPosition, setSelectedMarkerPosition] = useState<MapPoint | null>(null);
+  const [mapSize, setMapSize] = useState({ width: 0, height: 0 });
   const [now, setNow] = useState(() => Date.now());
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [draft, setDraft] = useState<DiscoverFilters>(emptyDiscoverFilters);
@@ -143,6 +145,16 @@ export default function DiscoverScreen() {
     if (!wide) setMode("map");
   }
 
+  function selectMarker(id: string, point: MapPoint) {
+    setSelectedMarkerId(id);
+    setSelectedMarkerPosition(point);
+  }
+
+  function clearSelectedMarker() {
+    setSelectedMarkerId(null);
+    setSelectedMarkerPosition(null);
+  }
+
   async function locateMe() {
     setLocating(true);
     setLocationDenied(false);
@@ -164,10 +176,13 @@ export default function DiscoverScreen() {
     <View style={styles.screen}>
       <View style={styles.body}>
         {showMap ? (
-          <View style={styles.mapPane}>
+          <View style={styles.mapPane} onLayout={(event) => {
+            const { width: nextWidth, height: nextHeight } = event.nativeEvent.layout;
+            setMapSize((current) => current.width === nextWidth && current.height === nextHeight ? current : { width: nextWidth, height: nextHeight });
+          }}>
             {initialView ? <Map center={initialView.center} zoom={initialView.zoom} styleUrl={mapStyleUrl()} markers={visibleMarkers} focus={focus} onMapIdle={onMapIdle}
-              onMarkerPress={setSelectedMarkerId} /> : <View style={styles.mapLoading}><ActivityIndicator /></View>}
-            {selectedItem ? <MapMarkerPreview item={selectedItem} now={now} onClose={() => setSelectedMarkerId(null)} onOpen={() => {
+              selectedMarkerId={selectedMarkerId} onMarkerPress={selectMarker} onMarkerPositionChange={setSelectedMarkerPosition} /> : <View style={styles.mapLoading}><ActivityIndicator /></View>}
+            {selectedItem && selectedMarkerPosition ? <MapMarkerPreview item={selectedItem} now={now} position={selectedMarkerPosition} mapSize={mapSize} onClose={clearSelectedMarker} onOpen={() => {
               if (selectedItem.kind === "incident") router.push({ pathname: "/incidents/[id]" as never, params: { id: selectedItem.value.id } });
               else router.push({ pathname: "/events/[id]", params: { id: selectedItem.value.id } });
             }} /> : null}
@@ -235,7 +250,7 @@ export default function DiscoverScreen() {
         </View>
         <View style={styles.kindSelector} accessibilityRole="tablist">
           {(["events", "incidents", "all"] as const).map((kind) => (
-            <Pressable key={kind} accessibilityRole="tab" accessibilityState={{ selected: discoverKind === kind }} onPress={() => { setDiscoverKind(kind); setSelectedMarkerId(null); }} style={[styles.kindOption, discoverKind === kind && styles.kindOptionOn]}>
+            <Pressable key={kind} accessibilityRole="tab" accessibilityState={{ selected: discoverKind === kind }} onPress={() => { setDiscoverKind(kind); clearSelectedMarker(); }} style={[styles.kindOption, discoverKind === kind && styles.kindOptionOn]}>
               <Text style={[styles.kindText, discoverKind === kind && styles.kindTextOn]}>{t(`discover.kind.${kind}`)}</Text>
             </Pressable>
           ))}

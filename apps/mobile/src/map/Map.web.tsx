@@ -8,13 +8,16 @@ import { createWebMarker } from "./markerFactory.web";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./attribution.css";
 
-export function Map({ center, zoom = 11, styleUrl, markers = [], focus = null, onMapIdle, onMapPress, onMarkerPress }: HappengoMapProps) {
+export function Map({ center, zoom = 11, styleUrl, markers = [], focus = null, selectedMarkerId = null, onMapIdle, onMapPress, onMarkerPress, onMarkerPositionChange }: HappengoMapProps) {
   const hostRef = useRef<ComponentRef<typeof View>>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markersRef = useRef<MapLibreMarker[]>([]);
   const [mapReady, setMapReady] = useState(false);
   const onMapIdleRef = useRef(onMapIdle);
   const onMapPressRef = useRef(onMapPress);
+  const onMarkerPositionChangeRef = useRef(onMarkerPositionChange);
+  const selectedMarkerIdRef = useRef(selectedMarkerId);
+  const markersDataRef = useRef(markers);
 
   useEffect(() => {
     onMapIdleRef.current = onMapIdle;
@@ -23,6 +26,12 @@ export function Map({ center, zoom = 11, styleUrl, markers = [], focus = null, o
   useEffect(() => {
     onMapPressRef.current = onMapPress;
   }, [onMapPress]);
+
+  useEffect(() => {
+    onMarkerPositionChangeRef.current = onMarkerPositionChange;
+    selectedMarkerIdRef.current = selectedMarkerId;
+    markersDataRef.current = markers;
+  }, [markers, onMarkerPositionChange, selectedMarkerId]);
 
   useEffect(() => {
     const container = hostRef.current as unknown as HTMLElement | null;
@@ -56,6 +65,11 @@ export function Map({ center, zoom = 11, styleUrl, markers = [], focus = null, o
             northEast: { longitude: bounds.getEast(), latitude: bounds.getNorth() },
           };
           if (idle) onMapIdleRef.current?.(value, map!.getZoom());
+        }
+        const selected = markersDataRef.current.find((marker) => marker.id === selectedMarkerIdRef.current);
+        if (map && selected) {
+          const point = map.project([selected.coordinate.longitude, selected.coordinate.latitude]);
+          onMarkerPositionChangeRef.current?.({ x: point.x, y: point.y });
         }
       };
       map.on("load", () => {
