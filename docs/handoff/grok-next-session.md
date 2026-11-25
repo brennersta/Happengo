@@ -604,3 +604,47 @@ Result: lint passed; typecheck passed; Jest 27 suites / 80 tests passed; web exp
 ### Moderator configuration
 
 Set `Moderation__ModeratorUserIds__0=auth0|<subject>` for each configured moderator subject ID. Store these IDs in the existing hosting configuration/secret mechanism; this change does not provision infrastructure.
+
+## Map and incident UX follow-up (2026-11-25)
+
+Work is on `codex/fix-incident-map-ux`, based on `origin/main` at `80b629d`; it is separate from the open reports/moderation branch/PR.
+
+- Fixed the create-kind choice page's unbounded full-width layout with a centered, 680px maximum content area.
+- In incident and event creation, a map tap selects coordinates and reverse-geocodes a readable address through Photon. If Photon has no address or fails, the selected coordinates are shown in the address field so the point can still be submitted. Address text editing clears the previous coordinate selection so a newly typed query cannot submit against a stale point.
+- Added explicit “Use current location” actions to both forms. They call the existing device-location permission flow only when tapped; no prompt occurs on first launch. On web, the browser requires a secure origin for geolocation.
+- Discover marker taps open a shared event/incident preview with a button to open full detail; the web-only generic MapLibre text popup was removed.
+- Updated the feature catalog and review note 0024. Incident photos are intentionally out of scope for v1 per ADR 0012. Event albums and post-start reactions are still absent from the rebuild, despite appearing in the Base44 detail screenshot; there is no rebuilt media/reaction API yet, and `GROK.md` says not to begin those features in this slice.
+
+### Commands actually run
+
+From the repository root:
+
+~~~text
+pnpm --filter @happengo/mobile lint
+~~~
+
+Result: passed (exit code 0).
+
+~~~text
+pnpm --filter @happengo/mobile typecheck
+~~~
+
+Result: passed (`tsc --noEmit`, exit code 0).
+
+~~~text
+pnpm --filter @happengo/mobile export:web
+~~~
+
+Result: passed; Expo exported the web app to `apps/mobile/dist` (exit code 0).
+
+~~~powershell
+Get-Content apps/mobile/src/i18n/locales/en.json | ConvertFrom-Json | Out-Null
+Get-Content apps/mobile/src/i18n/locales/pt-BR.json | ConvertFrom-Json | Out-Null
+~~~
+
+Result: both locale files parsed successfully.
+
+### Read/review only (not executed)
+
+- Read `GROK.md`, `docs/architecture/baseline.md`, this handoff, ADR 0012, the event/incident feature catalog, incident creation/detail and Discover screens, map platform adapters and marker factory, geocoding, and location-permission helpers.
+- Jest was not run. No backend tests, infrastructure, deployments, or Azure/Terraform operations were performed.

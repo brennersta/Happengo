@@ -4,7 +4,6 @@ import { centeredAuraPosition, INCIDENT_MARKER_COLOR, incidentMarkerSymbol, LIVE
 
 type MapLibreModule = typeof import("maplibre-gl");
 
-const popupOffset = 16;
 const markerWidth = 36;
 const markerHeight = 46;
 const pinLeft = 5;
@@ -54,6 +53,5 @@ export function createWebMarker(
 
   return new maplibre.Marker({ element, anchor: "bottom" })
     .setLngLat([item.coordinate.longitude, item.coordinate.latitude])
-    .setPopup(new maplibre.Popup({ offset: popupOffset }).setText(item.title))
     .addTo(map);
 }

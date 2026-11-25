@@ -48,6 +48,21 @@ export function buildPhotonUrl(input: {
   return url;
 }
 
+export function buildPhotonReverseUrl(input: {
+  baseUrl: string;
+  latitude: number;
+  longitude: number;
+  locale?: string;
+}): URL {
+  const root = input.baseUrl.replace(/\/+$/, "").replace(/\/api$/, "");
+  const url = new URL(`${root}/reverse`);
+  url.searchParams.set("lat", input.latitude.toFixed(6));
+  url.searchParams.set("lon", input.longitude.toFixed(6));
+  const language = photonLanguage(input.locale);
+  if (language) url.searchParams.set("lang", language);
+  return url;
+}
+
 export function placeLabel(properties: Record<string, unknown>): string {
   const text = (key: string) => typeof properties[key] === "string" ? properties[key].trim() : "";
   const street = [text("housenumber"), text("street")].filter(Boolean).join(" ");
@@ -99,6 +114,35 @@ export async function searchPlaces(input: {
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") throw error;
     return { status: "error", places: [] };
+  }
+}
+
+export async function reverseGeocode(input: {
+  latitude: number;
+  longitude: number;
+  locale?: string;
+  signal?: AbortSignal;
+  fetchImpl?: FetchLike;
+  baseUrl?: string;
+}): Promise<string | null> {
+  const url = buildPhotonReverseUrl({
+    baseUrl: input.baseUrl ?? geocoderBaseUrl(),
+    latitude: input.latitude,
+    longitude: input.longitude,
+    locale: input.locale,
+  });
+  try {
+    const response = await (input.fetchImpl ?? fetch)(url.toString(), {
+      signal: input.signal,
+      credentials: "omit",
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return null;
+    const body = await response.json() as { features?: unknown };
+    return parseFeatures(body.features)[0]?.label ?? null;
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") throw error;
+    return null;
   }
 }
 

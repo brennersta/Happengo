@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -7,8 +7,10 @@ import { auth } from "@/auth";
 import { fetchClient } from "@/api/client";
 import { mocksEnabled } from "@/mocks/config";
 import { AddressSearch } from "@/geocoding/AddressSearch";
+import { reverseGeocode } from "@/geocoding/photon";
 import { Map } from "@/map/Map";
 import { mapStyleUrl, TALLINN } from "@/map/config";
+import { requestDeviceLocation } from "@/map/deviceLocation";
 import type { LngLat, MapFocus } from "@/map/types";
 import { defaultLocalSlot, eventDateTimeFields, localTimeZone, validateCreateEventForm, type CreateEventFormValues } from "@/events/createEventForm";
 import { uniqueFriendTags } from "@/friends/friendTags";
@@ -47,7 +49,7 @@ export default function CreateEventScreen() {
 function CreateKindChoice() {
   const { t } = useTranslation();
   const router = useRouter();
-  return <View style={styles.fill}><View style={styles.statusContent}>
+  return <View style={styles.fill}><View style={styles.choiceContent}>
     <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.back}><Text style={styles.backText}>‹ {t("eventDetail.back")}</Text></Pressable>
     <Text style={styles.heading}>{t("createEvent.chooseKind")}</Text>
     <GradientButton label={t("createEvent.eventChoice")} onPress={() => router.replace({ pathname: "/events/create", params: { type: "event" } })} />
@@ -71,7 +73,7 @@ function EditEventStatus({ message }: { message: string }) {
 }
 
 function CreateEventForm({ event }: { event: components["schemas"]["EventResponse"] | null }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const editing = event !== null;
   const eventId = event?.id;
@@ -88,8 +90,12 @@ function CreateEventForm({ event }: { event: components["schemas"]["EventRespons
   const [endTime, setEndTime] = useState(end.time);
   const [timeZoneId, setTimeZoneId] = useState(event?.timeZoneId ?? localTimeZone());
   const [address, setAddress] = useState(event?.address ?? "");
+  const [skipAddressSearch, setSkipAddressSearch] = useState<string | null>(null);
   const [location, setLocation] = useState<LngLat | null>(event ? { longitude: event.longitude, latitude: event.latitude } : null);
   const [focus, setFocus] = useState<MapFocus | null>(event ? { longitude: event.longitude, latitude: event.latitude, key: 0 } : null);
+  const [locatingLocation, setLocatingLocation] = useState(false);
+  const [locationNotice, setLocationNotice] = useState<"denied" | "resolving" | null>(null);
+  const locationSequence = useRef(0);
   const [visibility, setVisibility] = useState<Visibility>(event?.visibility ?? "public");
   const [approvalMode, setApprovalMode] = useState<ApprovalMode>(event?.approvalMode ?? "open");
   const [tags, setTags] = useState<EventTag[]>((event?.tags ?? []) as EventTag[]);
@@ -110,6 +116,40 @@ function CreateEventForm({ event }: { event: components["schemas"]["EventRespons
     },
   });
   const friendTags = uniqueFriendTags(friendsQuery.data ?? []);
+
+  async function chooseMapLocation(next: LngLat) {
+    const sequence = ++locationSequence.current;
+    setLocation(next);
+    setAddress("");
+    setFocus({ ...next, key: Date.now() });
+    setLocationNotice("resolving");
+    try {
+      const label = await reverseGeocode({ latitude: next.latitude, longitude: next.longitude, locale: i18n.language });
+      if (locationSequence.current !== sequence) return;
+      const addressLabel = label ?? `${next.latitude.toFixed(5)}, ${next.longitude.toFixed(5)}`;
+      setAddress(addressLabel);
+      setSkipAddressSearch(addressLabel);
+    } finally {
+      if (locationSequence.current === sequence) setLocationNotice(null);
+    }
+  }
+
+  async function locateDevice() {
+    setLocatingLocation(true);
+    setLocationNotice(null);
+    try {
+      const current = await requestDeviceLocation();
+      if (!current) {
+        setLocationNotice("denied");
+        return;
+      }
+      await chooseMapLocation(current);
+    } catch {
+      setLocationNotice("denied");
+    } finally {
+      setLocatingLocation(false);
+    }
+  }
 
   function applyWhen(nextStartNow: boolean, minutes: number) {
     const slot = nextStartNow
@@ -281,13 +321,28 @@ function CreateEventForm({ event }: { event: components["schemas"]["EventRespons
               <AddressSearch
                 center={location ?? TALLINN}
                 value={address}
-                onChangeText={setAddress}
+                skipSearchValue={skipAddressSearch ?? undefined}
+                onChangeText={(value) => {
+                  locationSequence.current++;
+                  setLocationNotice(null);
+                  setAddress(value);
+                  setSkipAddressSearch(null);
+                  setLocation(null);
+                }}
                 onSelect={(place) => {
+                  locationSequence.current++;
                   setAddress(place.label);
-                  setLocation({ longitude: place.longitude, latitude: place.latitude });
-                  setFocus({ longitude: place.longitude, latitude: place.latitude, key: Date.now() });
+                  setSkipAddressSearch(place.label);
+                  const next = { longitude: place.longitude, latitude: place.latitude };
+                  setLocation(next);
+                  setFocus({ ...next, key: Date.now() });
+                  setLocationNotice(null);
                 }}
               />
+              <Pressable accessibilityRole="button" disabled={locatingLocation} onPress={() => void locateDevice()} style={styles.locationButton}>
+                <Text style={styles.locationButtonText}>{locatingLocation ? t("createEvent.locating") : t("createEvent.useCurrentLocation")}</Text>
+              </Pressable>
+              {locationNotice ? <Text accessibilityLiveRegion="polite" style={locationNotice === "denied" ? styles.locationNoticeError : styles.helper}>{t(`createEvent.locationStatus.${locationNotice}`)}</Text> : null}
               <View style={styles.map}>
                 <Map
                   center={TALLINN}
@@ -295,7 +350,7 @@ function CreateEventForm({ event }: { event: components["schemas"]["EventRespons
                   focus={focus}
                   styleUrl={mapStyleUrl()}
                   markers={location ? [{ id: "draft-location", title: address || t("createEvent.location"), coordinate: location }] : []}
-                  onMapPress={setLocation}
+                  onMapPress={(next) => void chooseMapLocation(next)}
                 />
               </View>
             </View>
@@ -391,6 +446,7 @@ const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: theme.page },
   content: { padding: 20, paddingBottom: 48, gap: 14, width: "100%", maxWidth: 1100, alignSelf: "center" },
   statusContent: { padding: 20, gap: 16 },
+  choiceContent: { width: "100%", maxWidth: 680, flex: 1, alignSelf: "center", justifyContent: "center", padding: 24, gap: 16 },
   back: { alignSelf: "flex-start" },
   backText: { color: theme.brand, fontSize: 15, fontWeight: "700" },
   incidentChoice: { alignItems: "center", justifyContent: "center", minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: "#fdba74", backgroundColor: "#fff7ed" },
@@ -411,6 +467,9 @@ const styles = StyleSheet.create({
   locationTitle: { color: "white", fontSize: 18, fontWeight: "700" },
   locationHelp: { color: "white", fontSize: 13, marginTop: 4 },
   locationBody: { gap: 12, marginTop: 12 },
+  locationButton: { alignSelf: "flex-start", minHeight: 40, justifyContent: "center", paddingHorizontal: 13, borderRadius: 20, backgroundColor: "#f4f2fb", borderWidth: 1, borderColor: theme.line },
+  locationButtonText: { color: theme.brand, fontSize: 13, fontWeight: "700" },
+  locationNoticeError: { color: theme.danger, fontSize: 12 },
   map: { height: 280, borderRadius: 14, overflow: "hidden" },
   error: { color: theme.danger, backgroundColor: "#fff0f0", borderRadius: 8, padding: 10, fontSize: 13 },
   modalScrim: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, backgroundColor: "rgba(31,27,46,0.35)", alignItems: "center", justifyContent: "center", padding: 16 },

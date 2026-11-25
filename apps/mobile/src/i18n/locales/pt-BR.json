@@ -95,6 +95,7 @@
   },
   "discover": {
     "locateMe": "Usar minha localização",
+    "closePreview": "Fechar prévia",
     "locationDenied": "Localização indisponível. Exibindo sua última área ou Tallinn.",
     "eventCount": "{count, plural, one {# evento nesta área} other {# eventos nesta área}}",
     "friendsGoingBadge": "{count, plural, one {# amigo} other {# amigos}}",
@@ -148,6 +149,9 @@
     "descriptionCount": "{count}/500",
     "location": "Localização",
     "mapHelp": "Busque um lugar ou toque no mapa para definir o local.",
+    "useCurrentLocation": "Usar minha localização",
+    "locating": "Obtendo sua localização…",
+    "resolvingAddress": "Buscando o endereço…",
     "submit": "Relatar ocorrência",
     "loadError": "Não foi possível carregar as ocorrências. Verifique sua conexão e tente novamente.",
     "empty": "Não há ocorrências nesta área do mapa.",
@@ -168,6 +172,7 @@
     "errors": {
       "description": "Digite uma descrição curta com até 500 caracteres.",
       "location": "Escolha um local e endereço.",
+      "locationPermission": "Não foi possível acessar sua localização. Verifique as permissões ou escolha um ponto no mapa.",
       "signIn": "Entre para relatar uma ocorrência.",
       "limit": "Você atingiu o limite diário de relatos. Tente novamente amanhã.",
       "save": "Não foi possível relatar a ocorrência. Confira os dados e tente novamente."
@@ -208,6 +213,12 @@
     "applyWhen": "Aplicar",
     "locationTitle": "Local do evento",
     "locationTap": "Toque no mapa para ajustar o local.",
+    "useCurrentLocation": "Usar minha localização",
+    "locating": "Obtendo sua localização…",
+    "locationStatus": {
+      "denied": "Localização indisponível. Verifique as permissões ou escolha um ponto no mapa.",
+      "resolving": "Buscando o endereço…"
+    },
     "subtitle": "Adicione os detalhes e toque no mapa para escolher um local.",
     "titleLabel": "Nome do evento",
     "descriptionLabel": "Descrição (opcional)",

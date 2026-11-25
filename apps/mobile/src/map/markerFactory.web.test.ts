@@ -33,12 +33,10 @@ test("web marker leaves positioning to MapLibre and anchors at the pin tip", () 
   } as unknown as Pick<Document, "createElement">;
   const markerInstance = {
     setLngLat: jest.fn().mockReturnThis(),
-    setPopup: jest.fn().mockReturnThis(),
     addTo: jest.fn().mockReturnThis(),
   };
   const Marker = jest.fn().mockImplementation(() => markerInstance);
-  const Popup = jest.fn().mockImplementation(() => ({ setText: jest.fn().mockReturnThis() }));
-  const maplibre = { Marker, Popup } as unknown as typeof import("maplibre-gl");
+  const maplibre = { Marker } as unknown as typeof import("maplibre-gl");
   const map = {} as MapLibreMap;
   const item: MapMarker = {
     id: "event-1",

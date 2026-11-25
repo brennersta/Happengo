@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -7,8 +8,10 @@ import { auth } from "@/auth";
 import { fetchClient } from "@/api/client";
 import { mocksEnabled } from "@/mocks/config";
 import { AddressSearch } from "@/geocoding/AddressSearch";
+import { reverseGeocode } from "@/geocoding/photon";
 import { Map } from "@/map/Map";
 import { mapStyleUrl, TALLINN } from "@/map/config";
+import { requestDeviceLocation } from "@/map/deviceLocation";
 import type { LngLat, MapFocus } from "@/map/types";
 import { theme } from "@/theme/theme";
 import { GradientButton } from "@/theme/ui";
@@ -18,17 +21,56 @@ type Category = components["schemas"]["IncidentCategory"];
 const categories: Category[] = ["fire", "traffic_collision", "other"];
 
 export default function CreateIncidentScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [category, setCategory] = useState<Category>("fire");
   const [description, setDescription] = useState("");
   const [address, setAddress] = useState("");
+  const [skipAddressSearch, setSkipAddressSearch] = useState<string | null>(null);
   const [location, setLocation] = useState<LngLat | null>(null);
   const [focus, setFocus] = useState<MapFocus | null>(null);
-  const [error, setError] = useState<"description" | "location" | "signIn" | "limit" | "save" | null>(null);
+  const [error, setError] = useState<"description" | "location" | "locationPermission" | "signIn" | "limit" | "save" | null>(null);
   const [saving, setSaving] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [resolvingAddress, setResolvingAddress] = useState(false);
+  const selectionSequence = useRef(0);
   const demo = mocksEnabled();
+
+  async function chooseMapLocation(next: LngLat) {
+    const sequence = ++selectionSequence.current;
+    setLocation(next);
+    setAddress("");
+    setFocus({ ...next, key: Date.now() });
+    setError(null);
+    setResolvingAddress(true);
+    try {
+      const label = await reverseGeocode({ latitude: next.latitude, longitude: next.longitude, locale: i18n.language });
+      if (selectionSequence.current !== sequence) return;
+      const addressLabel = label ?? `${next.latitude.toFixed(5)}, ${next.longitude.toFixed(5)}`;
+      setAddress(addressLabel);
+      setSkipAddressSearch(addressLabel);
+    } finally {
+      if (selectionSequence.current === sequence) setResolvingAddress(false);
+    }
+  }
+
+  async function locateMe() {
+    setLocating(true);
+    setError(null);
+    try {
+      const current = await requestDeviceLocation();
+      if (!current) {
+        setError("locationPermission");
+        return;
+      }
+      await chooseMapLocation(current);
+    } catch {
+      setError("locationPermission");
+    } finally {
+      setLocating(false);
+    }
+  }
 
   async function submit() {
     setError(null);
@@ -73,16 +115,29 @@ export default function CreateIncidentScreen() {
         <TextInput value={description} onChangeText={setDescription} maxLength={500} multiline placeholder={t("incidents.descriptionPlaceholder")} style={[styles.input, styles.multiline]} />
         <Text style={styles.helper}>{t("incidents.descriptionCount", { count: description.length })}</Text>
         <Text style={styles.label}>{t("incidents.location")}</Text>
-        <AddressSearch center={location ?? TALLINN} value={address} onChangeText={setAddress} onSelect={(place) => {
+        <AddressSearch center={location ?? TALLINN} value={address} skipSearchValue={skipAddressSearch ?? undefined} onChangeText={(value) => {
+          selectionSequence.current++;
+          setResolvingAddress(false);
+          setAddress(value);
+          setSkipAddressSearch(null);
+          setLocation(null);
+        }} onSelect={(place) => {
           setAddress(place.label);
+          setSkipAddressSearch(place.label);
           const next = { longitude: place.longitude, latitude: place.latitude };
           setLocation(next);
           setFocus({ ...next, key: Date.now() });
+          setError(null);
         }} />
+        <Pressable accessibilityRole="button" disabled={locating || resolvingAddress} onPress={() => void locateMe()} style={styles.locateButton}>
+          {locating ? <Ionicons name="locate" size={17} color={theme.brand} /> : <Ionicons name="locate-outline" size={17} color={theme.brand} />}
+          <Text style={styles.locateText}>{locating ? t("incidents.locating") : t("incidents.useCurrentLocation")}</Text>
+        </Pressable>
+        {resolvingAddress ? <Text style={styles.helper}>{t("incidents.resolvingAddress")}</Text> : null}
         <Text style={styles.helper}>{t("incidents.mapHelp")}</Text>
-        <View style={styles.map}><Map center={location ?? TALLINN} zoom={11} styleUrl={mapStyleUrl()} focus={focus} markers={location ? [{ id: "incident-draft", title: t(`incidents.categories.${category}`), coordinate: location, kind: "incident", incidentCategory: category }] : []} onMapPress={(next) => setLocation(next)} /></View>
+        <View style={styles.map}><Map center={TALLINN} zoom={11} styleUrl={mapStyleUrl()} focus={focus} markers={location ? [{ id: "incident-draft", title: t(`incidents.categories.${category}`), coordinate: location, kind: "incident", incidentCategory: category }] : []} onMapPress={(next) => void chooseMapLocation(next)} /></View>
         {error ? <Text accessibilityRole="alert" style={styles.error}>{t(`incidents.errors.${error}`)}</Text> : null}
-        <GradientButton label={t("incidents.submit")} busy={saving} disabled={saving} onPress={() => void submit()} />
+        <GradientButton label={t("incidents.submit")} busy={saving || resolvingAddress} disabled={saving || resolvingAddress} onPress={() => void submit()} />
       </View>
     </ScrollView>
   </KeyboardAvoidingView>;
@@ -105,5 +160,7 @@ const styles = StyleSheet.create({
   multiline: { minHeight: 100, textAlignVertical: "top" },
   helper: { color: theme.muted, fontSize: 12 },
   map: { height: 300, overflow: "hidden", borderRadius: 14 },
+  locateButton: { alignSelf: "flex-start", minHeight: 40, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 13, borderRadius: 20, backgroundColor: "#f4f2fb", borderWidth: 1, borderColor: theme.line },
+  locateText: { color: theme.brand, fontSize: 13, fontWeight: "700" },
   error: { color: theme.danger, backgroundColor: "#fff0f0", borderRadius: 8, padding: 10, fontSize: 13 },
 });

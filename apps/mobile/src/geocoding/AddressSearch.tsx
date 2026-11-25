@@ -11,12 +11,14 @@ export function AddressSearch({
   onChangeText,
   onSelect,
   placeholder,
+  skipSearchValue,
 }: {
   center: LngLat;
   value?: string;
   onChangeText?: (value: string) => void;
   onSelect: (place: GeocodePlace) => void;
   placeholder?: string;
+  skipSearchValue?: string;
 }) {
   const { t, i18n } = useTranslation();
   const [internal, setInternal] = useState("");
@@ -36,7 +38,7 @@ export function AddressSearch({
 
   useEffect(() => {
     const query = text.trim();
-    if (query.length < MIN_QUERY_LENGTH || query === chosenLabel.current) return;
+    if (query.length < MIN_QUERY_LENGTH || query === chosenLabel.current || query === skipSearchValue) return;
     const controller = new AbortController();
     const timer = setTimeout(() => {
       const here = centerRef.current;
@@ -64,7 +66,7 @@ export function AddressSearch({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [text, i18n.language]);
+  }, [text, i18n.language, skipSearchValue]);
 
   function changeText(next: string) {
     if (chosenLabel.current && next.trim() !== chosenLabel.current) chosenLabel.current = null;

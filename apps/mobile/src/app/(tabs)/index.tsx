@@ -13,6 +13,7 @@ import { displayAddress } from "@/events/displayAddress";
 import { isHappeningNow } from "@/events/liveState";
 import { bboxForBounds, formatEventTime, type MapEvent } from "@/events/mapEvents";
 import { Map } from "@/map/Map";
+import { MapMarkerPreview } from "@/map/MapMarkerPreview";
 import { TALLINN, mapStyleUrl } from "@/map/config";
 import { EVENT_TAGS } from "@/map/markerStyle";
 import type { MapBounds, MapFocus, MapMarker } from "@/map/types";
@@ -40,6 +41,7 @@ export default function DiscoverScreen() {
   const [locationDenied, setLocationDenied] = useState(false);
   const [bounds, setBounds] = useState(initialBounds);
   const [focus, setFocus] = useState<MapFocus | null>(null);
+  const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [draft, setDraft] = useState<DiscoverFilters>(emptyDiscoverFilters);
@@ -112,6 +114,9 @@ export default function DiscoverScreen() {
     staleTime: 15_000,
   });
   const items = useMemo(() => mergeDiscoverItems(events, incidentsQuery.data ?? [], discoverKind), [events, incidentsQuery.data, discoverKind]);
+  const selectedItem = selectedMarkerId ? items.find((item) => item.kind === "event"
+    ? item.value.id === selectedMarkerId
+    : `incident:${item.value.id}` === selectedMarkerId) ?? null : null;
   const countSource = viewportQuery.data?.items ?? [];
   const markers: MapMarker[] = events.map((event) => ({
     id: event.id,
@@ -161,9 +166,11 @@ export default function DiscoverScreen() {
         {showMap ? (
           <View style={styles.mapPane}>
             {initialView ? <Map center={initialView.center} zoom={initialView.zoom} styleUrl={mapStyleUrl()} markers={visibleMarkers} focus={focus} onMapIdle={onMapIdle}
-              onMarkerPress={(id) => id.startsWith("incident:")
-                ? router.push({ pathname: "/incidents/[id]" as never, params: { id: id.slice("incident:".length) } })
-                : router.push({ pathname: "/events/[id]", params: { id } })} /> : <View style={styles.mapLoading}><ActivityIndicator /></View>}
+              onMarkerPress={setSelectedMarkerId} onMapPress={() => setSelectedMarkerId(null)} /> : <View style={styles.mapLoading}><ActivityIndicator /></View>}
+            {selectedItem ? <MapMarkerPreview item={selectedItem} now={now} onClose={() => setSelectedMarkerId(null)} onOpen={() => {
+              if (selectedItem.kind === "incident") router.push({ pathname: "/incidents/[id]" as never, params: { id: selectedItem.value.id } });
+              else router.push({ pathname: "/events/[id]", params: { id: selectedItem.value.id } });
+            }} /> : null}
             <View style={styles.locationControl}>
               {locationDenied ? <Text accessibilityLiveRegion="polite" style={styles.locationMessage}>{t("discover.locationDenied")}</Text> : null}
               <Pressable accessibilityRole="button" accessibilityLabel={t("discover.locateMe")} disabled={locating} onPress={() => void locateMe()} style={styles.locateButton}>
@@ -228,7 +235,7 @@ export default function DiscoverScreen() {
         </View>
         <View style={styles.kindSelector} accessibilityRole="tablist">
           {(["events", "incidents", "all"] as const).map((kind) => (
-            <Pressable key={kind} accessibilityRole="tab" accessibilityState={{ selected: discoverKind === kind }} onPress={() => setDiscoverKind(kind)} style={[styles.kindOption, discoverKind === kind && styles.kindOptionOn]}>
+            <Pressable key={kind} accessibilityRole="tab" accessibilityState={{ selected: discoverKind === kind }} onPress={() => { setDiscoverKind(kind); setSelectedMarkerId(null); }} style={[styles.kindOption, discoverKind === kind && styles.kindOptionOn]}>
               <Text style={[styles.kindText, discoverKind === kind && styles.kindTextOn]}>{t(`discover.kind.${kind}`)}</Text>
             </Pressable>
           ))}
