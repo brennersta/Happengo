@@ -166,7 +166,7 @@ export default function DiscoverScreen() {
         {showMap ? (
           <View style={styles.mapPane}>
             {initialView ? <Map center={initialView.center} zoom={initialView.zoom} styleUrl={mapStyleUrl()} markers={visibleMarkers} focus={focus} onMapIdle={onMapIdle}
-              onMarkerPress={setSelectedMarkerId} onMapPress={() => setSelectedMarkerId(null)} /> : <View style={styles.mapLoading}><ActivityIndicator /></View>}
+              onMarkerPress={setSelectedMarkerId} /> : <View style={styles.mapLoading}><ActivityIndicator /></View>}
             {selectedItem ? <MapMarkerPreview item={selectedItem} now={now} onClose={() => setSelectedMarkerId(null)} onOpen={() => {
               if (selectedItem.kind === "incident") router.push({ pathname: "/incidents/[id]" as never, params: { id: selectedItem.value.id } });
               else router.push({ pathname: "/events/[id]", params: { id: selectedItem.value.id } });
