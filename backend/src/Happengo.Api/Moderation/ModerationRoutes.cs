@@ -121,8 +121,13 @@ internal static class ModerationRoutes
             return Problems.ModerationConflict("The incident is no longer active.");
         db.ModerationActions.Add(new ModerationAction
         {
-            Id = Guid.NewGuid(), ActorUserId = userId, TargetType = "incident", TargetId = id,
-            Action = "close_incident", Reason = reason, At = now,
+            Id = Guid.NewGuid(),
+            ActorUserId = userId,
+            TargetType = "incident",
+            TargetId = id,
+            Action = "close_incident",
+            Reason = reason,
+            At = now,
         });
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
@@ -144,8 +149,13 @@ internal static class ModerationRoutes
             return Problems.ModerationConflict("This event is already hidden.");
         db.ModerationActions.Add(new ModerationAction
         {
-            Id = Guid.NewGuid(), ActorUserId = userId, TargetType = "event", TargetId = id,
-            Action = "hide_event", Reason = reason, At = now,
+            Id = Guid.NewGuid(),
+            ActorUserId = userId,
+            TargetType = "event",
+            TargetId = id,
+            Action = "hide_event",
+            Reason = reason,
+            At = now,
         });
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
