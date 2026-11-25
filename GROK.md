@@ -16,6 +16,8 @@ The first-use event journey was validated on 2026-11-23. Create, Discover, My Ev
 
 The public demo is live at `https://brennersta.github.io/Happengo/` when GitHub Pages Source is GitHub Actions. The current slice matches the target Discover, detail, create, and My Events layout and adds Photon address search (ADR 0010). Do not start cover upload, albums, reactions, incident tags, attendee names, a duration change, or livestream links.
 
+Incidents v1 is now in the app and API. For the latest map-picker and pin-preview corrections, read the `Map and incident UX follow-up (2026-11-25)` section in [`docs/handoff/grok-next-session.md`](docs/handoff/grok-next-session.md) and review note 0024. This local work remains on `codex/fix-incident-map-ux` until reviewed/merged. Incident photos remain explicitly out of v1 per ADR 0012. Event albums and reactions are separate, still-missing rebuild features; the Base44 event-detail screenshot is evidence of that gap, not evidence those features exist in this API.
+
 Auth0 is the identity provider (ADR 0005, chosen 2026-11-23). Entra External ID was considered and was not selected. No tenant has been created.
 
 ## Current product direction

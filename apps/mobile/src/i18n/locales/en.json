@@ -95,6 +95,7 @@
   },
   "discover": {
     "locateMe": "Locate me",
+    "closePreview": "Close preview",
     "locationDenied": "Location unavailable. Showing your last area or Tallinn.",
     "eventCount": "{count, plural, one {# event in this area} other {# events in this area}}",
     "friendsGoingBadge": "{count, plural, one {# friend} other {# friends}}",
@@ -148,6 +149,9 @@
     "descriptionCount": "{count}/500",
     "location": "Location",
     "mapHelp": "Search for a place or tap the map to set the location.",
+    "useCurrentLocation": "Use current location",
+    "locating": "Getting your location…",
+    "resolvingAddress": "Finding the address…",
     "submit": "Report incident",
     "loadError": "Could not load incidents. Check your connection and try again.",
     "empty": "No incidents in this map area.",
@@ -168,6 +172,7 @@
     "errors": {
       "description": "Enter a short description of up to 500 characters.",
       "location": "Choose a location and address.",
+      "locationPermission": "Could not access your location. Check permission settings or choose a point on the map.",
       "signIn": "Sign in to report an incident.",
       "limit": "You have reached today's report limit. Try again tomorrow.",
       "save": "The incident could not be reported. Check the details and try again."
@@ -208,6 +213,12 @@
     "applyWhen": "Apply",
     "locationTitle": "Event Location",
     "locationTap": "Tap the map to adjust the location.",
+    "useCurrentLocation": "Use current location",
+    "locating": "Getting your location…",
+    "locationStatus": {
+      "denied": "Location unavailable. Check permission settings or choose a point on the map.",
+      "resolving": "Finding the address…"
+    },
     "subtitle": "Add the details and tap the map to choose a location.",
     "titleLabel": "Event name",
     "descriptionLabel": "Description (optional)",
