@@ -43,6 +43,8 @@ internal static class FeatureBoundaries
         "Happengo.Api.Media",
         "Happengo.Api.Identity",
         "Happengo.Api.Incidents",
+        "Happengo.Api.Reports",
+        "Happengo.Api.Moderation",
     ];
 
     public static IReadOnlyList<string> FindViolations(System.Reflection.Assembly assembly)

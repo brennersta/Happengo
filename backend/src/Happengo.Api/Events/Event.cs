@@ -44,4 +44,8 @@ internal sealed class Event
     public Instant UpdatedAt { get; set; }
 
     public Instant? CancelledAt { get; set; }
+
+    public Instant? HiddenAt { get; set; }
+
+    public string? HideReason { get; set; }
 }

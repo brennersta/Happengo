@@ -4,6 +4,13 @@ using System.Text.Json.Nodes;
 using Happengo.Api.Events;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Happengo.Api.Infrastructure.Persistence;
+using Happengo.Api.Tests.Support;
 
 namespace Happengo.Api.Tests.OpenApi;
 
@@ -12,7 +19,18 @@ public sealed class OpenApiDriftTests : IClassFixture<WebApplicationFactory<Prog
     private readonly WebApplicationFactory<Program> _factory;
 
     public OpenApiDriftTests(WebApplicationFactory<Program> factory) =>
-        _factory = factory.WithWebHostBuilder(builder => builder.UseSetting("ASPNETCORE_ENVIRONMENT", "Development"));
+        _factory = factory.WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting("ASPNETCORE_ENVIRONMENT", "Development");
+            builder.ConfigureTestServices(services =>
+            {
+                services.RemoveAll<DbContextOptions<HappengoDbContext>>();
+                services.RemoveAll<HappengoDbContext>();
+                services.RemoveAll<IDbContextOptionsConfiguration<HappengoDbContext>>();
+                services.AddDbContext<HappengoDbContext>(options => options.UseHappengo(
+                    "Host=127.0.0.1;Port=5432;Database=happengo;Username=happengo;Password=happengo"));
+            });
+        });
 
     [Fact]
     public async Task Event_tag_vocabulary_is_a_string_enum()

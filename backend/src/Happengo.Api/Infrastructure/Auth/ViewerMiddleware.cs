@@ -10,7 +10,8 @@ internal sealed class ViewerMiddleware(RequestDelegate next)
         HttpContext context,
         HappengoDbContext db,
         ViewerContext viewer,
-        IClock clock)
+        IClock clock,
+        IConfiguration configuration)
     {
         if (context.User.Identity?.IsAuthenticated == true)
         {
@@ -24,6 +25,10 @@ internal sealed class ViewerMiddleware(RequestDelegate next)
                     subject,
                     context.User.FindFirst("email")?.Value,
                     context.User.FindFirst("name")?.Value,
+                    (configuration.GetSection("Moderation:ModeratorUserIds").Get<string[]>() ?? [])
+                        .Where(value => !string.IsNullOrWhiteSpace(value))
+                        .Select(value => value.Trim())
+                        .ToHashSet(StringComparer.Ordinal),
                     clock.GetCurrentInstant(),
                     context.RequestAborted);
                 viewer.SignIn(userId);

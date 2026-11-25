@@ -38,6 +38,19 @@ export async function enableFetchMocks(): Promise<void> {
     const url = new URL(request.url);
     const path = url.pathname;
 
+    if (request.method === "POST" && path === "/v1/reports") {
+      const body = await request.json() as { targetType?: string; targetId?: string; reason?: string };
+      return Response.json({ targetType: body.targetType, targetId: body.targetId, reason: body.reason, createdAt: new Date().toISOString(), reportCount: 1, priorityReview: false }, { status: 201 });
+    }
+    if (request.method === "GET" && path === "/v1/moderation/queue") return Response.json({ items: [
+      { targetType: "event", targetId: "demo-event-1", title: "Harbour choir", category: null, description: "A short harbour rehearsal, open to anyone nearby.", address: "Tallinn, Estonia", reportCount: 3, priorityReview: true, latestReportedAt: new Date().toISOString(), reasons: ["spam_scam", "fake_misleading"], resolved: false },
+      { targetType: "incident", targetId: "demo-incident-1", title: null, category: "fire", description: "Smoke visible above the industrial area.", address: "Tallinn, Estonia", reportCount: 1, priorityReview: false, latestReportedAt: new Date().toISOString(), reasons: ["inappropriate_content"], resolved: false },
+    ] });
+    const modIncident = path.match(/\/v1\/moderation\/incidents\/([^/]+)\/close$/);
+    if (request.method === "POST" && modIncident?.[1]) return Response.json({ targetType: "incident", targetId: modIncident[1], action: "close_incident", reason: "Demo action", at: new Date().toISOString() });
+    const modEvent = path.match(/\/v1\/moderation\/events\/([^/]+)\/hide$/);
+    if (request.method === "POST" && modEvent?.[1]) return Response.json({ targetType: "event", targetId: modEvent[1], action: "hide_event", reason: "Demo action", at: new Date().toISOString() });
+
     const incidentVote = path.match(/\/v1\/incidents\/([^/]+)\/vote$/);
     if (request.method === "POST" && incidentVote?.[1]) {
       const body = await request.json() as { vote?: "still_there" | "gone" };

@@ -524,3 +524,83 @@ Result: Jest 22 suites / 69 tests passed; typecheck passed. The existing ignored
 ### Scope
 
 - No infrastructure, deployment, Azure, or Terraform changes. No existing migration was modified.
+## Reports and moderation — 2026-11-25
+
+### Implemented
+
+- Added `POST /v1/reports` for authenticated reports on visible, non-cancelled events and active incidents. Reasons are fixed to `inappropriate_content`, `spam_scam`, `fake_misleading`, and `harassment_unsafe`. A unique database index and transaction advisory lock enforce one report per user and target. Three unique reports set `priorityReview`; content is never hidden automatically.
+- Added `Moderation:ModeratorUserIds` configuration matching identity-provider `sub` values. `users.is_moderator` is synced on sign-in; there is no role-grant API. `GET /v1/me` exposes the moderator flag for app navigation.
+- Added moderator-only queue, incident-close and event-hide routes. Anonymous requests return 401 ProblemDetails; non-moderators return 404 ProblemDetails. Queue order is priority flag first, then latest report.
+- Successful moderation updates and `moderation_actions` audit rows are committed in one database transaction. The supplied reason is stored in the audit record; the event hide reason is also stored on the event. Incident close_reason retains the constrained `moderator` value.
+- `events.hidden_at` and `hide_reason` are persisted. The shared `VisibleTo` query keeps a hidden event visible to its owner and hides it from all other viewers.
+- Added report controls to event and incident detail, moderator queue screen and profile link, en/pt-BR strings and mock endpoints/sample queue data.
+- Added `docs/features/reviews/0021-reports-moderation.md`.
+
+### Commands run and results
+
+OpenAPI update (export test is isolated from Testcontainers and uses a local, unopened DB connection):
+
+~~~powershell
+$env:DOTNET_CLI_TELEMETRY_OPTOUT='1'
+$env:UPDATE_OPENAPI='1'
+dotnet test backend/tests/Happengo.Api.Tests/Happengo.Api.Tests.csproj --no-build --filter FullyQualifiedName~OpenApi_document_matches_committed_contract
+~~~
+
+Result: 1 passed. Regenerated `api/openapi.json`. Then ran `node scripts/generate.mjs` from `packages/api-client`; generated client includes Reports, Moderation, and `isModerator`.
+
+OpenAPI drift tests:
+
+~~~powershell
+$env:DOTNET_CLI_TELEMETRY_OPTOUT='1'
+Remove-Item Env:UPDATE_OPENAPI -ErrorAction SilentlyContinue
+dotnet test backend/tests/Happengo.Api.Tests/Happengo.Api.Tests.csproj --no-restore --filter FullyQualifiedName~OpenApiDriftTests
+~~~
+
+Result: 3 passed, 0 failed.
+
+Backend tests not requiring the Docker integration fixture:
+
+~~~powershell
+$env:DOTNET_CLI_TELEMETRY_OPTOUT='1'
+dotnet test backend/Happengo.sln --no-restore --filter 'Category!=Integration'
+~~~
+
+Result: 43 passed, 0 failed.
+
+Full backend suite:
+
+~~~powershell
+$env:DOTNET_CLI_TELEMETRY_OPTOUT='1'
+dotnet test backend/Happengo.sln --no-restore
+~~~
+
+Result: 43 passed, 218 failed during Testcontainers startup because Docker Desktop's Linux engine pipe is absent (`npipe:////./pipe/dockerDesktopLinuxEngine`). Docker Desktop launch also failed: its CLI could not locate installation registry keys. Treat the 218 failures as environment-blocked database tests, not passing tests; rerun when Docker is available.
+
+Formatting:
+
+~~~powershell
+$env:DOTNET_CLI_TELEMETRY_OPTOUT='1'
+dotnet format backend/Happengo.sln --no-restore --verify-no-changes --include <changed backend files>
+~~~
+
+Result: changed-file verification passed. Full-solution verification reports many existing whitespace and line-ending violations in untouched files (e.g. existing event and test files); no whole-repository reformat was applied.
+
+Mobile checks (repo root):
+
+~~~text
+pnpm --filter @happengo/mobile lint
+pnpm --filter @happengo/mobile typecheck
+pnpm --filter @happengo/mobile test --runInBand
+pnpm --filter @happengo/mobile export:web
+~~~
+
+Result: lint passed; typecheck passed; Jest 27 suites / 80 tests passed; web export succeeded (`WEB_EXPORT_EXIT=0`). Earlier pnpm workspace symlink and testhost named-pipe failures were sandbox restrictions; rerunning these commands outside the sandbox resolved them.
+
+### Remaining check
+
+- Rerun the full backend suite with Docker Desktop's Linux engine available; this will exercise the new reports/moderation database tests and migration application. The local branch is ready for a PR once those integration tests pass or CI confirms them.
+- No infrastructure, deployment, Azure, or Terraform changes. Migrations are new; none of the merged migrations was edited. Both migration source files are UTF-8 without BOM.
+
+### Moderator configuration
+
+Set `Moderation__ModeratorUserIds__0=auth0|<subject>` for each configured moderator subject ID. Store these IDs in the existing hosting configuration/secret mechanism; this change does not provision infrastructure.

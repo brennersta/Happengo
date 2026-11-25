@@ -2,9 +2,10 @@ export interface DemoProfile {
   id: string;
   displayName: string;
   shareAttendanceWithFriends: boolean;
+  isModerator: boolean;
 }
 
-const profile: DemoProfile = { id: "demo-user", displayName: "Demo User", shareAttendanceWithFriends: true };
+const profile: DemoProfile = { id: "demo-user", displayName: "Demo User", shareAttendanceWithFriends: true, isModerator: true };
 
 export function getDemoProfile(): DemoProfile {
   return { ...profile };

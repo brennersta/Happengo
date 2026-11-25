@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { useRouter } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { auth } from "@/auth";
@@ -7,11 +8,12 @@ import { SignInButton } from "@/auth/SignInButton";
 import i18n, { locales, resolveLocale, saveLocale, type AppLocale } from "@/i18n";
 import { fetchClient } from "@/api/client";
 
-interface ProfileData { id: string; displayName: string | null; shareAttendanceWithFriends: boolean }
+interface ProfileData { id: string; displayName: string | null; shareAttendanceWithFriends: boolean; isModerator: boolean }
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const router = useRouter();
   const session = useQuery({
     queryKey: ["profile-session"],
     queryFn: async () => Boolean(await auth.getAccessToken()),
@@ -120,6 +122,7 @@ export default function ProfileScreen() {
                 {updateAttendanceSharing.isError ? (
                   <Text accessibilityRole="alert" style={styles.error}>{t("profile.shareAttendanceError")}</Text>
                 ) : null}
+                {profile.data.isModerator ? <Pressable accessibilityRole="button" onPress={() => router.push("/moderation" as never)} style={styles.actionButton}><Text style={styles.actionText}>{t("moderation.title")}</Text></Pressable> : null}
               </>
             ) : null}
             <Text style={styles.label}>{t("profile.language")}</Text>

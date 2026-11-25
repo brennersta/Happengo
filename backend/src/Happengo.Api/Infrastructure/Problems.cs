@@ -85,4 +85,22 @@ internal static class Problems
 
     public static ProblemHttpResult IncidentRateLimited(string detail) => TypedResults.Problem(
         statusCode: StatusCodes.Status429TooManyRequests, title: "Incident report limit reached", detail: detail, type: ProblemTypes.IncidentRateLimited);
+
+    public static ProblemHttpResult InvalidReport(string detail) => TypedResults.Problem(
+        statusCode: StatusCodes.Status400BadRequest, title: "Invalid report", detail: detail, type: ProblemTypes.InvalidReport);
+
+    public static ProblemHttpResult ReportConflict() => TypedResults.Problem(
+        statusCode: StatusCodes.Status409Conflict, title: "Report already submitted", detail: "You have already reported this item.", type: ProblemTypes.ReportConflict);
+
+    public static ProblemHttpResult NotFoundReportTarget() => TypedResults.Problem(
+        statusCode: StatusCodes.Status404NotFound, title: "Not found", detail: "No reportable item exists for this request.", type: ProblemTypes.NotFound);
+
+    public static ProblemHttpResult NotFoundModeration() => TypedResults.Problem(
+        statusCode: StatusCodes.Status404NotFound, title: "Not found", detail: "No moderation resource exists for this request.", type: ProblemTypes.NotFound);
+
+    public static ProblemHttpResult InvalidModerationAction(string detail) => TypedResults.Problem(
+        statusCode: StatusCodes.Status400BadRequest, title: "Invalid moderation action", detail: detail, type: ProblemTypes.InvalidModerationAction);
+
+    public static ProblemHttpResult ModerationConflict(string detail) => TypedResults.Problem(
+        statusCode: StatusCodes.Status409Conflict, title: "Moderation conflict", detail: detail, type: ProblemTypes.ModerationConflict);
 }

@@ -25,6 +25,10 @@ public sealed class HappengoDbContext(DbContextOptions<HappengoDbContext> option
 
     internal DbSet<Incidents.IncidentVote> IncidentVotes => Set<Incidents.IncidentVote>();
 
+    internal DbSet<Reports.Report> Reports => Set<Reports.Report>();
+
+    internal DbSet<Moderation.ModerationAction> ModerationActions => Set<Moderation.ModerationAction>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasPostgresExtension("pgcrypto");

@@ -40,7 +40,8 @@ internal static class EventQueries
         var ownedTags = FriendAccess.Tags(db);
 
         return events.Where(e =>
-            !map || (e.EndAt > now && e.CancelledAt == null)).Where(e =>
+            (!e.HiddenAt.HasValue || (known && e.OwnerId == userId))
+            && (!map || (e.EndAt > now && e.CancelledAt == null))).Where(e =>
             (known
                 && e.OwnerId == userId
                 && ownerMaySee.Contains(e.Visibility))

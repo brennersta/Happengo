@@ -42,7 +42,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         await using var scope = Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<HappengoDbContext>();
         await db.Database.ExecuteSqlRawAsync(
-            """TRUNCATE TABLE incident_votes, incidents, attendances, event_invites, event_invited_friend_tags, friend_tags, friendships, friend_invites, events, users RESTART IDENTITY CASCADE""");
+            """TRUNCATE TABLE moderation_actions, reports, incident_votes, incidents, attendances, event_invites, event_invited_friend_tags, friend_tags, friendships, friend_invites, events, users RESTART IDENTITY CASCADE""");
     }
 
     public async Task<T> WithDb<T>(Func<HappengoDbContext, Task<T>> action)

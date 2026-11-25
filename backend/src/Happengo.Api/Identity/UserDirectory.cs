@@ -8,23 +8,33 @@ public sealed record UserName(Guid Id, string? DisplayName);
 
 public static class UserDirectory
 {
+    public static Task<bool> IsModeratorAsync(HappengoDbContext db, Guid userId, CancellationToken cancellationToken) =>
+        db.Users.AsNoTracking().AnyAsync(user => user.Id == userId && user.IsModerator, cancellationToken);
+
     public static async Task<Guid> GetOrCreateAsync(
         HappengoDbContext db,
         string issuer,
         string subject,
         string? email,
         string? displayName,
+        IReadOnlySet<string> moderatorUserIds,
         Instant createdAt,
         CancellationToken cancellationToken)
     {
         var existing = await db.Users
             .Where(user => user.Issuer == issuer && user.Subject == subject)
-            .Select(user => (Guid?)user.Id)
+            .Select(user => new { user.Id, user.IsModerator })
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (existing is Guid id)
+        if (existing is not null)
         {
-            return id;
+            var isModerator = moderatorUserIds.Contains(subject);
+            if (existing.IsModerator != isModerator)
+            {
+                await db.Users.Where(user => user.Id == existing.Id)
+                    .ExecuteUpdateAsync(update => update.SetProperty(user => user.IsModerator, isModerator), cancellationToken);
+            }
+            return existing.Id;
         }
 
         var user = new User
@@ -34,6 +44,7 @@ public static class UserDirectory
             Subject = subject,
             Email = Fit(email, 320),
             DisplayName = Fit(displayName, 200),
+            IsModerator = moderatorUserIds.Contains(subject),
             CreatedAt = createdAt,
         };
 
@@ -46,10 +57,14 @@ public static class UserDirectory
         catch (DbUpdateException)
         {
             db.Entry(user).State = EntityState.Detached;
-            return await db.Users
+            var racedUserId = await db.Users
                 .Where(row => row.Issuer == issuer && row.Subject == subject)
                 .Select(row => row.Id)
                 .SingleAsync(cancellationToken);
+            var isModerator = moderatorUserIds.Contains(subject);
+            await db.Users.Where(row => row.Id == racedUserId)
+                .ExecuteUpdateAsync(update => update.SetProperty(row => row.IsModerator, isModerator), cancellationToken);
+            return racedUserId;
         }
     }
 

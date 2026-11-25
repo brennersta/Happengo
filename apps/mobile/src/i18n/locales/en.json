@@ -63,6 +63,33 @@
       "pt-BR": "Português (Brasil)"
     }
   },
+  "reports": {
+    "report": "Report",
+    "signIn": "Sign in to report this",
+    "submitted": "Thanks. Your report was sent to moderators.",
+    "error": "Could not send your report. Try again.",
+    "reasons": {
+      "inappropriate_content": "Inappropriate content",
+      "spam_scam": "Spam or scam",
+      "fake_misleading": "Fake or misleading",
+      "harassment_unsafe": "Harassment or unsafe"
+    }
+  },
+  "moderation": {
+    "title": "Moderation",
+    "loading": "Loading review queue…",
+    "error": "Could not load the review queue.",
+    "empty": "The review queue is empty.",
+    "priority": "Priority review",
+    "reportCount": "{count} reports",
+    "reason": "Action reason",
+    "reasonPlaceholder": "Explain why you are taking this action",
+    "close": "Close incident",
+    "hide": "Hide event",
+    "resolved": "Resolved",
+    "actionError": "Could not save this moderation action.",
+    "signIn": "Sign in with a moderator account to open this screen."
+  },
   "dates": {
     "today": "Today"
   },

@@ -63,6 +63,33 @@
       "pt-BR": "Português (Brasil)"
     }
   },
+  "reports": {
+    "report": "Denunciar",
+    "signIn": "Entre para denunciar",
+    "submitted": "Obrigado. Sua denúncia foi enviada aos moderadores.",
+    "error": "Não foi possível enviar a denúncia. Tente novamente.",
+    "reasons": {
+      "inappropriate_content": "Conteúdo impróprio",
+      "spam_scam": "Spam ou golpe",
+      "fake_misleading": "Falso ou enganoso",
+      "harassment_unsafe": "Assédio ou situação insegura"
+    }
+  },
+  "moderation": {
+    "title": "Moderação",
+    "loading": "Carregando fila de análise…",
+    "error": "Não foi possível carregar a fila de análise.",
+    "empty": "A fila de análise está vazia.",
+    "priority": "Análise prioritária",
+    "reportCount": "{count} denúncias",
+    "reason": "Motivo da ação",
+    "reasonPlaceholder": "Explique por que esta ação está sendo tomada",
+    "close": "Encerrar ocorrência",
+    "hide": "Ocultar evento",
+    "resolved": "Resolvido",
+    "actionError": "Não foi possível salvar esta ação de moderação.",
+    "signIn": "Entre com uma conta de moderador para abrir esta tela."
+  },
   "dates": {
     "today": "Hoje"
   },
