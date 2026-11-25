@@ -726,8 +726,10 @@ Jest was not run.
 Work is on `codex/create-expand-menu`, based on `origin/main` at `ad03586` (includes PR #41).
 
 - Replaced the standalone event/incident choice page with a compact menu that expands from the Discover Create button. The person can create an event or report an incident; tapping outside or Create again dismisses the menu.
-- `/events/create` now opens the event form directly unless an event id is supplied for editing. The Discover menu navigates to the event form with an explicit event type and to the incident form.
-- Added en and pt-BR accessibility labels. Review note 0027 records this change.
+- `/events/create` now opens the event form directly unless an event id is supplied for editing. The Discover menu navigates to the event form and to the incident form.
+- Removed the manual time-zone input. New events automatically use the device's local IANA zone; edits retain the event's saved zone to avoid changing its absolute time.
+- Visibility and participation choices now render as overlay dropdown menus with chevrons. Opening them does not expand document flow or shift the submit action.
+- Added en and pt-BR strings. Review note 0027 records all four requested UI adjustments.
 
 ### Commands actually run
 
@@ -749,7 +751,7 @@ Result: passed (`tsc --noEmit`, exit code 0).
 pnpm --filter @happengo/mobile export:web
 ~~~
 
-Result: passed; Expo exported the web app to `apps/mobile/dist` (exit code 0).
+The sandboxed attempt returned `EPERM` when Expo wrote generated output to `apps/mobile/dist`. The same command passed after rerunning with workspace write permission; Expo exported the web app (exit code 0).
 
 Jest was not run.
 

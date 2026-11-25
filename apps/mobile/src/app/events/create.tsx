@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -76,7 +77,7 @@ function CreateEventForm({ event }: { event: components["schemas"]["EventRespons
   const [startTime, setStartTime] = useState(start.time);
   const [endDate, setEndDate] = useState(end.date);
   const [endTime, setEndTime] = useState(end.time);
-  const [timeZoneId, setTimeZoneId] = useState(event?.timeZoneId ?? localTimeZone());
+  const [timeZoneId] = useState(() => event?.timeZoneId ?? localTimeZone());
   const [address, setAddress] = useState(event?.address ?? "");
   const [skipAddressSearch, setSkipAddressSearch] = useState<string | null>(null);
   const [location, setLocation] = useState<LngLat | null>(event ? { longitude: event.longitude, latitude: event.latitude } : null);
@@ -229,7 +230,7 @@ function CreateEventForm({ event }: { event: components["schemas"]["EventRespons
               <Text style={styles.inputText}>{whenLabel}</Text>
             </Pressable>
             <Text style={styles.helper}>{t("createEvent.whenHelp")}</Text>
-            <Field label={t("createEvent.timeZoneId")} value={timeZoneId} onChangeText={setTimeZoneId} maxLength={64} />
+            <Text style={styles.helper}>{t("createEvent.localTimeZoneHelp")}</Text>
             <Text style={styles.label}>{t("createEvent.tags")}</Text>
             <Text style={styles.helper}>{t("createEvent.tagsHelp")}</Text>
             <View style={styles.chips}>
@@ -414,16 +415,23 @@ function SelectField({ label, value, helper, options, onChange }: {
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <View style={styles.field}>
+    <View style={[styles.field, open && styles.dropdownFieldOpen]}>
       <Text style={styles.label}>{label}</Text>
-      <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={label} onPress={() => setOpen((current) => !current)} style={styles.input}>
-        <Text style={styles.inputText}>{value}</Text>
-      </Pressable>
-      {open ? options.map(([id, text]) => (
-        <Pressable key={id} accessibilityRole="button" onPress={() => { onChange(id); setOpen(false); }} style={styles.option}>
-          <Text style={styles.inputText}>{text}</Text>
+      <View style={styles.dropdownAnchor}>
+        <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={label} onPress={() => setOpen((current) => !current)} style={[styles.input, styles.selectInput]}>
+          <Text style={styles.inputText}>{value}</Text>
+          <Ionicons name={open ? "chevron-up" : "chevron-down"} size={16} color={theme.muted} />
         </Pressable>
-      )) : null}
+        {open ? (
+          <View style={styles.optionsMenu}>
+            {options.map(([id, text]) => (
+              <Pressable key={id} accessibilityRole="button" accessibilityState={{ selected: text === value }} onPress={() => { onChange(id); setOpen(false); }} style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}>
+                <Text style={styles.inputText}>{text}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
+      </View>
       <Text style={styles.helper}>{helper}</Text>
     </View>
   );
@@ -443,10 +451,16 @@ const styles = StyleSheet.create({
   selects: { flexDirection: "row" },
   card: { flex: 1, backgroundColor: "white", borderRadius: 18, padding: 16, gap: 8, ...theme.shadow },
   field: { gap: 6, flex: 1 },
+  dropdownFieldOpen: { zIndex: 12, elevation: 12 },
   label: { color: theme.ink, fontSize: 13, fontWeight: "700" },
   helper: { color: theme.muted, fontSize: 12 },
   input: { minHeight: 44, borderRadius: 10, borderWidth: 1, borderColor: theme.line, backgroundColor: "white", paddingHorizontal: 12, justifyContent: "center", color: theme.ink, fontSize: 15 },
   inputText: { color: theme.ink, fontSize: 15 },
+  dropdownAnchor: { position: "relative" },
+  selectInput: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  optionsMenu: { position: "absolute", top: 48, right: 0, left: 0, zIndex: 12, borderWidth: 1, borderColor: theme.line, borderRadius: 10, backgroundColor: "white", ...theme.shadow },
+  option: { minHeight: 42, justifyContent: "center", paddingHorizontal: 12, backgroundColor: "white" },
+  optionPressed: { backgroundColor: theme.chip },
   multiline: { minHeight: 90, textAlignVertical: "top", paddingTop: 10 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   locationTitle: { color: "white", fontSize: 18, fontWeight: "700" },
@@ -468,5 +482,4 @@ const styles = StyleSheet.create({
   whenFields: { gap: 8 },
   modalActions: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   clear: { color: theme.brand, fontWeight: "700" },
-  option: { paddingVertical: 8, paddingHorizontal: 8 },
 });
