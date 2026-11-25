@@ -23,7 +23,7 @@ type ApprovalMode = components["schemas"]["ApprovalMode"];
 
 export default function CreateEventScreen() {
   const { t } = useTranslation();
-  const { id: eventId } = useLocalSearchParams<{ id?: string }>();
+  const { id: eventId, type } = useLocalSearchParams<{ id?: string; type?: string }>();
   const editEventQuery = useQuery({
     queryKey: ["event", eventId],
     enabled: Boolean(eventId),
@@ -40,7 +40,19 @@ export default function CreateEventScreen() {
   if (event && (!eventDateTimeFields(event.startAt, event.timeZoneId) || !eventDateTimeFields(event.endAt, event.timeZoneId))) {
     return <EditEventStatus message={t("createEvent.createError")} />;
   }
+  if (!eventId && type !== "event") return <CreateKindChoice />;
   return <CreateEventForm key={event?.id ?? "new-event"} event={event ?? null} />;
+}
+
+function CreateKindChoice() {
+  const { t } = useTranslation();
+  const router = useRouter();
+  return <View style={styles.fill}><View style={styles.statusContent}>
+    <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.back}><Text style={styles.backText}>‹ {t("eventDetail.back")}</Text></Pressable>
+    <Text style={styles.heading}>{t("createEvent.chooseKind")}</Text>
+    <GradientButton label={t("createEvent.eventChoice")} onPress={() => router.replace({ pathname: "/events/create", params: { type: "event" } })} />
+    <Pressable accessibilityRole="button" style={styles.incidentChoice} onPress={() => router.push("/incidents/create" as never)}><Text style={styles.incidentChoiceText}>{t("createEvent.incidentChoice")}</Text></Pressable>
+  </View></View>;
 }
 
 function EditEventStatus({ message }: { message: string }) {
@@ -381,6 +393,8 @@ const styles = StyleSheet.create({
   statusContent: { padding: 20, gap: 16 },
   back: { alignSelf: "flex-start" },
   backText: { color: theme.brand, fontSize: 15, fontWeight: "700" },
+  incidentChoice: { alignItems: "center", justifyContent: "center", minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: "#fdba74", backgroundColor: "#fff7ed" },
+  incidentChoiceText: { color: "#9a3412", fontSize: 15, fontWeight: "800" },
   heading: { color: theme.brand, fontSize: 32, fontWeight: "800" },
   demoNotice: { color: "#624314", backgroundColor: "#fff4d6", borderRadius: 10, padding: 12, fontSize: 13 },
   columns: { gap: 16 },

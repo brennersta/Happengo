@@ -1,8 +1,8 @@
 import { Camera, Map as NativeMap, Marker, type CameraRef } from "@maplibre/maplibre-react-native";
-import { AccessibilityInfo, Animated, StyleSheet, View } from "react-native";
+import { AccessibilityInfo, Animated, StyleSheet, Text, View } from "react-native";
 import { useEffect, useRef, useState } from "react";
 import type { HappengoMapProps } from "./types";
-import { centeredAuraPosition, LIVE_AURA_SIZE, liveAuraMode, MARKER_PIN_SIZE, markerColor } from "./markerStyle";
+import { centeredAuraPosition, INCIDENT_MARKER_COLOR, incidentMarkerSymbol, LIVE_AURA_SIZE, liveAuraMode, MARKER_PIN_SIZE, markerColor } from "./markerStyle";
 
 const worldBounds: [number, number, number, number] = [-180, -85, 180, 85];
 const nativeMarkerWidth = 40;
@@ -61,7 +61,7 @@ export function Map({ center, zoom = 11, styleUrl, markers = [], focus = null, o
           anchor="bottom"
           onPress={() => onMarkerPress?.(marker.id)}
         >
-          <NativeMarker title={marker.title} mainTag={marker.mainTag} tagLabel={marker.tagLabel} happeningNow={marker.happeningNow} />
+          <NativeMarker title={marker.title} mainTag={marker.mainTag} tagLabel={marker.tagLabel} happeningNow={marker.happeningNow} kind={marker.kind} incidentCategory={marker.incidentCategory} />
         </Marker>
       ))}
     </NativeMap>
@@ -72,11 +72,12 @@ const styles = StyleSheet.create({
   map: { flex: 1 },
   markerContainer: { position: "relative", width: nativeMarkerWidth, height: nativeMarkerHeight },
   marker: { position: "absolute", top: nativePinTop, left: nativePinLeft, width: MARKER_PIN_SIZE, height: MARKER_PIN_SIZE, backgroundColor: "white", borderTopLeftRadius: 13, borderTopRightRadius: 13, borderBottomRightRadius: 13, borderBottomLeftRadius: 2, borderWidth: 2, borderColor: "white", transform: [{ rotate: "45deg" }] },
+  markerSymbol: { color: "white", fontSize: 11, fontWeight: "900", textAlign: "center", transform: [{ rotate: "-45deg" }] },
   aura: { position: "absolute", top: nativeAuraPosition.top, left: nativeAuraPosition.left, width: LIVE_AURA_SIZE, height: LIVE_AURA_SIZE, borderRadius: LIVE_AURA_SIZE / 2, backgroundColor: "#18a879" },
   staticAura: { borderWidth: 3, borderColor: "#18a879", backgroundColor: "rgba(24,168,121,.14)" },
 });
 
-function NativeMarker({ title, mainTag, tagLabel, happeningNow }: { title: string; mainTag?: string | null; tagLabel?: string | null; happeningNow?: boolean }) {
+function NativeMarker({ title, mainTag, tagLabel, happeningNow, kind, incidentCategory }: { title: string; mainTag?: string | null; tagLabel?: string | null; happeningNow?: boolean; kind?: "event" | "incident"; incidentCategory?: "fire" | "traffic_collision" | "other" }) {
   const [progress] = useState(() => new Animated.Value(0));
   const [reduceMotion, setReduceMotion] = useState(false);
   useEffect(() => {
@@ -100,7 +101,9 @@ function NativeMarker({ title, mainTag, tagLabel, happeningNow }: { title: strin
   return (
     <View accessible accessibilityLabel={`${title}${tagLabel || mainTag ? `, ${tagLabel || mainTag}` : ""}${happeningNow ? ", happening now" : ""}`} style={styles.markerContainer}>
       {aura !== "none" ? <Animated.View style={[styles.aura, aura === "static" ? styles.staticAura : { transform: [{ scale }], opacity }]} /> : null}
-      <View style={[styles.marker, { backgroundColor: markerColor(mainTag) }]} />
+      <View style={[styles.marker, { backgroundColor: kind === "incident" ? INCIDENT_MARKER_COLOR : markerColor(mainTag) }]}>
+        {kind === "incident" ? <Text style={styles.markerSymbol}>{incidentMarkerSymbol(incidentCategory)}</Text> : null}
+      </View>
     </View>
   );
 }

@@ -11,6 +11,8 @@ export type MapMarker = {
   mainTag?: string | null;
   tagLabel?: string | null;
   happeningNow?: boolean;
+  kind?: "event" | "incident";
+  incidentCategory?: "fire" | "traffic_collision" | "other";
 };
 
 export type MapFocus = { longitude: number; latitude: number; key: number };

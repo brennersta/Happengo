@@ -17,6 +17,7 @@ import { TALLINN, mapStyleUrl } from "@/map/config";
 import { EVENT_TAGS } from "@/map/markerStyle";
 import type { MapBounds, MapFocus, MapMarker } from "@/map/types";
 import type { SavedMapView } from "@/map/mapView";
+import { mergeDiscoverItems, type DiscoverKind, type Incident } from "@/incidents/discoverItems";
 import { initialMapView } from "@/map/mapView";
 import { readSavedMapView, saveMapView } from "@/map/mapViewStorage";
 import { readGrantedDeviceLocation, requestDeviceLocation } from "@/map/deviceLocation";
@@ -43,6 +44,7 @@ export default function DiscoverScreen() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [draft, setDraft] = useState<DiscoverFilters>(emptyDiscoverFilters);
   const [applied, setApplied] = useState<DiscoverFilters>(emptyDiscoverFilters);
+  const [discoverKind, setDiscoverKind] = useState<DiscoverKind>("all");
   const timeZoneId = useMemo(() => localTimeZone(), []);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 30_000);
@@ -99,7 +101,17 @@ export default function DiscoverScreen() {
     staleTime: 15_000,
   });
   const activeQuery = filtered ? filteredQuery : viewportQuery;
-  const events: MapEvent[] = activeQuery.data?.items ?? [];
+  const events: MapEvent[] = useMemo(() => activeQuery.data?.items ?? [], [activeQuery.data]);
+  const incidentsQuery = useQuery({
+    queryKey: ["discover-incidents", bbox],
+    queryFn: async () => {
+      const { data, error, response } = await fetchClient.GET("/v1/incidents", { params: { query: { bbox } } });
+      if (error || !data) throw new Error(response.statusText || t("incidents.loadError"));
+      return data.items;
+    },
+    staleTime: 15_000,
+  });
+  const items = useMemo(() => mergeDiscoverItems(events, incidentsQuery.data ?? [], discoverKind), [events, incidentsQuery.data, discoverKind]);
   const countSource = viewportQuery.data?.items ?? [];
   const markers: MapMarker[] = events.map((event) => ({
     id: event.id,
@@ -109,6 +121,14 @@ export default function DiscoverScreen() {
     tagLabel: event.tags[0] ? t(`tags.${event.tags[0]}`) : null,
     happeningNow: isHappeningNow(event.startAt, event.endAt, new Date(now)),
   }));
+  const incidentMarkers: MapMarker[] = (incidentsQuery.data ?? []).filter((incident) => incident.isActive).map((incident) => ({
+    id: `incident:${incident.id}`,
+    title: t(`incidents.categories.${incident.category}`),
+    coordinate: { longitude: incident.longitude, latitude: incident.latitude },
+    kind: "incident",
+    incidentCategory: incident.category,
+  }));
+  const visibleMarkers = discoverKind === "events" ? markers : discoverKind === "incidents" ? incidentMarkers : [...markers, ...incidentMarkers];
   const activeCount = applied.tags.length + (applied.happeningNow ? 1 : 0) + (applied.when !== "now" ? 1 : 0);
   const showMap = mode === "map" || wide;
   const showList = mode === "list";
@@ -140,8 +160,10 @@ export default function DiscoverScreen() {
       <View style={styles.body}>
         {showMap ? (
           <View style={styles.mapPane}>
-            {initialView ? <Map center={initialView.center} zoom={initialView.zoom} styleUrl={mapStyleUrl()} markers={markers} focus={focus} onMapIdle={onMapIdle}
-              onMarkerPress={(id) => router.push({ pathname: "/events/[id]", params: { id } })} /> : <View style={styles.mapLoading}><ActivityIndicator /></View>}
+            {initialView ? <Map center={initialView.center} zoom={initialView.zoom} styleUrl={mapStyleUrl()} markers={visibleMarkers} focus={focus} onMapIdle={onMapIdle}
+              onMarkerPress={(id) => id.startsWith("incident:")
+                ? router.push({ pathname: "/incidents/[id]" as never, params: { id: id.slice("incident:".length) } })
+                : router.push({ pathname: "/events/[id]", params: { id } })} /> : <View style={styles.mapLoading}><ActivityIndicator /></View>}
             <View style={styles.locationControl}>
               {locationDenied ? <Text accessibilityLiveRegion="polite" style={styles.locationMessage}>{t("discover.locationDenied")}</Text> : null}
               <Pressable accessibilityRole="button" accessibilityLabel={t("discover.locateMe")} disabled={locating} onPress={() => void locateMe()} style={styles.locateButton}>
@@ -153,20 +175,25 @@ export default function DiscoverScreen() {
         ) : null}
         {showList ? (
           <View style={[styles.listPane, !wide && styles.listFull]}>
-            <Text style={[styles.listHeading, !showMap && styles.listHeadingUnderBar]}>{t("discover.eventsNearYou", { count: events.length })}</Text>
-            {activeQuery.isError ? (
+            <Text style={[styles.listHeading, !showMap && styles.listHeadingUnderBar]}>{t("discover.itemsNearYou", { count: items.length })}</Text>
+            {activeQuery.isError || (discoverKind !== "events" && incidentsQuery.isError) ? (
               <View style={styles.message}>
-                <Text style={styles.errorText}>{t("discover.loadError")}</Text>
-                <GradientButton label={t("discover.retry")} onPress={() => void activeQuery.refetch()} />
+                <Text style={styles.errorText}>{activeQuery.isError ? t("discover.loadError") : t("incidents.loadError")}</Text>
+                <GradientButton label={t("discover.retry")} onPress={() => {
+                  if (activeQuery.isError) void activeQuery.refetch();
+                  if (discoverKind !== "events" && incidentsQuery.isError) void incidentsQuery.refetch();
+                }} />
               </View>
-            ) : activeQuery.isLoading ? (
+            ) : activeQuery.isLoading || incidentsQuery.isLoading ? (
               <View style={styles.message}><ActivityIndicator /><Text style={styles.muted}>{t("discover.loading")}</Text></View>
-            ) : events.length === 0 ? (
-              <Text style={styles.muted}>{t(filtered ? "discover.noMatches" : "discover.empty")}</Text>
+            ) : items.length === 0 ? (
+              <Text style={styles.muted}>{t(discoverKind === "incidents" ? "incidents.empty" : filtered ? "discover.noMatches" : "discover.empty")}</Text>
             ) : (
               <ScrollView contentContainerStyle={styles.listContent}>
-                {events.map((event) => (
-                  <EventCard key={event.id} event={event} now={now} onPress={() => router.push({ pathname: "/events/[id]", params: { id: event.id } })} />
+                {items.map((item) => item.kind === "event" ? (
+                  <EventCard key={`event:${item.value.id}`} event={item.value} now={now} onPress={() => router.push({ pathname: "/events/[id]", params: { id: item.value.id } })} />
+                ) : (
+                  <IncidentCard key={`incident:${item.value.id}`} incident={item.value} onPress={() => router.push({ pathname: "/incidents/[id]" as never, params: { id: item.value.id } })} />
                 ))}
               </ScrollView>
             )}
@@ -196,12 +223,19 @@ export default function DiscoverScreen() {
             {activeCount ? <View style={styles.badge}><Text style={styles.badgeText}>{activeCount}</Text></View> : null}
           </Pressable>
           <View style={styles.createWrap}>
-            <GradientButton label={wide ? `+ ${t("discover.createEvent")}` : "+"} onPress={() => router.push("/events/create")} />
+            <GradientButton label={wide ? `+ ${t("discover.create")}` : "+"} onPress={() => router.push("/events/create")} />
           </View>
         </View>
+        <View style={styles.kindSelector} accessibilityRole="tablist">
+          {(["events", "incidents", "all"] as const).map((kind) => (
+            <Pressable key={kind} accessibilityRole="tab" accessibilityState={{ selected: discoverKind === kind }} onPress={() => setDiscoverKind(kind)} style={[styles.kindOption, discoverKind === kind && styles.kindOptionOn]}>
+              <Text style={[styles.kindText, discoverKind === kind && styles.kindTextOn]}>{t(`discover.kind.${kind}`)}</Text>
+            </Pressable>
+          ))}
+        </View>
         <View style={styles.countPill}>
-          {activeQuery.isFetching ? <ActivityIndicator size="small" color={theme.brand} /> : null}
-          <Text style={styles.countText}>{t("discover.countPill", { count: events.length })}</Text>
+          {activeQuery.isFetching || incidentsQuery.isFetching ? <ActivityIndicator size="small" color={theme.brand} /> : null}
+          <Text style={styles.countText}>{t("discover.countPill", { count: items.length })}</Text>
         </View>
       </View>
 
@@ -246,6 +280,31 @@ function EventCard({ event, now, onPress }: { event: MapEvent; now: number; onPr
       <GradientButton label={t("discover.viewEvent")} onPress={onPress} />
     </View>
   );
+}
+
+function IncidentCard({ incident, onPress }: { incident: Incident; onPress: () => void }) {
+  const { t, i18n } = useTranslation();
+  return <View style={[styles.card, styles.incidentCard]}>
+    <View style={styles.cardRow}>
+      <View style={styles.incidentThumb}><Ionicons name={incident.category === "fire" ? "flame" : incident.category === "traffic_collision" ? "car-sport" : "alert-circle"} size={27} color="#c2410c" /></View>
+      <View style={styles.cardBody}>
+        <Text style={styles.incidentLabel}>{t(`incidents.categories.${incident.category}`)}</Text>
+        <Text numberOfLines={2} style={styles.meta}>{incident.description}</Text>
+        <Text numberOfLines={1} style={styles.meta}>{incident.address}</Text>
+        <Text style={styles.meta}>{t("incidents.reportedAgo", { time: relativeTime(incident.createdAt, i18n.language) })}</Text>
+      </View>
+    </View>
+    <GradientButton label={t("incidents.viewIncident")} onPress={onPress} />
+  </View>;
+}
+
+function relativeTime(value: string, locale: string): string {
+  const minutes = Math.max(0, Math.floor((Date.now() - Date.parse(value)) / 60_000));
+  const formatter = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  if (minutes < 60) return formatter.format(-minutes, "minute");
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return formatter.format(-hours, "hour");
+  return formatter.format(-Math.floor(hours / 24), "day");
 }
 
 function FilterDrawer({
@@ -355,6 +414,11 @@ const styles = StyleSheet.create({
   createWrap: { ...theme.shadow, borderRadius: 12 },
   countPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "white", borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, ...theme.shadow },
   countText: { color: theme.ink, fontSize: 13, fontWeight: "700" },
+  kindSelector: { flexDirection: "row", alignSelf: "flex-end", borderRadius: 12, backgroundColor: "white", padding: 3, ...theme.shadow },
+  kindOption: { paddingHorizontal: 11, paddingVertical: 8, borderRadius: 9 },
+  kindOptionOn: { backgroundColor: "#c2410c" },
+  kindText: { color: theme.ink, fontSize: 12, fontWeight: "700" },
+  kindTextOn: { color: "white" },
   card: { backgroundColor: "white", borderRadius: 16, padding: 12, gap: 10, borderWidth: 1, borderColor: theme.line },
   cardRow: { flexDirection: "row", gap: 12 },
   thumb: { width: 92, height: 72, borderRadius: 12, overflow: "hidden" },
@@ -365,6 +429,9 @@ const styles = StyleSheet.create({
   meta: { color: theme.muted, fontSize: 12 },
   friendsBadge: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 4, marginTop: 3, borderRadius: 10, backgroundColor: "#EEEEFF", paddingHorizontal: 7, paddingVertical: 3 },
   friendsBadgeText: { color: theme.brand, fontSize: 11, fontWeight: "700" },
+  incidentCard: { borderColor: "#fed7aa", backgroundColor: "#fffaf5" },
+  incidentThumb: { width: 52, height: 52, borderRadius: 13, backgroundColor: "#ffedd5", alignItems: "center", justifyContent: "center" },
+  incidentLabel: { color: "#9a3412", fontSize: 15, fontWeight: "800" },
   message: { padding: 24, gap: 10, alignItems: "center" },
   muted: { color: theme.muted, fontSize: 14, padding: 16 },
   errorText: { color: theme.danger, fontSize: 14 },

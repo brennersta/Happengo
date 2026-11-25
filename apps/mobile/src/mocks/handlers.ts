@@ -25,8 +25,27 @@ import {
   requestDemoAttendance,
   type CreateEventRequest,
 } from "./contract";
+import { closeDemoIncident, createDemoIncident, getDemoIncident, listDemoIncidents, voteDemoIncident, type CreateIncident } from "./incidents";
 
 export const handlers = [
+  http.get("/v1/incidents", ({ request }) => HttpResponse.json({ items: listDemoIncidents(new URL(request.url).searchParams.get("bbox")) })),
+  http.post("/v1/incidents", async ({ request }) => {
+    const result = createDemoIncident(await request.json() as CreateIncident);
+    return result ? HttpResponse.json(result, { status: 201 }) : HttpResponse.json({ title: "Invalid incident", status: 400 }, { status: 400 });
+  }),
+  http.get("/v1/incidents/:id", ({ params }) => {
+    const result = getDemoIncident(String(params.id));
+    return result ? HttpResponse.json(result) : new HttpResponse(null, { status: 404 });
+  }),
+  http.post("/v1/incidents/:id/vote", async ({ params, request }) => {
+    const body = await request.json() as { vote: "still_there" | "gone" };
+    const result = voteDemoIncident(String(params.id), body.vote);
+    return result ? HttpResponse.json(result) : new HttpResponse(null, { status: 409 });
+  }),
+  http.post("/v1/incidents/:id/close", ({ params }) => {
+    const result = closeDemoIncident(String(params.id));
+    return result ? HttpResponse.json(result) : new HttpResponse(null, { status: 404 });
+  }),
   http.get("/v1/me", () => HttpResponse.json(getDemoProfile())),
   http.put("/v1/me/display-name", async ({ request }) => {
     const body = await request.json() as { displayName?: unknown };
