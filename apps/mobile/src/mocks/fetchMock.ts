@@ -24,6 +24,7 @@ import {
   type CreateEventRequest,
 } from "./contract";
 import { getDemoProfile, updateDemoAttendanceSharing, updateDemoDisplayName } from "./profile";
+import { closeDemoIncident, createDemoIncident, getDemoIncident, listDemoIncidents, voteDemoIncident } from "./incidents";
 
 let patched = false;
 
@@ -36,6 +37,31 @@ export async function enableFetchMocks(): Promise<void> {
     const request = new Request(input, init);
     const url = new URL(request.url);
     const path = url.pathname;
+
+    const incidentVote = path.match(/\/v1\/incidents\/([^/]+)\/vote$/);
+    if (request.method === "POST" && incidentVote?.[1]) {
+      const body = await request.json() as { vote?: "still_there" | "gone" };
+      const result = body.vote ? voteDemoIncident(incidentVote[1], body.vote) : null;
+      return result ? Response.json(result) : problem(409);
+    }
+    const incidentClose = path.match(/\/v1\/incidents\/([^/]+)\/close$/);
+    if (request.method === "POST" && incidentClose?.[1]) {
+      const result = closeDemoIncident(incidentClose[1]);
+      return result ? Response.json(result) : problem(404);
+    }
+    if (request.method === "GET" && path.endsWith("/v1/incidents")) {
+      return Response.json({ items: listDemoIncidents(url.searchParams.get("bbox")) });
+    }
+    if (request.method === "POST" && path.endsWith("/v1/incidents")) {
+      const body = await request.json() as import("./incidents").CreateIncident;
+      const result = createDemoIncident(body);
+      return result ? Response.json(result, { status: 201 }) : problem(400);
+    }
+    const incidentMatch = path.match(/\/v1\/incidents\/([^/]+)$/);
+    if (request.method === "GET" && incidentMatch?.[1]) {
+      const result = getDemoIncident(incidentMatch[1]);
+      return result ? Response.json(result) : problem(404);
+    }
 
     if (request.method === "GET" && path.endsWith("/v1/me")) {
       return Response.json(getDemoProfile());

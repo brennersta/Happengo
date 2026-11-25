@@ -7,6 +7,7 @@ export const EVENT_TAG_COLORS: Record<EventTag, string> = {
 };
 
 export const NEUTRAL_MARKER_COLOR = "#5b5bd6";
+export const INCIDENT_MARKER_COLOR = "#c2410c";
 export const MARKER_PIN_SIZE = 26;
 export const LIVE_AURA_SIZE = 32;
 
@@ -17,6 +18,12 @@ export function centeredAuraPosition(pinLeft: number, pinTop: number) {
 
 export function markerColor(tag?: string | null): string {
   return tag && tag in EVENT_TAG_COLORS ? EVENT_TAG_COLORS[tag as EventTag] : NEUTRAL_MARKER_COLOR;
+}
+
+export function incidentMarkerSymbol(category?: "fire" | "traffic_collision" | "other"): string {
+  if (category === "fire") return "🔥";
+  if (category === "traffic_collision") return "🚗";
+  return "!";
 }
 
 export type LiveAuraMode = "none" | "static" | "pulse";
