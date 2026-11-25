@@ -44,6 +44,7 @@ export default function DiscoverScreen() {
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [createOptionsOpen, setCreateOptionsOpen] = useState(false);
   const [draft, setDraft] = useState<DiscoverFilters>(emptyDiscoverFilters);
   const [applied, setApplied] = useState<DiscoverFilters>(emptyDiscoverFilters);
   const [discoverKind, setDiscoverKind] = useState<DiscoverKind>("all");
@@ -208,6 +209,7 @@ export default function DiscoverScreen() {
         ) : null}
       </View>
 
+      {createOptionsOpen ? <Pressable accessibilityRole="button" accessibilityLabel={t("createEvent.closeChoices")} onPress={() => setCreateOptionsOpen(false)} style={styles.createDismissLayer} /> : null}
       <View style={[styles.toolbar, showList && wide && styles.toolbarShift, !showMap && styles.toolbarInline]} pointerEvents="box-none">
         <View style={styles.bar}>
           <AddressSearch center={center} onSelect={choosePlace} />
@@ -230,9 +232,18 @@ export default function DiscoverScreen() {
             {activeCount ? <View style={styles.badge}><Text style={styles.badgeText}>{activeCount}</Text></View> : null}
           </Pressable>
           <View style={styles.createWrap}>
-            <GradientButton label={wide ? `+ ${t("discover.create")}` : "+"} onPress={() => router.push("/events/create")} />
+            <GradientButton label={wide ? `+ ${t("discover.create")}` : "+"} accessibilityLabel={t("discover.create")} accessibilityState={{ expanded: createOptionsOpen }} onPress={() => setCreateOptionsOpen((open) => !open)} />
           </View>
         </View>
+        {createOptionsOpen ? (
+          <View style={styles.createMenu}>
+            <Text style={styles.createMenuTitle}>{t("createEvent.chooseKind")}</Text>
+            <GradientButton label={t("createEvent.eventChoice")} onPress={() => { setCreateOptionsOpen(false); router.push({ pathname: "/events/create", params: { type: "event" } }); }} />
+            <Pressable accessibilityRole="button" style={styles.incidentCreateOption} onPress={() => { setCreateOptionsOpen(false); router.push("/incidents/create" as never); }}>
+              <Text style={styles.incidentCreateOptionText}>{t("createEvent.incidentChoice")}</Text>
+            </Pressable>
+          </View>
+        ) : null}
         <View style={styles.kindSelector} accessibilityRole="tablist">
           {(["events", "incidents", "all"] as const).map((kind) => (
             <Pressable key={kind} accessibilityRole="tab" accessibilityState={{ selected: discoverKind === kind }} onPress={() => { setDiscoverKind(kind); setSelectedMarkerId(null); }} style={[styles.kindOption, discoverKind === kind && styles.kindOptionOn]}>
@@ -411,6 +422,7 @@ const styles = StyleSheet.create({
   toolbar: { position: "absolute", top: 12, right: 12, left: 64, alignItems: "flex-end", gap: 8, zIndex: 4 },
   toolbarShift: { right: 432 },
   toolbarInline: { position: "relative", top: 0, left: 0, right: 0, paddingHorizontal: 12, paddingTop: 12 },
+  createDismissLayer: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, zIndex: 3 },
   bar: { flexDirection: "row", alignItems: "center", gap: 8, maxWidth: 760, alignSelf: "flex-end" },
   segment: { flexDirection: "row", backgroundColor: "white", borderRadius: 12, overflow: "hidden", ...theme.shadow },
   segmentButton: { width: 40, height: 42, alignItems: "center", justifyContent: "center" },
@@ -419,6 +431,10 @@ const styles = StyleSheet.create({
   badge: { position: "absolute", top: -4, right: -4, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: theme.brand, alignItems: "center", justifyContent: "center", paddingHorizontal: 3 },
   badgeText: { color: "white", fontSize: 10, fontWeight: "700" },
   createWrap: { ...theme.shadow, borderRadius: 12 },
+  createMenu: { width: 260, maxWidth: "100%", alignSelf: "flex-end", padding: 12, gap: 10, borderRadius: 16, backgroundColor: "white", borderWidth: 1, borderColor: theme.line, ...theme.shadow },
+  createMenuTitle: { color: theme.ink, fontSize: 14, fontWeight: "700" },
+  incidentCreateOption: { minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: "#fdba74", backgroundColor: "#fff7ed", alignItems: "center", justifyContent: "center", paddingHorizontal: 12 },
+  incidentCreateOptionText: { color: "#9a3412", fontSize: 14, fontWeight: "800" },
   countPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "white", borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, ...theme.shadow },
   countText: { color: theme.ink, fontSize: 13, fontWeight: "700" },
   kindSelector: { flexDirection: "row", alignSelf: "flex-end", borderRadius: 12, backgroundColor: "white", padding: 3, ...theme.shadow },

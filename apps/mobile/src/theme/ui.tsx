@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { LinearGradient } from "expo-linear-gradient";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View, type AccessibilityState, type StyleProp, type ViewStyle } from "react-native";
 import { markerColor } from "@/map/markerStyle";
 import { theme } from "./theme";
 
@@ -9,14 +9,18 @@ export function GradientButton({
   onPress,
   disabled = false,
   busy = false,
+  accessibilityLabel,
+  accessibilityState,
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
   busy?: boolean;
+  accessibilityLabel?: string;
+  accessibilityState?: AccessibilityState;
 }) {
   return (
-    <Pressable accessibilityRole="button" disabled={disabled || busy} onPress={onPress} style={[styles.gradientPress, (disabled || busy) && styles.disabled]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} accessibilityState={accessibilityState} disabled={disabled || busy} onPress={onPress} style={[styles.gradientPress, (disabled || busy) && styles.disabled]}>
       <LinearGradient colors={theme.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientFill}>
         {busy ? <ActivityIndicator color="white" /> : <Text style={styles.gradientText}>{label}</Text>}
       </LinearGradient>

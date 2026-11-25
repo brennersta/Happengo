@@ -194,6 +194,7 @@
     "title": "Create an event",
     "heading": "Create New Event",
     "chooseKind": "What would you like to create?",
+    "closeChoices": "Close create options",
     "eventChoice": "Create an event",
     "incidentChoice": "Report an incident",
     "editHeading": "Edit Event",

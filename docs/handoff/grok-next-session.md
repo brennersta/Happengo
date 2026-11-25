@@ -720,3 +720,39 @@ Jest was not run.
 ### Read/review only (not executed)
 
 - Reviewed Discover's marker selection and preview selection code, web and native map press wiring, and the installed MapLibre GL `src/ui/marker.ts` click implementation to confirm marker clicks propagate to the map handler.
+
+## Expand Create options on Discover (2026-11-25)
+
+Work is on `codex/create-expand-menu`, based on `origin/main` at `ad03586` (includes PR #41).
+
+- Replaced the standalone event/incident choice page with a compact menu that expands from the Discover Create button. The person can create an event or report an incident; tapping outside or Create again dismisses the menu.
+- `/events/create` now opens the event form directly unless an event id is supplied for editing. The Discover menu navigates to the event form with an explicit event type and to the incident form.
+- Added en and pt-BR accessibility labels. Review note 0027 records this change.
+
+### Commands actually run
+
+From the repository root:
+
+~~~text
+pnpm --filter @happengo/mobile lint
+~~~
+
+Result: passed (exit code 0).
+
+~~~text
+pnpm --filter @happengo/mobile typecheck
+~~~
+
+Result: passed (`tsc --noEmit`, exit code 0).
+
+~~~text
+pnpm --filter @happengo/mobile export:web
+~~~
+
+Result: passed; Expo exported the web app to `apps/mobile/dist` (exit code 0).
+
+Jest was not run.
+
+### Read/review only (not executed)
+
+- Reviewed Discover toolbar layout, event/incident create routing, and existing localized choice strings.
