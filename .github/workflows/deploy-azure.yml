@@ -1,0 +1,103 @@
+name: Deploy Azure API
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: happengo-azure-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: azure-mvp
+    env:
+      RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      AUTH_AUTHORITY: ${{ vars.AUTH0_AUTHORITY }}
+      AUTH_AUDIENCE: ${{ vars.AUTH0_AUDIENCE }}
+      MODERATOR_IDS: ${{ vars.MODERATOR_USER_IDS }}
+      WEB_ORIGIN: ${{ vars.HAPPENGO_WEB_ORIGIN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Prepare and check deployment inputs
+        run: |
+          set -euo pipefail
+          : "${RESOURCE_GROUP:?Set AZURE_RESOURCE_GROUP}"
+          : "${AUTH_AUTHORITY:?Set AUTH0_AUTHORITY}"
+          : "${AUTH_AUDIENCE:?Set AUTH0_AUDIENCE}"
+          image="ghcr.io/brennersta/happengo-api:$GITHUB_SHA"
+          docker manifest inspect "$image" >/dev/null
+          jq -n --arg image "$image" --arg authority "$AUTH_AUTHORITY" --arg audience "$AUTH_AUDIENCE" \
+            --arg origin "$WEB_ORIGIN" --argjson moderators "${MODERATOR_IDS:-[]}" '
+            if ($moderators | type == "array" and all(.[]; type == "string")) then
+              {parameters: {image: {value: $image}, authAuthority: {value: $authority},
+                authAudience: {value: $audience}, moderatorUserIds: {value: $moderators}, webOrigin: {value: $origin}}}
+            else error("MODERATOR_USER_IDS must be a JSON array of strings") end
+            + {"$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#", contentVersion: "1.0.0.0"}
+          ' > "$RUNNER_TEMP/happengo.parameters.json"
+
+      - uses: azure/login@7ddb5af1ef8758cf1353cf3b42f940aee27ba21c # v3.0.2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Preview infrastructure
+        id: preview
+        run: |
+          set -euo pipefail
+          external=$(az containerapp list --resource-group "$RESOURCE_GROUP" \
+            --query "[?name=='happengo-api'].properties.configuration.ingress.external | [0]" -o tsv)
+          bootstrap=true
+          if [[ "$external" == true ]]; then bootstrap=false; fi
+          echo "bootstrap=$bootstrap" >> "$GITHUB_OUTPUT"
+          az deployment group what-if --resource-group "$RESOURCE_GROUP" \
+            --template-file infra/azure/main.bicep --parameters @"$RUNNER_TEMP/happengo.parameters.json" bootstrap="$bootstrap"
+
+      - name: Apply infrastructure
+        env:
+          BOOTSTRAP: ${{ steps.preview.outputs.bootstrap }}
+        run: |
+          az deployment group create --resource-group "$RESOURCE_GROUP" \
+            --template-file infra/azure/main.bicep --parameters @"$RUNNER_TEMP/happengo.parameters.json" bootstrap="$BOOTSTRAP" --output none
+
+      - name: Run EF migrations in Azure
+        run: |
+          set -euo pipefail
+          execution=$(az containerapp job start --resource-group "$RESOURCE_GROUP" --name happengo-migrate --query name -o tsv)
+          test -n "$execution"
+          for attempt in {1..80}; do
+            status=$(az containerapp job execution show --resource-group "$RESOURCE_GROUP" --name happengo-migrate --job-execution-name "$execution" --query properties.status -o tsv)
+            case "$status" in
+              Succeeded) exit 0 ;;
+              Failed|Stopped|Degraded) echo "Migration execution $execution: $status"; exit 1 ;;
+            esac
+            sleep 15
+          done
+          echo "Timed out waiting for migration execution $execution"
+          exit 1
+
+      - name: Enable public ingress after first migration
+        if: steps.preview.outputs.bootstrap == 'true'
+        run: |
+          set -euo pipefail
+          az deployment group what-if --resource-group "$RESOURCE_GROUP" \
+            --template-file infra/azure/main.bicep --parameters @"$RUNNER_TEMP/happengo.parameters.json"
+          az deployment group create --resource-group "$RESOURCE_GROUP" \
+            --template-file infra/azure/main.bicep --parameters @"$RUNNER_TEMP/happengo.parameters.json" --output none
+
+      - name: Check deployed API
+        run: |
+          set -euo pipefail
+          API_FQDN=$(az containerapp show --resource-group "$RESOURCE_GROUP" --name happengo-api --query properties.configuration.ingress.fqdn -o tsv)
+          curl --fail --show-error --silent --retry 12 --retry-all-errors --retry-delay 10 "https://$API_FQDN/health"
+          echo "EXPO_PUBLIC_API_URL=https://$API_FQDN" >> "$GITHUB_STEP_SUMMARY"
