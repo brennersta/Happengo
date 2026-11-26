@@ -1,4 +1,4 @@
-import { Camera, Map as NativeMap, Marker, type CameraRef } from "@maplibre/maplibre-react-native";
+import { Camera, Map as NativeMap, Marker, type CameraRef, type MapRef } from "@maplibre/maplibre-react-native";
 import { AccessibilityInfo, Animated, StyleSheet, Text, View } from "react-native";
 import { useEffect, useRef, useState } from "react";
 import type { HappengoMapProps } from "./types";
@@ -11,8 +11,9 @@ const nativePinLeft = 7;
 const nativePinTop = nativeMarkerHeight - 18.3848 - MARKER_PIN_SIZE / 2;
 const nativeAuraPosition = centeredAuraPosition(nativePinLeft, nativePinTop);
 
-export function Map({ center, zoom = 11, styleUrl, markers = [], focus = null, onMapIdle, onMapPress, onMarkerPress }: HappengoMapProps) {
+export function Map({ center, zoom = 11, styleUrl, markers = [], focus = null, selectedMarkerId = null, onMapIdle, onMapPress, onMarkerPress, onMarkerPositionChange }: HappengoMapProps) {
   const cameraRef = useRef<CameraRef>(null);
+  const mapRef = useRef<MapRef>(null);
   useEffect(() => {
     if (!focus) return;
     let cancelled = false;
@@ -28,6 +29,7 @@ export function Map({ center, zoom = 11, styleUrl, markers = [], focus = null, o
   }, [focus]);
   return (
     <NativeMap
+      ref={mapRef}
       mapStyle={styleUrl}
       style={styles.map}
       attribution
@@ -39,6 +41,12 @@ export function Map({ center, zoom = 11, styleUrl, markers = [], focus = null, o
           southWest: { longitude: west, latitude: south },
           northEast: { longitude: east, latitude: north },
         }, nativeEvent.zoom);
+        const selected = markers.find((marker) => marker.id === selectedMarkerId);
+        if (selected) {
+          void mapRef.current?.project([selected.coordinate.longitude, selected.coordinate.latitude]).then(([x, y]) => {
+            onMarkerPositionChange?.({ x, y });
+          });
+        }
       }}
       onPress={(event) => onMapPress?.({
         longitude: event.nativeEvent.lngLat[0],
@@ -59,7 +67,11 @@ export function Map({ center, zoom = 11, styleUrl, markers = [], focus = null, o
           id={marker.id}
           lngLat={[marker.coordinate.longitude, marker.coordinate.latitude]}
           anchor="bottom"
-          onPress={() => onMarkerPress?.(marker.id)}
+          onPress={() => {
+            void mapRef.current?.project([marker.coordinate.longitude, marker.coordinate.latitude]).then(([x, y]) => {
+              onMarkerPress?.(marker.id, { x, y });
+            });
+          }}
         >
           <NativeMarker title={marker.title} mainTag={marker.mainTag} tagLabel={marker.tagLabel} happeningNow={marker.happeningNow} kind={marker.kind} incidentCategory={marker.incidentCategory} />
         </Marker>
