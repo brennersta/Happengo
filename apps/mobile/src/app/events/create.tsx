@@ -230,9 +230,6 @@ function CreateEventForm({ event }: { event: components["schemas"]["EventRespons
               <Text style={styles.inputText}>{whenLabel}</Text>
             </Pressable>
             <Text style={styles.helper}>{t("createEvent.whenHelp")}</Text>
-            <Text style={styles.helper}>
-              {editing ? t("createEvent.savedTimeZoneHelp", { timeZone: timeZoneId }) : t("createEvent.localTimeZoneHelp")}
-            </Text>
             <Text style={styles.label}>{t("createEvent.tags")}</Text>
             <Text style={styles.helper}>{t("createEvent.tagsHelp")}</Text>
             <View style={styles.chips}>

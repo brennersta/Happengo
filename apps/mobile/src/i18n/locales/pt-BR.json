@@ -202,8 +202,6 @@
     "visibilityApprovalLocked": "A visibilidade e as regras de participação continuam como foram definidas na criação.",
     "when": "Quando",
     "whenHelp": "Escolha quando começa e quanto tempo dura.",
-    "localTimeZoneHelp": "Os horários usam o fuso local do seu dispositivo.",
-    "savedTimeZoneHelp": "Os horários usam o fuso salvo no evento ({timeZone}).",
     "selectWhen": "Selecionar data e hora",
     "startNow": "Começar agora",
     "scheduleLater": "Agendar para depois",
