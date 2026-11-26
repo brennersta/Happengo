@@ -758,3 +758,7 @@ Jest was not run.
 ### Read/review only (not executed)
 
 - Reviewed Discover toolbar layout, event/incident create routing, and existing localized choice strings.
+
+## Azure MVP hosting
+
+Branch `codex/azure-mvp-hosting` adds North Europe Bicep resources, managed identity database connectivity, GHCR publishing from main and a manual Azure deployment workflow. The first rollout starts with internal ingress, runs EF migrations in a Container Apps job, then enables external HTTPS. See review 0028 for local command results and docs/operations/azure-setup.md for the operator steps. Auth0 values, moderator IDs and the hosted Expo URL are configured when setting up the environment. No Azure commands or deployments were run.

@@ -12,6 +12,8 @@
 
 ## Next implementation checkpoint
 
+Azure MVP hosting is prepared on `codex/azure-mvp-hosting`. See [review 0028](docs/features/reviews/0028-azure-mvp-hosting.md) and the [setup guide](docs/operations/azure-setup.md). Azure resources have not been deployed.
+
 The first-use event journey was validated on 2026-11-23. Create, Discover, My Events, marker and card navigation, join, and owner approve/decline work against the demo contract. The live aura uses the half-open window `startAt <= now < endAt`. Exact commands and what was executed versus only read are in [`docs/handoff/grok-next-session.md`](docs/handoff/grok-next-session.md).
 
 The public demo is live at `https://brennersta.github.io/Happengo/` when GitHub Pages Source is GitHub Actions. The current slice matches the target Discover, detail, create, and My Events layout and adds Photon address search (ADR 0010). Do not start cover upload, albums, reactions, incident tags, attendee names, a duration change, or livestream links.

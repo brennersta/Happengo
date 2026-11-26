@@ -24,6 +24,7 @@ using Microsoft.OpenApi;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.IdentityModel.Tokens;
 using NodaTime;
+using Npgsql;
 
 namespace Happengo.Api.Infrastructure;
 
@@ -51,7 +52,16 @@ public static class HappengoServices
                 "Authentication:Authority and Authentication:Audience are required. They name the OIDC provider; none is hard-coded.");
         }
 
-        services.AddDbContext<HappengoDbContext>(options => options.UseHappengo(connectionString));
+        if (configuration.GetValue<bool>("Database:UseManagedIdentity"))
+        {
+            services.AddSingleton(_ => AzurePostgres.CreateDataSource(connectionString));
+            services.AddDbContext<HappengoDbContext>((provider, options) =>
+                options.UseHappengo(provider.GetRequiredService<NpgsqlDataSource>()));
+        }
+        else
+        {
+            services.AddDbContext<HappengoDbContext>(options => options.UseHappengo(connectionString));
+        }
         services.AddSingleton<IClock>(SystemClock.Instance);
         services.AddScoped<ViewerContext>();
 
