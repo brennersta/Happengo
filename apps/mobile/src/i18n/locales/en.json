@@ -202,8 +202,6 @@
     "visibilityApprovalLocked": "Visibility and joining rules stay as they were when this event was created.",
     "when": "When",
     "whenHelp": "Choose when it starts and how long it lasts.",
-    "localTimeZoneHelp": "Times use your device's local time zone.",
-    "savedTimeZoneHelp": "Times use the event's saved time zone ({timeZone}).",
     "selectWhen": "Select date and time",
     "startNow": "Start now",
     "scheduleLater": "Schedule for later",
