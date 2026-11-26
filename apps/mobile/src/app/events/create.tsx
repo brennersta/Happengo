@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -414,21 +414,27 @@ function SelectField({ label, value, helper, options, onChange }: {
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <View style={[styles.field, open && styles.dropdownFieldOpen]}>
+    <View style={styles.selectField}>
       <Text style={styles.label}>{label}</Text>
-      <View style={styles.dropdownAnchor}>
+      <View>
         <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={label} onPress={() => setOpen((current) => !current)} style={[styles.input, styles.selectInput]}>
           <Text style={styles.inputText}>{value}</Text>
           <Ionicons name={open ? "chevron-up" : "chevron-down"} size={16} color={theme.muted} />
         </Pressable>
         {open ? (
-          <View style={styles.optionsMenu}>
-            {options.map(([id, text]) => (
-              <Pressable key={id} accessibilityRole="button" accessibilityState={{ selected: text === value }} onPress={() => { onChange(id); setOpen(false); }} style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}>
-                <Text style={styles.inputText}>{text}</Text>
-              </Pressable>
-            ))}
-          </View>
+          <Modal transparent visible onRequestClose={() => setOpen(false)}>
+            <View style={styles.choiceBackdrop}>
+              <Pressable accessible={false} onPress={() => setOpen(false)} style={StyleSheet.absoluteFill} />
+              <View style={styles.optionsMenu} accessibilityViewIsModal>
+                <Text accessibilityRole="header" style={styles.choiceHeading}>{label}</Text>
+                {options.map(([id, text]) => (
+                  <Pressable key={id} accessibilityRole="button" accessibilityState={{ selected: text === value }} onPress={() => { onChange(id); setOpen(false); }} style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}>
+                    <Text style={styles.inputText}>{text}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          </Modal>
         ) : null}
       </View>
       <Text style={styles.helper}>{helper}</Text>
@@ -449,15 +455,16 @@ const styles = StyleSheet.create({
   columnsWide: { flexDirection: "row", alignItems: "flex-start" },
   selects: { flexDirection: "row" },
   card: { flex: 1, backgroundColor: "white", borderRadius: 18, padding: 16, gap: 8, ...theme.shadow },
-  field: { gap: 6, flex: 1 },
-  dropdownFieldOpen: { zIndex: 12, elevation: 12 },
+  field: { gap: 6 },
+  selectField: { gap: 6, flexGrow: 1, flexShrink: 1, minWidth: 0 },
   label: { color: theme.ink, fontSize: 13, fontWeight: "700" },
   helper: { color: theme.muted, fontSize: 12 },
   input: { minHeight: 44, borderRadius: 10, borderWidth: 1, borderColor: theme.line, backgroundColor: "white", paddingHorizontal: 12, justifyContent: "center", color: theme.ink, fontSize: 15 },
   inputText: { color: theme.ink, fontSize: 15 },
-  dropdownAnchor: { position: "relative" },
   selectInput: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  optionsMenu: { position: "absolute", top: 48, right: 0, left: 0, zIndex: 12, borderWidth: 1, borderColor: theme.line, borderRadius: 10, backgroundColor: "white", ...theme.shadow },
+  choiceBackdrop: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20, backgroundColor: "rgba(31,27,46,0.35)" },
+  optionsMenu: { width: "100%", maxWidth: 360, padding: 12, borderRadius: 14, backgroundColor: "white", ...theme.shadow },
+  choiceHeading: { color: theme.ink, fontSize: 16, fontWeight: "700", padding: 12 },
   option: { minHeight: 42, justifyContent: "center", paddingHorizontal: 12, backgroundColor: "white" },
   optionPressed: { backgroundColor: theme.chip },
   multiline: { minHeight: 90, textAlignVertical: "top", paddingTop: 10 },

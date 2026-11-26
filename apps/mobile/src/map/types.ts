@@ -3,6 +3,8 @@ export type LngLat = {
   latitude: number;
 };
 
+export type MapPoint = { x: number; y: number };
+
 export type MapBounds = { southWest: LngLat; northEast: LngLat };
 export type MapMarker = {
   id: string;
@@ -23,7 +25,9 @@ export type HappengoMapProps = {
   styleUrl: string;
   markers?: MapMarker[];
   focus?: MapFocus | null;
-  onMarkerPress?: (id: string) => void;
+  selectedMarkerId?: string | null;
+  onMarkerPress?: (id: string, point: MapPoint) => void;
+  onMarkerPositionChange?: (point: MapPoint) => void;
   onMapIdle?: (bounds: MapBounds, zoom: number) => void;
   onMapPress?: (coordinate: LngLat) => void;
 };

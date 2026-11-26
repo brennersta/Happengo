@@ -22,7 +22,10 @@ export function createWebMarker(
   const tag = item.tagLabel || item.mainTag;
   element.setAttribute("aria-label", `${item.title}${tag ? `, ${tag}` : ""}${item.happeningNow ? ", happening now" : ""}`);
   element.title = item.title;
-  element.addEventListener("click", () => onMarkerPress?.(item.id));
+  element.addEventListener("click", () => {
+    const point = map.project([item.coordinate.longitude, item.coordinate.latitude]);
+    onMarkerPress?.(item.id, { x: point.x, y: point.y });
+  });
   element.style.cssText = `width:${markerWidth}px;height:${markerHeight}px;padding:0;border:0;background:transparent;cursor:pointer;`;
 
   const wrapper = documentRef.createElement("span");

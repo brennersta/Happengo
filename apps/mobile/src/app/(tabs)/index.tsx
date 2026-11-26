@@ -16,7 +16,7 @@ import { Map } from "@/map/Map";
 import { MapMarkerPreview } from "@/map/MapMarkerPreview";
 import { TALLINN, mapStyleUrl } from "@/map/config";
 import { EVENT_TAGS } from "@/map/markerStyle";
-import type { MapBounds, MapFocus, MapMarker } from "@/map/types";
+import type { MapBounds, MapFocus, MapMarker, MapPoint } from "@/map/types";
 import type { SavedMapView } from "@/map/mapView";
 import { mergeDiscoverItems, type DiscoverKind, type Incident } from "@/incidents/discoverItems";
 import { initialMapView } from "@/map/mapView";
@@ -42,6 +42,8 @@ export default function DiscoverScreen() {
   const [bounds, setBounds] = useState(initialBounds);
   const [focus, setFocus] = useState<MapFocus | null>(null);
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
+  const [selectedMarkerPosition, setSelectedMarkerPosition] = useState<MapPoint | null>(null);
+  const [mapSize, setMapSize] = useState({ width: 0, height: 0 });
   const [now, setNow] = useState(() => Date.now());
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [createOptionsOpen, setCreateOptionsOpen] = useState(false);
@@ -144,6 +146,16 @@ export default function DiscoverScreen() {
     if (!wide) setMode("map");
   }
 
+  function selectMarker(id: string, point: MapPoint) {
+    setSelectedMarkerId(id);
+    setSelectedMarkerPosition(point);
+  }
+
+  function clearSelectedMarker() {
+    setSelectedMarkerId(null);
+    setSelectedMarkerPosition(null);
+  }
+
   async function locateMe() {
     setLocating(true);
     setLocationDenied(false);
@@ -165,10 +177,13 @@ export default function DiscoverScreen() {
     <View style={styles.screen}>
       <View style={styles.body}>
         {showMap ? (
-          <View style={styles.mapPane}>
+          <View style={styles.mapPane} onLayout={(event) => {
+            const { width: nextWidth, height: nextHeight } = event.nativeEvent.layout;
+            setMapSize((current) => current.width === nextWidth && current.height === nextHeight ? current : { width: nextWidth, height: nextHeight });
+          }}>
             {initialView ? <Map center={initialView.center} zoom={initialView.zoom} styleUrl={mapStyleUrl()} markers={visibleMarkers} focus={focus} onMapIdle={onMapIdle}
-              onMarkerPress={setSelectedMarkerId} /> : <View style={styles.mapLoading}><ActivityIndicator /></View>}
-            {selectedItem ? <MapMarkerPreview item={selectedItem} now={now} onClose={() => setSelectedMarkerId(null)} onOpen={() => {
+              selectedMarkerId={selectedMarkerId} onMarkerPress={selectMarker} onMarkerPositionChange={setSelectedMarkerPosition} /> : <View style={styles.mapLoading}><ActivityIndicator /></View>}
+            {selectedItem && selectedMarkerPosition ? <MapMarkerPreview item={selectedItem} now={now} position={selectedMarkerPosition} mapSize={mapSize} onClose={clearSelectedMarker} onOpen={() => {
               if (selectedItem.kind === "incident") router.push({ pathname: "/incidents/[id]" as never, params: { id: selectedItem.value.id } });
               else router.push({ pathname: "/events/[id]", params: { id: selectedItem.value.id } });
             }} /> : null}
@@ -212,7 +227,7 @@ export default function DiscoverScreen() {
       {createOptionsOpen ? <Pressable accessibilityRole="button" accessibilityLabel={t("createEvent.closeChoices")} onPress={() => setCreateOptionsOpen(false)} style={styles.createDismissLayer} /> : null}
       <View style={[styles.toolbar, showList && wide && styles.toolbarShift, !showMap && styles.toolbarInline]} pointerEvents="box-none">
         <View style={styles.bar}>
-          <AddressSearch center={center} onSelect={choosePlace} />
+          {wide ? <AddressSearch center={center} onSelect={choosePlace} /> : null}
           <View style={styles.segment}>
             <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === "map" }} accessibilityLabel={t("discover.mapView")} onPress={() => setMode("map")} style={[styles.segmentButton, mode === "map" && styles.segmentOn]}>
               <Ionicons name="map-outline" size={18} color={mode === "map" ? "white" : theme.ink} />
@@ -235,6 +250,7 @@ export default function DiscoverScreen() {
             <GradientButton label={wide ? `+ ${t("discover.create")}` : "+"} accessibilityLabel={t("discover.create")} accessibilityState={{ expanded: createOptionsOpen }} onPress={() => setCreateOptionsOpen((open) => !open)} />
           </View>
         </View>
+        {!wide ? <View style={styles.compactSearch}><AddressSearch center={center} onSelect={choosePlace} /></View> : null}
         {createOptionsOpen ? (
           <View style={styles.createMenu}>
             <Text style={styles.createMenuTitle}>{t("createEvent.chooseKind")}</Text>
@@ -246,7 +262,7 @@ export default function DiscoverScreen() {
         ) : null}
         <View style={styles.kindSelector} accessibilityRole="tablist">
           {(["events", "incidents", "all"] as const).map((kind) => (
-            <Pressable key={kind} accessibilityRole="tab" accessibilityState={{ selected: discoverKind === kind }} onPress={() => { setDiscoverKind(kind); setSelectedMarkerId(null); }} style={[styles.kindOption, discoverKind === kind && styles.kindOptionOn]}>
+            <Pressable key={kind} accessibilityRole="tab" accessibilityState={{ selected: discoverKind === kind }} onPress={() => { setDiscoverKind(kind); clearSelectedMarker(); }} style={[styles.kindOption, discoverKind === kind && styles.kindOptionOn]}>
               <Text style={[styles.kindText, discoverKind === kind && styles.kindTextOn]}>{t(`discover.kind.${kind}`)}</Text>
             </Pressable>
           ))}
@@ -410,7 +426,7 @@ const styles = StyleSheet.create({
   body: { flex: 1, flexDirection: "row" },
   mapPane: { flex: 1 },
   mapLoading: { flex: 1, alignItems: "center", justifyContent: "center" },
-  locationControl: { position: "absolute", right: 16, bottom: 20, alignItems: "flex-end", gap: 8 },
+  locationControl: { position: "absolute", right: 16, bottom: 84, alignItems: "flex-end", gap: 8 },
   locateButton: { minHeight: 44, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, borderRadius: 22, backgroundColor: "white", ...theme.shadow },
   locateText: { color: theme.ink, fontSize: 14, fontWeight: "700" },
   locationMessage: { maxWidth: 240, paddingVertical: 8, paddingHorizontal: 12, overflow: "hidden", borderRadius: 10, backgroundColor: "white", color: theme.ink, fontSize: 13, ...theme.shadow },
@@ -424,6 +440,7 @@ const styles = StyleSheet.create({
   toolbarInline: { position: "relative", top: 0, left: 0, right: 0, paddingHorizontal: 12, paddingTop: 12 },
   createDismissLayer: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, zIndex: 3 },
   bar: { flexDirection: "row", alignItems: "center", gap: 8, maxWidth: 760, alignSelf: "flex-end" },
+  compactSearch: { width: "100%", flexDirection: "row", zIndex: 2 },
   segment: { flexDirection: "row", backgroundColor: "white", borderRadius: 12, overflow: "hidden", ...theme.shadow },
   segmentButton: { width: 40, height: 42, alignItems: "center", justifyContent: "center" },
   segmentOn: { backgroundColor: "#1F1B2E" },
